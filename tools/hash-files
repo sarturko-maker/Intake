@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# hash-files: print the SHA-256 of each file, one line each: <sha256>  <path>.
+# Usage: bash tools/hash-files FILE...
+# Methods in order: sha256sum, shasum -a 256, openssl dgst -sha256, Python hashlib, PowerShell Get-FileHash.
+#   HASH_FILES_METHOD=sha256sum|shasum|openssl|python|powershell forces one method.
+# A missing or unreadable file prints "no file: <path>" on stderr; the others are still hashed.
+# Exit: 0 ok, 1 a file missing or unreadable, 2 usage error, 3 no SHA-256 method (fallback printed).
+# Fallback without any method: on Windows run certutil -hashfile FILE SHA256; else record the file as not hashed in WORKFLOW-LOG.md.
+FALLBACK="on Windows run certutil -hashfile FILE SHA256; else record the file as not hashed in WORKFLOW-LOG.md."
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+[ "${1:-}" = "--" ] && shift
+if [ $# -eq 0 ]; then
+  echo "usage: bash tools/hash-files FILE..." >&2
+  exit 2
+fi
+
+PYCMD=""
+PSCMD=""
+find_python() {
+  for c in python3 python "py -3"; do
+    # shellcheck disable=SC2086
+    if command -v ${c%% *} >/dev/null 2>&1 && $c -c 'import hashlib' >/dev/null 2>&1; then
+      PYCMD="$c"
+      return 0
+    fi
+  done
+  return 1
+}
+find_powershell() {
+  for c in pwsh powershell powershell.exe; do
+    if command -v "$c" >/dev/null 2>&1; then
+      PSCMD="$c"
+      return 0
+    fi
+  done
+  return 1
+}
+available() {
+  case "$1" in
+    sha256sum) command -v sha256sum >/dev/null 2>&1 ;;
+    shasum) command -v shasum >/dev/null 2>&1 ;;
+    openssl) command -v openssl >/dev/null 2>&1 ;;
+    python) find_python ;;
+    powershell) find_powershell ;;
+    *) return 1 ;;
+  esac
+}
+
+method="${HASH_FILES_METHOD:-}"
+if [ -n "$method" ]; then
+  case "$method" in
+    sha256sum|shasum|openssl|python|powershell) ;;
+    *) echo "HASH_FILES_METHOD must be sha256sum, shasum, openssl, python or powershell (got '$method')" >&2; exit 2 ;;
+  esac
+  if ! available "$method"; then
+    echo "The SHA-256 method '$method' is not available on this machine." >&2
+    echo "Fallback: $FALLBACK" >&2
+    exit 3
+  fi
+else
+  for m in sha256sum shasum openssl python powershell; do
+    if available "$m"; then method="$m"; break; fi
+  done
+  if [ -z "$method" ]; then
+    echo "No SHA-256 method was found (sha256sum, shasum, openssl, Python or PowerShell)." >&2
+    echo "Fallback: $FALLBACK" >&2
+    echo "Record the fallback in WORKFLOW-LOG.md." >&2
+    exit 3
+  fi
+fi
+
+hash_one() {
+  case "$method" in
+    sha256sum) sha256sum < "$1" ;;
+    shasum) shasum -a 256 < "$1" ;;
+    openssl) openssl dgst -sha256 < "$1" ;;
+    python)
+      # shellcheck disable=SC2086
+      $PYCMD -c 'import hashlib, sys
+h = hashlib.sha256()
+with open(sys.argv[1], "rb") as fh:
+    for chunk in iter(lambda: fh.read(1 << 20), b""):
+        h.update(chunk)
+print(h.hexdigest())' "$1" ;;
+    powershell)
+      winpath="$1"
+      if command -v cygpath >/dev/null 2>&1; then winpath="$(cygpath -w "$1")"; fi
+      quoted="$(printf '%s' "$winpath" | sed "s/'/''/g")"
+      "$PSCMD" -NoProfile -NonInteractive -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath '$quoted').Hash" ;;
+  esac
+}
+
+status=0
+for f in "$@"; do
+  if [ ! -f "$f" ] || [ ! -r "$f" ]; then
+    echo "no file: $f" >&2
+    status=1
+    continue
+  fi
+  h="$(hash_one "$f" 2>/dev/null | tr 'ABCDEF' 'abcdef' | grep -o '[0-9a-f]\{64\}' | head -n 1)"
+  if [ -z "$h" ]; then
+    echo "could not hash: $f ($method)" >&2
+    status=1
+    continue
+  fi
+  printf '%s  %s\n' "$h" "$f"
+done
+exit $status

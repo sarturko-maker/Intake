@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# msg2eml: convert Outlook .msg files to .eml; the .msg is kept.
+# Usage: bash tools/msg2eml FILE.msg... [--outdir DIR]
+#   --outdir DIR   write <stem>.eml into DIR (default: beside each .msg). An existing .eml is kept, not overwritten.
+# Methods in order: 1. python-oxmsg (headers from PR_TRANSPORT_MESSAGE_HEADERS when present, else rebuilt
+#   from properties; body and attachments rebuilt from properties); 2. msgconvert (Perl Email::Outlook::Message).
+#   MSG2EML_METHOD=oxmsg|msgconvert forces one method.
+# Neither works: prints the fallback (tools/msg2eml.ps1 on Windows with Outlook desktop, or ask the human to
+#   save the email as .eml from new or web Outlook) and exits 3. The caller writes the JOURNAL line (converted).
+# Exit: 0 ok, 1 findings or check failed, 2 usage error, 3 conversion impossible here or Python missing (fallback printed).
+# Fallback without Python: on Windows with Outlook desktop run powershell -NoProfile -ExecutionPolicy Bypass -File tools\msg2eml.ps1 -Path FILE.msg; else ask the human to save the email as .eml from new or web Outlook.
+FALLBACK="on Windows with Outlook desktop run powershell -NoProfile -ExecutionPolicy Bypass -File tools\\msg2eml.ps1 -Path FILE.msg; else ask the human to save the email as .eml from new or web Outlook."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/msg2eml.py" "$@"

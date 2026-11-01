@@ -1,0 +1,77 @@
+From: Marcus Reid <marcus.reid@kestrel-eng.co.uk>
+To: Kestrel Legal <legal@kestrel-eng.co.uk>
+Subject: RE: Export query: PX-400 pumps to Egypt - dual use? [{{REF:G03}}]
+Date: Tue, 20 Oct 2026 10:10:04 +0100
+Message-ID: <b2-03.202610201010@kestrel-eng.co.uk>
+In-Reply-To: <b1-07.202610151602@kestrel-eng.co.uk>
+References: <b1-06.202610131420@kestrel-eng.co.uk> <b1-07.202610151602@kestrel-eng.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+
+Hi Alex,
+
+Picking this up again under your reference {{REF:G03}}.
+
+The end-user statement came back signed on Friday, the customer explained the routing (their forwarder consolidates loads for Alexandria), and the screening was clear. But Nilewater have now asked for 4 of the 12 pumps in a corrosion-resistant version, because they will be pumping brine from a new desalination stage.
+
+Engineering say they can build these as a special: a super-austenitic stainless steel casing and impeller (roughly 25% nickel and 20% chromium; I am waiting for the exact grade) and a double mechanical seal. The other 8 pumps stay as standard cast iron.
+
+Does that change your advice? If we need a licence, how long would it take? The customer still wants everything delivered in December.
+
+Thanks
+Marcus
+
+Marcus Reid
+Logistics and Export Compliance
+Kestrel Engineering Ltd
+T +44 114 496 0587
+marcus.reid@kestrel-eng.co.uk
+
+On Thu, 15 Oct 2026 at 16:02, Alex Morgan <alex.morgan@kestrel-eng.co.uk> wrote:
+> Hi Marcus,
+>
+> Short answer: on the information you sent, the PX-400 is not a listed dual-use item, so the pumps do not need an export licence as such. But please do not ship until the two points below are closed.
+>
+> Why it is not listed: the only entry that could apply is 2B350.i in the UK dual-use list (pumps for corrosive chemicals). It covers only multiple-seal and seal-less pumps in which every surface in contact with the liquid is made of specified corrosion-resistant materials, such as high-nickel alloys, titanium or fluoropolymers. The datasheet shows a single mechanical seal, a grey cast iron casing and a ductile iron impeller, with no alloy options, so the PX-400 falls outside that entry. Please keep a copy of the datasheet on the shipping file as the basis for the "no licence required" decision.
+>
+> Before you ship:
+> 1. End-user statement. We need it signed by Nilewater, naming the end use (the municipal water treatment plant) and confirming that the pumps will not be re-exported.
+> 2. Routing through Jebel Ali. Shipping through a forwarder in the UAE for a customer in Alexandria is a recognised diversion pattern. Ask the customer why, and get the forwarder's full name and address. If the answer is not convincing, ship direct or come back to me.
+>
+> Please also run the usual screening of Nilewater, the forwarder and the paying bank against the UK sanctions list. If anything suggests a military end use, or a link to chemical or other weapons, stop and call me: the end-use controls apply even when goods are not listed.
+>
+> Unless the end-user statement or the routing raises something new, I do not need to see this again.
+>
+> Best,
+> Alex
+>
+> Alex Morgan
+> Senior Legal Counsel
+> Kestrel Engineering Ltd
+> T +44 114 496 0230
+> alex.morgan@kestrel-eng.co.uk
+>
+> This email may contain confidential and legally privileged information. If you have received it in error, please tell the sender and delete it.
+>
+> On Tue, 13 Oct 2026 at 14:20, Marcus Reid <marcus.reid@kestrel-eng.co.uk> wrote:
+> > Hi Alex,
+> >
+> > We have an order from a new customer in Egypt for 12 PX-400 pumps, worth about GBP 186,000. The customer is Nilewater Contracting S.A.E. in Alexandria, a contractor building a municipal water treatment plant. We would ship from Sheffield in December.
+> >
+> > Before I confirm the shipping date, can you tell me whether the PX-400 needs an export licence? The datasheet is attached. My reading of the dual-use list is that pumps are only controlled when the parts in contact with the liquid are made of corrosion-resistant materials, and the PX-400 is cast iron throughout. But I would like a legal view before we rely on that.
+> >
+> > Two other points:
+> > - The customer has asked us to ship through a freight forwarder in Jebel Ali (UAE) rather than direct to Alexandria.
+> > - They have not yet returned our end-user statement.
+> >
+> > Could you let me know by Friday if possible?
+> >
+> > Thanks
+> > Marcus
+> >
+> > Marcus Reid
+> > Logistics and Export Compliance
+> > Kestrel Engineering Ltd
+> > T +44 114 496 0587
+> > marcus.reid@kestrel-eng.co.uk

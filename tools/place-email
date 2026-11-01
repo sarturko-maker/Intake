@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# place-email: move one inbox email into a matter, noise or please-check, with its bookkeeping.
+# Usage: bash tools/place-email FILE --to <MATTER_FOLDER|REF|noise|please-check> [options]
+#        bash tools/place-email --register PATH_INSIDE_MATTER [--run RUN] [--json]
+#   --run RUN             run id for journal and log lines (default: now, house time).
+#   --reason TEXT         why; goes into the JOURNAL.md line.  --confidence 0-1   the filing confidence.
+#   --note TEXT           please-check: why unsure, what you would do, what the lawyer should decide.
+#   --claimed REF         please-check: the reference the email claims (tag).
+#   --candidates "R1,R2"  please-check: the matters it might belong to.
+#   --title TEXT          noise: NOISE.csv title (default the subject).  --label TEXT  noise label.
+#   --cross-ref FOLDER    also log a cross-reference in this matter's log.md.
+#   --json                one JSON object instead of one plain line per action.
+# Matter: FILE -> correspondence/<canonical_name> (clash: -2, -3); a same-stem .msg moves with it;
+#   attachments of kind document, image, email -> documents/received/ (documents/ours/ when out);
+#   a hash already in documents.md is not stored again (row gets duplicate_of); signature images
+#   and calendar parts are not stored (read=no: ...). Rows in documents.md, a log.md line, a JOURNAL.md line.
+#   Identical email already filed: the inbox copy is deleted (duplicate-dropped). The only deletion.
+# noise: inbox/noise/<canonical_name>, next NOISE-NNNN row in inbox/noise/NOISE.csv. please-check:
+#   inbox/please-check/<canonical_name> plus <name>.note.md. Re-filing from please-check resolves the note.
+# A file that is not an email: --to please-check only (own name kept, note written); from inbox/please-check/,
+#   --to MATTER puts it in documents/received/ with a documents.md row. Loose files are never deleted.
+# --register: adds documents.md rows (and extracts an email's attachments) for a file put in a matter by hand.
+# Refuses (exit 2, nothing changed) a FILE outside inbox/ or inbox/please-check/, or a folder without matter.md.
+# Exit: 0 ok, 1 a move or write failed part-way, 2 usage error or refusal, 3 Python missing (fallback printed).
+# Fallback without Python: move the email by hand to the canonical name (bash tools/unpack-email rules), save attachments, hash them with bash tools/hash-files, and append the documents.md, log.md and JOURNAL.md lines yourself.
+FALLBACK="move the email by hand to the canonical name, save attachments, hash them with bash tools/hash-files, and append the documents.md, log.md and JOURNAL.md lines yourself."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/place_email.py" "$@"

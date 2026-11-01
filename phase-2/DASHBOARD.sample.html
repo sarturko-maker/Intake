@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legal intake dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+    --bar: #2a78d6; --bar-soft: #cde2fb;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+    --good-text: #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+      --bar: #3987e5; --bar-soft: #184f95; --good-text: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --bar: #3987e5; --bar-soft: #184f95; --good-text: #0ca30c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--ink-2); margin: 0 0 20px; }
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 16px; }
+  .grid { display: grid; gap: 14px; }
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 18px; }
+  .tile .v { font-size: 28px; font-weight: 600; line-height: 1.1; margin: 2px 0 4px; }
+  .tile .l { color: var(--ink-2); font-size: 13px; }
+  .tile .n { color: var(--muted); font-size: 12px; }
+  .two { grid-template-columns: 1fr 1fr; margin-top: 18px; }
+  @media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+  ol.next { margin: 0; padding-left: 22px; }
+  ol.next li { margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { color: var(--ink-2); font-weight: 600; cursor: pointer; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .ref { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .where { color: var(--muted); font-size: 12px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--ring); white-space: nowrap; }
+  .pill .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot.you { background: var(--warning); } .dot.stale { background: var(--serious); } .dot.other { background: var(--axis); } .dot.done { background: var(--good); }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .filters button, .btn { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--ring); background: transparent; color: var(--ink); cursor: pointer; }
+  .filters button[aria-pressed="true"] { background: var(--bar); color: #fff; border-color: var(--bar); }
+  .bars { display: grid; gap: 8px; }
+  .bar-row { display: grid; grid-template-columns: 150px 1fr 36px; align-items: center; gap: 10px; font-size: 13px; }
+  .bar-row .lbl { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-row .track { height: 14px; background: transparent; border-left: 1px solid var(--axis); }
+  .bar-row .fill { height: 100%; background: var(--bar); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .bar-row .cnt { color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; }
+  .budget { position: relative; height: 18px; border: 1px solid var(--ring); border-radius: 9px; overflow: hidden; background: var(--surface); margin: 10px 0 6px; }
+  .budget .fill { height: 100%; background: var(--bar); border-radius: 9px 4px 4px 9px; }
+  .budget .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--axis); }
+  .legend { display: flex; gap: 16px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+  textarea { width: 100%; font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--page); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px; padding: 8px; min-height: 56px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .ok { color: var(--good-text); }
+  footer { color: var(--muted); font-size: 12px; margin-top: 28px; }
+  label.chk { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--grid); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Legal intake: dashboard</h1>
+  <p class="sub" id="runline"></p>
+
+  <div class="grid tiles" id="tiles"></div>
+
+  <section class="card">
+    <h2>What to do next</h2>
+    <ol class="next" id="next"></ol>
+  </section>
+
+  <section class="card" style="margin-top:18px">
+    <h2>Your queue</h2>
+    <div class="filters" id="filters" role="group" aria-label="Filter by practice area"></div>
+    <table id="queue">
+      <thead><tr>
+        <th data-k="reference">Ref</th><th data-k="title">Matter</th><th data-k="proposed">Proposed</th>
+        <th data-k="waitingOn">Waiting on</th><th class="num" data-k="days">Days</th><th data-k="next">Next step</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="muted" style="margin:10px 0 0">Click a column heading to sort. Open <code>INDEX.csv</code> in Excel for every column.</p>
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Open matters by area</h2>
+      <div class="bars" id="byArea"></div>
+    </section>
+    <section class="card">
+      <h2>Ageing of open matters</h2>
+      <div class="bars" id="ageing"></div>
+    </section>
+  </div>
+
+  <div class="grid two">
+    <section class="card">
+      <h2>Confirm as nothing needed</h2>
+      <div id="noise"></div>
+      <p class="muted" style="margin:10px 0 6px">Tick, then paste the line below into chat, or type <code>closed</code> in the CSV.</p>
+      <textarea id="cmd" readonly></textarea>
+    </section>
+    <section class="card">
+      <h2>Budget this month</h2>
+      <div class="budget" id="budget"></div>
+      <div class="legend" id="budgetLegend"></div>
+      <p class="muted" id="budgetNote" style="margin-top:10px"></p>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:18px">
+    <h2>Closed in the last 30 days</h2>
+    <table id="closed">
+      <thead><tr><th>Ref</th><th>Matter</th><th>Closed</th><th class="num">Your minutes</th><th>Deliverable accepted unchanged</th><th>Agent proposal matched your decision</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <footer>Generated from INDEX.csv by tools/dashboard-build. Static file, no network, safe to open from the synced folder.</footer>
+</main>
+
+<script>
+// In the real system tools/dashboard-build inlines INDEX.csv here. Sample data follows.
+const RUN = { at: "2026-11-01 08:40", emails: 14, touched: 9, estCost: 1.85, mode: "full", pleaseCheck: 1 };
+const BUDGET = { cap: 100, estimated: 23.40, actual: 21.10, actualDate: "2026-10-28", lean: 70, minimal: 90 };
+const AREAS = { commercial: "Commercial", corporate: "Corporate", privacy: "Privacy", disputes: "Disputes", "trade-compliance": "Trade compliance", general: "General" };
+const ROWS = [
+ {reference:"2026-0047",kind:"matter",area:"commercial",where:"customers / meridian-bank",title:"Meridian NDA: non-compete clause in a bid NDA",status:"waiting_lawyer",proposed:"ready_for_lawyer",waitingOn:"you",days:2,next:"Decide whether to accept the non-compete or ask for a carve-out; bid closes Friday",due:"2026-11-06",hours:2.5},
+ {reference:"2026-0043",kind:"matter",area:"commercial",where:"suppliers / borealis-components",title:"Borealis price protection claim: out of window",status:"waiting_lawyer",proposed:"ready_for_lawyer",waitingOn:"you",days:1,next:"Approve the draft refusal in drafts/ or soften it",hours:1.5},
+ {reference:"2026-0045",kind:"matter",area:"commercial",where:"customers / volta-rail",title:"Volta RFQ: exceptions to the tender terms",status:"waiting_lawyer",proposed:"ready_for_lawyer",waitingOn:"you",days:6,next:"Confirm the five exceptions; two pages of the tender matter",due:"2026-11-04",hours:4},
+ {reference:"2026-0003",kind:"matter",area:"corporate",where:"signing-authority",title:"Who can sign the PoA for the German subsidiary",status:"waiting_lawyer",proposed:"needs_info_from_requester",waitingOn:"you",days:3,next:"Confirm the notarisation route; requester asked twice",hours:0.5},
+ {reference:"2026-0002",kind:"matter",area:"general",where:"unfiled",title:"Finance forwarded a supplier invoice dispute",status:"waiting_lawyer",proposed:"out_of_area",waitingOn:"you",days:1,next:"Route to disputes or procurement",hours:0.5},
+ {reference:"2026-0042",kind:"matter",area:"commercial",where:"customers / acme-automotive",title:"Acme MSA: liability cap for data breach still open",status:"waiting_counterparty",proposed:"in_progress",waitingOn:"counterparty",days:9,next:"Their response to our 2x fees sub-limit is due Monday",due:"2026-11-03",hours:3},
+ {reference:"2026-0049",kind:"matter",area:"commercial",where:"customers / acme-automotive",title:"Acme security questionnaire for the bid",status:"waiting_requester",proposed:"needs_info_from_requester",waitingOn:"IT security",days:4,next:"Two answers need IT confirmation; 38 of 40 drawn from the knowledge base",due:"2026-11-05",hours:6},
+ {reference:"2026-0012",kind:"matter",area:"privacy",where:"gdpr / vendor-dpas",title:"Acme DPA: sub-processor list",status:"open",proposed:"in_progress",waitingOn:"nobody",days:12,next:"Quiet for 12 days: still open?",hours:5},
+ {reference:"2026-0001",kind:"matter",area:"disputes",where:"northgate-logistics",title:"Northgate late delivery claim",status:"waiting_counterparty",proposed:"in_progress",waitingOn:"counterparty",days:15,next:"Chase their evidence of the delay",hours:8},
+ {reference:"2026-0008",kind:"matter",area:"trade-compliance",where:"exports / pump-series-x",title:"Dual-use classification for a shipment to Egypt",status:"closed",proposed:"ready_for_lawyer",confirmed:"ready_for_lawyer",closedOn:"2026-10-29",minutes:15,accepted:"yes",hours:2},
+ {reference:"2026-0040",kind:"matter",area:"commercial",where:"customers / volta-rail",title:"Volta NDA",status:"closed",proposed:"ready_for_lawyer",confirmed:"ready_for_lawyer",closedOn:"2026-10-21",minutes:20,accepted:"yes",hours:1.5},
+ {reference:"2026-0038",kind:"matter",area:"commercial",where:"suppliers / helix-castings",title:"Helix framework agreement renewal",status:"closed",proposed:"ready_for_lawyer",confirmed:"ready_for_lawyer",closedOn:"2026-10-28",minutes:45,accepted:"no",hours:12},
+ {reference:"2026-0036",kind:"matter",area:"commercial",where:"customers / acme-automotive",title:"Acme NDA",status:"closed",proposed:"nothing_needed",confirmed:"ready_for_lawyer",closedOn:"2026-10-02",minutes:10,accepted:"yes",hours:1},
+ {reference:"NOISE-0007",kind:"noise",title:"Law firm newsletter: autumn employment update",status:"waiting_lawyer",proposed:"nothing_needed",days:1},
+ {reference:"NOISE-0008",kind:"noise",title:"Out of office: J. Keller until 10 November",status:"waiting_lawyer",proposed:"nothing_needed",days:1},
+ {reference:"NOISE-0009",kind:"noise",title:"Calendar invitation: supplier day",status:"waiting_lawyer",proposed:"nothing_needed",days:1},
+];
+const LABEL = { ready_for_lawyer:"ready for you", needs_info_from_requester:"needs info from requester", out_of_area:"out of area", in_progress:"in progress", nothing_needed:"nothing needed" };
+const STALE_DAYS = 10;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const matters = ROWS.filter(r => r.kind === "matter");
+const open = matters.filter(r => r.status !== "closed");
+const closed = matters.filter(r => r.status === "closed");
+const noise = ROWS.filter(r => r.kind === "noise");
+const waitingYou = open.filter(r => r.status === "waiting_lawyer");
+const toConfirm = noise.length + open.filter(r => r.proposed === "nothing_needed").length;
+const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+const median = a => { if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); const m=Math.floor(s.length/2); return s.length%2? s[m] : (s[m-1]+s[m])/2; };
+const withMin = closed.filter(r => r.minutes != null);
+const withAcc = closed.filter(r => r.accepted);
+const agreed = closed.filter(r => r.confirmed === r.proposed).length;
+
+$("#runline").textContent = `Last run ${RUN.at}. ${RUN.emails} emails processed, ${RUN.touched} matters touched, about $${RUN.estCost.toFixed(2)} spent, mode: ${RUN.mode}.`;
+
+const tiles = [
+  ["Open matters", open.length, ""],
+  ["Waiting on you", waitingYou.length, "decisions in your queue"],
+  ["Nothing needed, to confirm", toConfirm, "one click each"],
+  ["Please check", RUN.pleaseCheck, "unsure where it belongs"],
+  ["Closed, last 30 days", closed.filter(r => r.closedOn >= "2026-10-02").length, ""],
+  ["Your minutes per matter", Math.round(mean(withMin.map(r=>r.minutes))), "closed matters"],
+  ["Accepted unchanged", withAcc.length ? Math.round(100*withAcc.filter(r=>r.accepted==="yes").length/withAcc.length)+"%" : "n/a", "deliverables, closed matters"],
+  ["Proposal matched you", closed.length ? Math.round(100*agreed/closed.length)+"%" : "n/a", "proposed vs confirmed outcome"],
+  ["Hours to ready", median(matters.map(r=>r.hours).filter(x=>x!=null)).toFixed(1), "median, arrival to ready"],
+];
+$("#tiles").innerHTML = tiles.map(([l,v,n]) => `<div class="card tile"><div class="l">${esc(l)}</div><div class="v">${esc(v)}</div><div class="n">${esc(n)}</div></div>`).join("");
+
+// What to do next: due soonest, then waiting on you by age, then confirmations and please-check.
+const nextItems = [];
+[...waitingYou].sort((a,b) => (a.due||"9").localeCompare(b.due||"9") || b.days-a.days).slice(0,4)
+  .forEach(r => nextItems.push(`<b>${esc(r.reference)}</b> ${esc(r.title)}. ${esc(r.next)}${r.due?` <span class="muted">(due ${esc(r.due)})</span>`:""}`));
+if (toConfirm) nextItems.push(`Confirm ${toConfirm} items proposed as nothing needed (list below).`);
+if (RUN.pleaseCheck) nextItems.push(`File ${RUN.pleaseCheck} email in <code>inbox/please-check/</code>.`);
+open.filter(r => r.days >= STALE_DAYS && r.status !== "waiting_lawyer").forEach(r => nextItems.push(`<b>${esc(r.reference)}</b> has been quiet ${r.days} days: still open?`));
+$("#next").innerHTML = nextItems.map(x => `<li>${x}</li>`).join("");
+
+// Queue table with area filter and sorting.
+let filter = "all", sortK = "days", sortDir = -1;
+const areasPresent = [...new Set(open.map(r=>r.area))];
+$("#filters").innerHTML = [["all","All"], ...areasPresent.map(a=>[a, AREAS[a]||a])]
+  .map(([k,l]) => `<button type="button" data-f="${esc(k)}" aria-pressed="${k==="all"}">${esc(l)}</button>`).join("");
+$("#filters").addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; filter = b.dataset.f; renderQueue(); });
+document.querySelectorAll("#queue th").forEach(th => th.addEventListener("click", () => { const k = th.dataset.k; if(!k) return; if (sortK === k) sortDir *= -1; else { sortK = k; sortDir = k==="days" ? -1 : 1; } renderQueue(); }));
+document.querySelectorAll('#filters button').forEach(b => b.addEventListener("click", () => document.querySelectorAll('#filters button').forEach(x => x.setAttribute("aria-pressed", x===b))));
+function pill(r) {
+  if (r.status === "waiting_lawyer") return `<span class="pill"><span class="dot you"></span>waiting on you</span>`;
+  if (r.days >= STALE_DAYS) return `<span class="pill"><span class="dot stale"></span>stale, ${esc(r.waitingOn)}</span>`;
+  return `<span class="pill"><span class="dot other"></span>${esc(r.waitingOn)}</span>`;
+}
+function renderQueue() {
+  const rows = open.filter(r => filter==="all" || r.area===filter)
+    .sort((a,b) => { const x=a[sortK], y=b[sortK]; return (typeof x==="number" ? x-y : String(x).localeCompare(String(y))) * sortDir; });
+  $("#queue tbody").innerHTML = rows.map(r => `<tr>
+    <td class="ref">${esc(r.reference)}</td>
+    <td>${esc(r.title)}<div class="where">${esc(AREAS[r.area]||r.area)} / ${esc(r.where)}</div></td>
+    <td>${esc(LABEL[r.proposed]||r.proposed)}</td>
+    <td>${pill(r)}</td>
+    <td class="num">${r.days}</td>
+    <td>${esc(r.next)}</td></tr>`).join("");
+}
+renderQueue();
+
+// Single-series bars: one hue, direct labels, no legend needed.
+function bars(el, pairs) {
+  const max = Math.max(1, ...pairs.map(p=>p[1]));
+  el.innerHTML = pairs.map(([l,v]) => `<div class="bar-row" title="${esc(l)}: ${v}"><div class="lbl">${esc(l)}</div><div class="track"><div class="fill" style="width:${(100*v/max).toFixed(1)}%"></div></div><div class="cnt">${v}</div></div>`).join("");
+}
+const byArea = Object.entries(open.reduce((m,r)=>{ m[r.area]=(m[r.area]||0)+1; return m; }, {})).sort((a,b)=>b[1]-a[1]).map(([a,n])=>[AREAS[a]||a, n]);
+bars($("#byArea"), byArea);
+const buckets = [["0 to 2 days",0],["3 to 7 days",0],["8 to 14 days",0],["15 days and more",0]];
+open.forEach(r => { const d=r.days; (d<=2?buckets[0]:d<=7?buckets[1]:d<=14?buckets[2]:buckets[3])[1]++; });
+bars($("#ageing"), buckets);
+
+// Nothing-needed confirmation list builds a chat line; nothing happens in the page itself.
+const confirmables = [...noise, ...open.filter(r => r.proposed === "nothing_needed")];
+$("#noise").innerHTML = confirmables.map(r => `<label class="chk"><input type="checkbox" value="${esc(r.reference)}" checked> <span><b>${esc(r.reference)}</b> ${esc(r.title)}</span></label>`).join("") || `<p class="muted">Nothing waiting.</p>`;
+function buildCmd() { const ids = [...document.querySelectorAll('#noise input:checked')].map(i=>i.value); $("#cmd").value = ids.length ? `confirm nothing needed: ${ids.join(", ")}` : ""; }
+$("#noise").addEventListener("change", buildCmd); buildCmd();
+
+// Budget: estimated spend against the cap, with the mode thresholds marked.
+const pct = Math.min(100, 100*BUDGET.estimated/BUDGET.cap);
+$("#budget").innerHTML = `<div class="fill" style="width:${pct.toFixed(1)}%"></div><div class="mark" style="left:${BUDGET.lean}%"></div><div class="mark" style="left:${BUDGET.minimal}%"></div>`;
+$("#budgetLegend").innerHTML = `<span>Estimated $${BUDGET.estimated.toFixed(2)} of $${BUDGET.cap}</span><span>lean mode from ${BUDGET.lean}%</span><span>minimal mode from ${BUDGET.minimal}%</span>`;
+$("#budgetNote").textContent = `Actual bill entered ${BUDGET.actualDate}: $${BUDGET.actual.toFixed(2)}. Estimates are recalibrated against the actual figure each month.`;
+
+$("#closed tbody").innerHTML = closed.sort((a,b)=>b.closedOn.localeCompare(a.closedOn)).map(r => `<tr>
+  <td class="ref">${esc(r.reference)}</td><td>${esc(r.title)}</td><td class="ref">${esc(r.closedOn)}</td>
+  <td class="num">${r.minutes ?? ""}</td>
+  <td>${r.accepted==="yes" ? '<span class="ok">yes</span>' : esc(r.accepted||"")}</td>
+  <td>${r.confirmed===r.proposed ? '<span class="ok">yes</span>' : `no, proposed ${esc(LABEL[r.proposed]||r.proposed)}`}</td></tr>`).join("");
+</script>
+</body>
+</html>

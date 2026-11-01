@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# new-matter: create a matter folder, its subfolders and memory files from the templates.
+# Usage: bash tools/new-matter --area A [--sub-area S] --subject SUBJ --topic TOPIC [--subject-name "Name"]
+#          [--title TEXT] [--follows REF] [--opened YYYY-MM-DD] [--run RUN]
+#        bash tools/new-matter --next-ref [--year YYYY]      prints the next reference only.
+#   --area      key from house/areas.md; general is always allowed.
+#   --sub-area  must be declared for the area; else exit 2 (file under the area and propose it in the digest).
+#   --subject, --topic  slugs [a-z0-9-]+; topic two or three words, shortened so the folder is at most 70 characters.
+#   --subject-name  display name for a new subject.md (default: the subject slug, title-cased).
+#   --title     matter title, at most 80 characters (default "<Subject Name>: <topic words>").
+#   --opened    opened date (default today, house time); its year picks the reference counter.
+# Creates areas/<area>/[<sub-area>/]<subject>/subject.md if missing and
+#   areas/.../<subject>/<REF>_<subject>_<topic>/ with correspondence/, documents/{received,ours,reference}/,
+#   work-product/, drafts/, history/ and matter.md, brief.md, facts.md, roster.md, roster.confirmed.md,
+#   corrections.md, log.md, documents.md. Appends log.md "opened matter" and a JOURNAL.md new-matter line.
+# Prints: REF<TAB>FOLDER.
+# Exit: 0 ok, 1 could not write, 2 usage error (unknown area, undeclared sub-area, bad slug), 3 Python missing (fallback printed).
+# Fallback without Python: take the next reference by hand (highest YYYY-NNNN for the year in INDEX.csv and folder names, plus one), create the folders, copy the templates from skills/operations/matter-memory/templates/ and fill the {{...}} fields.
+FALLBACK="take the next reference by hand (highest YYYY-NNNN for the year in INDEX.csv and folder names, plus one), create the folders, copy the templates from skills/operations/matter-memory/templates/ and fill the {{...}} fields."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/new_matter.py" "$@"

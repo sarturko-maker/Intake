@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# budget-update: keep BUDGET.md: monthly cap, estimated spend, mode, ledger.
+# Usage: bash tools/budget-update --init [--month YYYY-MM]
+#        bash tools/budget-update --run RUN --model opus|sonnet|haiku --in-chars N --out-chars M [--note T]
+#        bash tools/budget-update --actual USD [--date YYYY-MM-DD] [--month YYYY-MM]
+#        bash tools/budget-update --show | --mode
+#   --init     create BUDGET.md if absent (cap 100, overhead 1.25, default prices and thresholds)
+#   --run      append one ledger line per model per run: est = (in/4*price_in + out/4*price_out)/1e6*overhead_factor
+#   --actual   record the bill; overhead_factor = old * actual / estimated, limited to 1.0-5.0.
+#              Billed month: --month; else BUDGET.md's month if it has ended; else last month if
+#              digests/budget-<last month>.md has no actual yet; else this month (spend to date).
+#   --show     print the summary and this month's ledger
+#   --mode     print only the mode word: full, lean, minimal or paused (a month that has ended counts as reset)
+#   --today D  stand-in for today (tests, catching up)
+# Modes from BUDGET.md thresholds (default lean=70 minimal=90 paused=100, percent of cap). Prices come from BUDGET.md.
+# On any write, if BUDGET.md's month is not the current month, its ledger moves to digests/budget-<month>.md and the estimate resets.
+# Exit: 0 ok, 1 findings or check failed, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: append the ledger line to BUDGET.md by hand, add up est_usd, set percent_of_cap and mode from the thresholds.
+FALLBACK="append the ledger line to BUDGET.md by hand (est = (in_chars/4*price_in + out_chars/4*price_out)/1e6*overhead_factor), add up est_usd, set percent_of_cap and mode from the thresholds."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/budget_update.py" "$@"

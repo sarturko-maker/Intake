@@ -1,0 +1,22 @@
+{
+  "out": "tools/fixtures/sample.msg",
+  "from": { "name": "Lena Vogt", "address": "lena.vogt@kestrel-eng.de" },
+  "to": [{ "name": "Kestrel Legal", "address": "legal@kestrel-eng.co.uk" }],
+  "cc": [],
+  "subject": "Fixture: sample message",
+  "date": "Thu, 01 Oct 2026 09:00:00 +0200",
+  "message_id": "<fixture.202610010900@kestrel-eng.de>",
+  "in_reply_to": "",
+  "references": "",
+  "body": [
+    "Hello,",
+    "",
+    "This is the sample message for the tooling check. It carries one small text attachment, fixture.txt.",
+    "",
+    "Lena Vogt",
+    "Kestrel Pumpen GmbH"
+  ],
+  "attachments": [
+    { "path": "demo/build/msg/specs/attachments/fixture.txt", "name": "fixture.txt", "mime": "text/plain" }
+  ]
+}

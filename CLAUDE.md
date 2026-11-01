@@ -1,0 +1,20 @@
+@RULES.md
+
+# Claude Code notes
+
+Read RULES.md before acting. It is the contract; this file adds only what is specific to Claude Code.
+
+- Commands are skills: /cold-start, /intake, /status, /close, /checkpoint, /bundle, /budget, /draft-skill, /index. /learn is phase 2: its skill says so and logs the request. Plain phrases map to the same skills (RULES.md, Commands).
+- .claude/skills/ is a mirror generated from skills/ by `bash tools/skills-sync`. Edit skills/ only, then run it.
+- Subagents in .claude/agents/:
+  - filer: one intake batch; matches and places each email through the tools.
+  - reader: one matter; memory, brief and proposed outcome. After filing, after a deliverable or hand-placed file, or when corrections change.
+  - indexer: knowledge/INDEX.md, at cold start, on /index, and for changed house/, knowledge/ or seeds/ files.
+  - distiller: wrap-ups on /close, /checkpoint and `closed` typed in INDEX.csv.
+  - researcher, drafter, reviewer: when the work is done here instead of a work tool: find and cite, draft, check the draft.
+- Dispatch readers in parallel, one matter each; matters under one subject go one after another, since they share subject.md.
+- Keep the main session lean: read changes/<run>.md and subagent reports, not the whole tree.
+- Hooks and deny rules are in .claude/settings.json; TOOLING.md records whether they are live. When a hook refuses a write, read its message and comply. Never work around it.
+- Write memory files with Write or Edit only, so the hooks run. Never through shell redirection.
+- Ask the human in plain chat text, not question widgets.
+- Obey the mode in BUDGET.md.

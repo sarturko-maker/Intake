@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# index-rebuild: apply the lawyer's INDEX.csv edits, rebuild INDEX.csv and INDEX.md, write digest parts.
+# Usage: bash tools/index-rebuild [--today YYYY-MM-DD] [--run RUN] [--digest-parts FILE] [--no-apply] [--confirm-noise IDS] [--json]
+#   --today D          date used for days_open, closing, quiet and recent lists (default: today, house time)
+#   --run RUN          run id for JOURNAL.md and log.md lines (default: now)
+#   --digest-parts F   write the digest sections: Nothing needed (confirm), Please check, Quiet for ten days or more, Measures, What you should do next
+#   --no-apply         report detected edits only; change no file (INDEX.csv, INDEX.md, matter.md, NOISE.csv untouched)
+#   --confirm-noise I  confirm noise ids from chat ("confirm nothing needed: NOISE-0001, NOISE-0002"): move to inbox/noise/confirmed/, NOISE.csv closed
+#   --json             print the report as JSON
+# Step 1 compares INDEX.csv with changes/INDEX.generated.csv cell by cell (rows by reference):
+#   human columns (confirmed_outcome, confirmed_by, lawyer_minutes, accepted_unchanged) -> matter.md frontmatter (history copy first);
+#   status typed closed -> status closed, closed: today, flag wrap-up-pending; prints "closed-by-lawyer REF: run the wrap-up";
+#   title -> title and title_locked: yes; noise row closed or confirmed_outcome -> file to inbox/noise/confirmed/, NOISE.csv updated;
+#   any other edited cell is ignored with a warning. No generated copy (first run): no edits detected.
+# Rows: every matter.md under areas/ and every NOISE.csv row. Writes INDEX.csv (UTF-8 BOM, CRLF; INDEX.new.csv if locked),
+#   changes/INDEX.generated.csv (byte copy), INDEX.md; JOURNAL.md and log.md lines for applied edits.
+# Integrity: duplicate references, missing reference/area/subject/title/status/opened, folder name not starting with its reference.
+# Exit: 0 ok, 1 findings or check failed (integrity), 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: rebuild INDEX.csv by hand from each matter.md frontmatter (columns as INDEX.sample.csv) and copy it to changes/INDEX.generated.csv; apply the lawyer's edits to matter.md first.
+FALLBACK="write INDEX.csv by hand from each matter.md frontmatter and inbox/noise/NOISE.csv (columns as INDEX.sample.csv), after copying the lawyer's edits into matter.md; copy it to changes/INDEX.generated.csv."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/index_rebuild.py" "$@"

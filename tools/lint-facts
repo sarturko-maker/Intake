@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# lint-facts: check a facts.md file (append-only memory); print its live or as-of view.
+# Usage: bash tools/lint-facts FILE [--previous OLDFILE] [--live] [--as-of YYYY-MM-DD]
+#   FILE                a matter's facts.md
+#   --previous OLDFILE  the version before the write: its records must stay, unchanged and in order, as a prefix
+#   --live              print only live records (not superseded by a later line)
+#   --as-of D           print the records live on D: recorded by D, valid_from (or recorded) by D, not superseded by such a record
+# Checks: 7 fields; id F+4 digits, unique, ascending; type party|term|date|decision|open_point|fact;
+#   recorded and valid_from= are dates (valid_from may be empty); source= non-empty; supersedes= targets exist and come earlier.
+# Output: one line per error (FILE:LINE: ID: message). Views print record lines; errors then go to stderr.
+# Called by the PostToolUse hook after every write to facts.md; the hook restores the file on exit 1.
+# Exit: 0 ok, 1 findings or check failed, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: check by eye before saving: 7 fields, ids unique and ascending, every supersedes= target an earlier id, no earlier line changed or removed.
+FALLBACK="check facts.md by eye: 7 fields per line, ids unique and ascending, every supersedes= target is an earlier id, no earlier line changed or removed; live facts are the lines no later line supersedes."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/lint_facts.py" "$@"

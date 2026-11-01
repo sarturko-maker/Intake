@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# scan-changes: compare the workspace tree with MANIFEST.csv and report what changed.
+# Usage: bash tools/scan-changes [--run RUN] [--write-manifest] [--json] [--quiet]
+#   --run RUN          run id (default now, house time); the report is changes/<RUN>.md.
+#   --write-manifest   rewrite MANIFEST.csv from the current tree (first_seen kept, last_seen = RUN,
+#                      last_processed = RUN for every file not directly in inbox/).
+#   --json             counts and changes as JSON.   --quiet   print only the report path.
+# Compares by size and mtime, hashes candidates only. Kinds: new, modified (hash differs), touched
+#   (mtime only), moved (a deleted path's hash at a new path), deleted. No manifest: everything is new.
+# Skips .git/ .claude/ tools/ demo/ phase-2/ .github/ changes/ digests/, every history/ folder,
+#   work-product/bundle-*/, MANIFEST.csv JOURNAL.md INDEX.md WORKFLOW-LOG.md TOOLING.md BUDGET.md
+#   HANDOFF.md, and OS junk (.DS_Store Thumbs.db desktop.ini ~$* *.tmp .~lock*). INDEX.csv is scanned.
+# Report groups: matter folder, else inbox/knowledge/house/seeds/skills/areas, else root.
+# Exit: 0 ok, 1 findings or check failed, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: list files changed since the last run with find -newer MANIFEST.csv, hash them with bash tools/hash-files, and write changes/<run>.md by hand.
+FALLBACK="list files changed since the last run with find -newer MANIFEST.csv, hash them with bash tools/hash-files, and write changes/<run>.md by hand."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/scan_changes.py" "$@"

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# setup: make a fresh demo workspace (Kestrel Engineering) from this repository.
+# Usage: bash demo/scripts/setup DIR [--force]
+#   DIR             the new workspace folder: outside the repository, or demo/workspace inside it
+#                   (git ignores demo/workspace*/). Also accepted as --workspace DIR.
+#   --force         copy into DIR even if it is not empty (same-named files are replaced)
+# Copies the workspace files (not .git, not demo/build/**/node_modules), then installs
+# demo/house/* into house/, demo/knowledge/** into knowledge/ and demo/seeds/** into seeds/
+# (existing .gitkeep files stay), and prints the next steps.
+# Exit: 0 ok, 1 target not empty, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: copy the repository (without .git) to DIR, then copy demo/house/* to house/, demo/knowledge/ to knowledge/, demo/seeds/ to seeds/.
+FALLBACK="copy the repository (without .git) to DIR, then copy demo/house/* to house/, demo/knowledge/ to knowledge/, demo/seeds/ to seeds/"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/../../tools/lib/find-python.sh"
+exec $PY "$here/lib/setup.py" "$@"

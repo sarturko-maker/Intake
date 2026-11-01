@@ -1,0 +1,575 @@
+#!/usr/bin/env bash
+# tooling-setup: detect, install on request, verify and record the helper tools in TOOLING.md.
+# Usage: bash tools/tooling-setup [--install] [--yes] [--verify-only]
+#   (no option)    detect, verify on tools/fixtures/, write TOOLING.md; print what is missing, the exact
+#                  install commands and one question for the agent to ask the human once
+#   --install      install what is missing with the available package manager, then verify and write TOOLING.md
+#   --yes          with --install: no confirmation prompt on a terminal; accept winget agreements
+#   --verify-only  detect and verify only, write TOOLING.md; no install advice
+#   TOOLING_DRY_RUN=1  environment variable: print the install commands instead of running them (nothing is installed)
+# Detects: bash, a SHA-256 tool, python3 (or py -3, python), python-oxmsg, python-docx, msgconvert, pandoc, munpack,
+#   ripmime, git, pip, brew, apt-get (sudo), winget, npm, PowerShell, Outlook (Windows), and the hooks and deny
+#   rules in .claude/settings.json.
+# Installs: python3 -m pip install --user python-oxmsg (again with --break-system-packages when externally managed);
+#   apt-get install -y libemail-outlook-message-perl pandoc mpack (sudo when not root and passwordless);
+#   brew install pandoc mpack; winget install --id JohnMacFarlane.Pandoc -e. A failed install is recorded as blocked.
+# Verifies on tools/fixtures/ (values in EXPECTED.txt): sha256 of sample.eml; unpack-email reports its Message-ID;
+#   msg2eml converts sample.msg; pandoc --track-changes=all shows the inserted text of sample.docx; munpack or
+#   ripmime extracts the attachment. A missing fixture is recorded as "not verified: fixture missing".
+# TOOLING.md: header (date, OS), then "item | status | version | fallback in use | note" lines for shell, sha256,
+#   python3, msg converter, pandoc, munpack/ripmime, python-docx, git, hooks, deny rules.
+#   Status: found, installed, missing, blocked, configured or verified.
+# Pure bash. Exit: 0 ok, 1 findings or check failed (a present tool failed verification), 2 usage error.
+# Fallback without this script: check each tool by hand (command -v NAME; NAME --version) and write TOOLING.md in the same line format.
+FALLBACK="check each tool by hand (command -v NAME; NAME --version) and write TOOLING.md in the same line format; state the RULES.md obligations for hooks and deny rules."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+set -u
+
+usage() {
+  echo "tooling-setup: $1" >&2
+  echo "Usage: bash tools/tooling-setup [--install] [--yes] [--verify-only]" >&2
+  exit 2
+}
+
+INSTALL=0
+YES=0
+VERIFY_ONLY=0
+for arg in "$@"; do
+  case "$arg" in
+    --install) INSTALL=1 ;;
+    --yes|-y) YES=1 ;;
+    --verify-only) VERIFY_ONLY=1 ;;
+    *) usage "unknown argument: $arg" ;;
+  esac
+done
+[ "$INSTALL" = 1 ] && [ "$VERIFY_ONLY" = 1 ] && usage "--install and --verify-only do not go together"
+[ "$YES" = 1 ] && [ "$INSTALL" = 0 ] && usage "--yes goes with --install"
+DRY=0
+[ "${TOOLING_DRY_RUN:-}" = 1 ] && DRY=1
+
+ROOT="${INTAKE_ROOT:-$here/..}"
+ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P)" || usage "workspace not found"
+FIX="$ROOT/tools/fixtures"
+EXP="$FIX/EXPECTED.txt"
+TMPD="$(mktemp -d "${TMPDIR:-/tmp}/tooling.XXXXXX" 2>/dev/null)" || { TMPD="$ROOT/.tooling-tmp.$$"; mkdir -p "$TMPD"; }
+trap 'rm -rf "$TMPD"' EXIT
+CONF_NOTE="prove at cold start (RULES.md obligations if the harness ignores them)"
+FAIL=0
+
+have() { command -v "$1" >/dev/null 2>&1; }
+clean() { printf '%s' "$1" | tr '|\r\n\t' '/   ' | sed 's/  */ /g; s/^ //; s/ $//'; }
+
+# ---------------------------------------------------------------- per-item state (bash 3.2: no associative arrays)
+set_item() { printf -v "st_$1" '%s' "$2"; printf -v "ver_$1" '%s' "$3"; printf -v "fb_$1" '%s' "$4"; printf -v "note_$1" '%s' "$5"; }
+get() { local n="$1_$2"; printf '%s' "${!n:-}"; }
+set_var() { printf -v "$1_$2" '%s' "$3"; }
+add_note() {
+  local n="note_$1" cur
+  cur="${!n:-}"
+  if [ -z "$cur" ] || [ "$cur" = "-" ]; then printf -v "$n" '%s' "$2"; else printf -v "$n" '%s' "$cur; $2"; fi
+}
+ITEMS="shell sha256 python3 msg pandoc munpack docx git hooks deny"
+label() {
+  case "$1" in
+    msg) echo "msg converter" ;; munpack) echo "munpack/ripmime" ;; docx) echo "python-docx" ;;
+    deny) echo "deny rules" ;; *) echo "$1" ;;
+  esac
+}
+
+# Value of a frontmatter key in a Markdown file.
+fm_get() {
+  [ -f "$1" ] || return 0
+  awk -v k="$2" '
+    { sub(/\r$/, "") }
+    NR == 1 { if ($0 != "---") exit; next }
+    /^---[ \t]*$/ { exit }
+    index($0, k ":") == 1 { v = substr($0, length(k) + 2); gsub(/^[ \t"]+|[ \t"]+$/, "", v); print v; exit }' "$1"
+}
+
+# ---------------------------------------------------------------- platform
+UNAME="$(uname -s 2>/dev/null || echo unknown)"
+IS_WIN=0
+IS_MAC=0
+case "$UNAME" in MINGW*|MSYS*|CYGWIN*) IS_WIN=1 ;; Darwin) IS_MAC=1 ;; esac
+if [ "$IS_MAC" = 1 ]; then
+  OS_DESC="macOS $(sw_vers -productVersion 2>/dev/null)"
+elif [ "$IS_WIN" = 1 ]; then
+  OS_DESC="Windows ($UNAME, Git Bash)"
+elif [ -r /etc/os-release ]; then
+  OS_DESC="$( . /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-Linux}") (kernel $(uname -r 2>/dev/null))"
+else
+  OS_DESC="$UNAME $(uname -r 2>/dev/null)"
+fi
+TZNAME="$(fm_get "$ROOT/house/brief.md" timezone)"
+NOW=""
+[ -n "$TZNAME" ] && NOW="$(TZ="$TZNAME" date '+%Y-%m-%d %H:%M' 2>/dev/null) ($TZNAME)"
+[ -n "$NOW" ] || NOW="$(date '+%Y-%m-%d %H:%M') (machine time)"
+
+# ---------------------------------------------------------------- detection
+py_mod_version() {  # module, distribution name: prints the version, fails when the import fails
+  $PY -c "import $1" >/dev/null 2>&1 || return 1
+  $PY -c "
+try:
+    from importlib.metadata import version
+    print(version('$2'))
+except Exception:
+    print('-')" 2>/dev/null | tr -d '\r'
+  return 0
+}
+
+sha256_of() {
+  case "$SHA_TOOL" in
+    sha256sum) sha256sum < "$1" | awk '{print $1}' ;;
+    "shasum -a 256") shasum -a 256 < "$1" | awk '{print $1}' ;;
+    "openssl dgst -sha256") openssl dgst -sha256 < "$1" | awk '{print $NF}' ;;
+    "python hashlib") $PY -c 'import hashlib, sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$1" ;;
+    Get-FileHash) "$PS" -NoProfile -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath '$(cygpath -w "$1" 2>/dev/null || echo "$1")').Hash" ;;
+  esac | tr -d '\r' | tr 'A-F' 'a-f'
+}
+
+detect() {
+  PY=""
+  for cand in python3 python "py -3"; do
+    # shellcheck disable=SC2086
+    if have "${cand%% *}" && $cand -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+      PY="$cand"
+      break
+    fi
+  done
+  PS=""
+  for c in powershell.exe powershell pwsh; do have "$c" && { PS="$c"; break; }; done
+  HAS_OUTLOOK=0
+  if [ "$IS_WIN" = 1 ]; then
+    # Outlook desktop registers the Outlook.Application COM class that tools/msg2eml.ps1 uses.
+    if MSYS_NO_PATHCONV=1 reg query 'HKCR\Outlook.Application' >/dev/null 2>&1; then
+      HAS_OUTLOOK=1
+    else
+      for p in /c/Program\ Files*/*Office*/root/Office*/OUTLOOK.EXE /c/Program\ Files*/*Office*/Office*/OUTLOOK.EXE; do
+        [ -f "$p" ] && HAS_OUTLOOK=1
+      done
+    fi
+  fi
+
+  set_item shell found "bash ${BASH_VERSION:-unknown}" "-" "-"
+
+  if [ -n "$PY" ]; then
+    local fb="-"
+    [ "$PY" = python3 ] || fb="$PY"
+    set_item python3 found "$($PY -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])' 2>/dev/null | tr -d '\r')" "$fb" "-"
+  else
+    set_item python3 missing "-" "shell plus munpack; the agent writes CSV directly" "install Python 3.8 or later with the platform installer"
+  fi
+
+  SHA_TOOL=""
+  if have sha256sum; then SHA_TOOL="sha256sum"
+  elif have shasum; then SHA_TOOL="shasum -a 256"
+  elif have openssl; then SHA_TOOL="openssl dgst -sha256"
+  elif [ -n "$PY" ]; then SHA_TOOL="python hashlib"
+  elif [ -n "$PS" ]; then SHA_TOOL="Get-FileHash"
+  fi
+  case "$SHA_TOOL" in
+    "") set_item sha256 missing "-" "none" "no SHA-256 tool: duplicate and integrity checks cannot run" ;;
+    sha256sum|"shasum -a 256") set_item sha256 found "$SHA_TOOL" "-" "-" ;;
+    *) set_item sha256 found "$SHA_TOOL" "$SHA_TOOL" "-" ;;
+  esac
+
+  local v
+  if [ -n "$PY" ] && v="$(py_mod_version docx python-docx)"; then
+    set_item docx found "$v" "-" "fallback reader for .docx when pandoc is missing"
+  else
+    set_item docx missing "-" "-" "optional: pandoc reads .docx; without both, unzip the .docx and strip tags"
+  fi
+
+  if [ -n "$PY" ] && v="$(py_mod_version oxmsg python-oxmsg)"; then
+    set_item msg found "python-oxmsg $v" "-" "-"
+  elif have msgconvert; then
+    set_item msg found "msgconvert" "-" "-"
+  else
+    local fb="ask the human to save the email as .eml from new or web Outlook"
+    [ "$IS_WIN" = 1 ] && [ "$HAS_OUTLOOK" = 1 ] && [ -n "$PS" ] && fb="tools/msg2eml.ps1 (PowerShell with Outlook desktop)"
+    set_item msg missing "-" "$fb" "neither python-oxmsg nor msgconvert found"
+  fi
+
+  if have pandoc; then
+    set_item pandoc found "$(pandoc --version 2>/dev/null | head -n 1 | awk '{print $2}' | tr -d '\r')" "-" "-"
+  elif [ "$(get st docx)" = found ]; then
+    set_item pandoc missing "-" "python-docx" "-"
+  else
+    set_item pandoc missing "-" "unzip the .docx and strip tags" "-"
+  fi
+
+  if have munpack; then set_item munpack found "munpack" "-" "-"
+  elif have ripmime; then set_item munpack found "ripmime" "-" "-"
+  elif [ -n "$PY" ]; then set_item munpack missing "-" "Python (unpack-email, place-email) extracts attachments" "-"
+  else set_item munpack missing "-" "the human saves attachments into the matter" "-"
+  fi
+
+  if have git; then set_item git found "$(git --version 2>/dev/null | awk '{print $3}' | tr -d '\r')" "-" "-"
+  else set_item git missing "-" "history/ copies and SharePoint versions" "usually present; install from the platform's package manager if wanted"
+  fi
+
+  local set_file="$ROOT/.claude/settings.json"
+  if [ -f "$set_file" ]; then
+    if grep -q '"PreToolUse"' "$set_file" && grep -q '"PostToolUse"' "$set_file"; then
+      set_item hooks configured "-" "-" "$CONF_NOTE"
+    else
+      set_item hooks missing "-" "RULES.md obligations; history copies by the agent" ".claude/settings.json declares no PreToolUse and PostToolUse hooks"
+    fi
+    local deny lacking=""
+    deny="$(awk '/"deny"/ { on = 1 } on { print } on && /\]/ { exit }' "$set_file")"
+    if [ -z "$deny" ]; then
+      lacking="a deny list"
+    else
+      for pat in corrections.md roster.confirmed.md house/; do
+        printf '%s' "$deny" | grep -qF "$pat" || lacking="$lacking${lacking:+, }$pat"
+      done
+    fi
+    if [ -z "$lacking" ]; then
+      set_item deny configured "-" "-" "$CONF_NOTE"
+    else
+      set_item deny missing "-" "RULES.md obligations" ".claude/settings.json deny rules lack: $lacking"
+    fi
+  else
+    set_item hooks missing "-" "RULES.md obligations; history copies by the agent" ".claude/settings.json not found"
+    set_item deny missing "-" "RULES.md obligations" ".claude/settings.json not found"
+  fi
+
+  PIP=0
+  [ -n "$PY" ] && $PY -m pip --version >/dev/null 2>&1 && PIP=1
+  BREW=0
+  have brew && BREW=1
+  APT=""
+  APT_PW=0
+  if have apt-get; then
+    if [ "$(id -u 2>/dev/null)" = 0 ]; then APT="apt-get"
+    elif have sudo && sudo -n true >/dev/null 2>&1; then APT="sudo apt-get"
+    else APT_PW=1
+    fi
+  fi
+  WINGET=0
+  have winget && WINGET=1
+  NPM=0
+  have npm && NPM=1
+  MGRS=""
+  [ "$PIP" = 1 ] && MGRS="pip"
+  [ "$BREW" = 1 ] && MGRS="$MGRS${MGRS:+, }brew"
+  [ -n "$APT" ] && MGRS="$MGRS${MGRS:+, }$APT"
+  [ "$APT_PW" = 1 ] && MGRS="$MGRS${MGRS:+, }apt-get (needs a sudo password)"
+  [ "$WINGET" = 1 ] && MGRS="$MGRS${MGRS:+, }winget"
+  [ "$NPM" = 1 ] && MGRS="$MGRS${MGRS:+, }npm"
+}
+
+# ---------------------------------------------------------------- install plan
+plan() {
+  PLAN_PIP=0
+  PLAN_APT=""
+  PLAN_BREW=""
+  PLAN_WINGET=0
+  HUMAN_APT=""
+  ASK_PKGS=""
+  ASK_MGRS=""
+  for it in msg pandoc munpack; do set_var cmd "$it" ""; done
+  ask() {
+    ASK_PKGS="$ASK_PKGS${ASK_PKGS:+, }$1"
+    case "/$ASK_MGRS/" in *"/$2/"*) ;; *) ASK_MGRS="$ASK_MGRS${ASK_MGRS:+/}$2" ;; esac
+  }
+  if [ "$(get st msg)" = missing ]; then
+    if [ "$PIP" = 1 ]; then PLAN_PIP=1; ask python-oxmsg pip; set_var cmd msg "$PY -m pip install --user python-oxmsg"
+    elif [ -n "$APT" ]; then PLAN_APT="$PLAN_APT libemail-outlook-message-perl"; ask libemail-outlook-message-perl apt
+    elif [ "$APT_PW" = 1 ]; then HUMAN_APT="$HUMAN_APT libemail-outlook-message-perl"
+    fi
+  fi
+  if [ "$(get st pandoc)" = missing ]; then
+    if [ -n "$APT" ]; then PLAN_APT="$PLAN_APT pandoc"; ask pandoc apt
+    elif [ "$BREW" = 1 ]; then PLAN_BREW="$PLAN_BREW pandoc"; ask pandoc brew
+    elif [ "$WINGET" = 1 ]; then PLAN_WINGET=1; ask pandoc winget; set_var cmd pandoc "winget install --id JohnMacFarlane.Pandoc -e"
+    elif [ "$APT_PW" = 1 ]; then HUMAN_APT="$HUMAN_APT pandoc"
+    fi
+  fi
+  if [ "$(get st munpack)" = missing ]; then
+    if [ -n "$APT" ]; then PLAN_APT="$PLAN_APT mpack"; ask mpack apt
+    elif [ "$BREW" = 1 ]; then PLAN_BREW="$PLAN_BREW mpack"; ask mpack brew
+    elif [ "$APT_PW" = 1 ]; then HUMAN_APT="$HUMAN_APT mpack"
+    fi
+  fi
+  PLAN_APT="${PLAN_APT# }"
+  PLAN_BREW="${PLAN_BREW# }"
+  HUMAN_APT="${HUMAN_APT# }"
+  case " $PLAN_APT " in *" libemail-outlook-message-perl "*) set_var cmd msg "$APT install -y $PLAN_APT" ;; esac
+  case " $PLAN_APT " in *" pandoc "*) set_var cmd pandoc "$APT install -y $PLAN_APT" ;; esac
+  case " $PLAN_APT " in *" mpack "*) set_var cmd munpack "$APT install -y $PLAN_APT" ;; esac
+  case " $PLAN_BREW " in *" pandoc "*) set_var cmd pandoc "brew install $PLAN_BREW" ;; esac
+  case " $PLAN_BREW " in *" mpack "*) set_var cmd munpack "brew install $PLAN_BREW" ;; esac
+}
+
+print_commands() {
+  [ "$PLAN_PIP" = 1 ] && echo "  $PY -m pip install --user python-oxmsg"
+  [ -n "$PLAN_APT" ] && echo "  $APT install -y $PLAN_APT"
+  [ -n "$PLAN_BREW" ] && echo "  brew install $PLAN_BREW"
+  [ "$PLAN_WINGET" = 1 ] && echo "  winget install --id JohnMacFarlane.Pandoc -e"
+  return 0
+}
+
+# ---------------------------------------------------------------- install
+LAST_ERR=""
+run_cmd() {  # runs the command; 0 ok, 1 failed (LAST_ERR = last output line), 99 dry run
+  echo "+ $*"
+  if [ "$DRY" = 1 ]; then return 99; fi
+  "$@" > "$TMPD/install.log" 2>&1
+  local rc=$?
+  LAST_ERR="$(grep -v '^[[:space:]]*$' "$TMPD/install.log" | tail -n 1)"
+  [ "$rc" = 0 ] && return 0
+  return 1
+}
+
+record() {  # item, result code
+  case "$2" in
+    0) set_var result "$1" ok ;;
+    99) set_var result "$1" dry ;;
+    *) set_var result "$1" fail; set_var err "$1" "$(clean "$LAST_ERR")" ;;
+  esac
+}
+
+do_install() {
+  local rc
+  if [ "$PLAN_PIP" = 1 ]; then
+    # shellcheck disable=SC2086
+    run_cmd $PY -m pip install --user python-oxmsg; rc=$?
+    if [ "$rc" = 1 ] && grep -qi "externally.managed" "$TMPD/install.log" 2>/dev/null; then
+      # shellcheck disable=SC2086
+      run_cmd $PY -m pip install --user --break-system-packages python-oxmsg; rc=$?
+    fi
+    record msg "$rc"
+  fi
+  if [ -n "$PLAN_APT" ]; then
+    # shellcheck disable=SC2086
+    run_cmd env DEBIAN_FRONTEND=noninteractive $APT install -y $PLAN_APT; rc=$?
+    if [ "$rc" = 1 ] && grep -q "Unable to locate package" "$TMPD/install.log" 2>/dev/null; then
+      # shellcheck disable=SC2086
+      run_cmd $APT update && run_cmd env DEBIAN_FRONTEND=noninteractive $APT install -y $PLAN_APT; rc=$?
+    fi
+    for p in $PLAN_APT; do
+      case "$p" in libemail-outlook-message-perl) record msg "$rc" ;; pandoc) record pandoc "$rc" ;; mpack) record munpack "$rc" ;; esac
+    done
+  fi
+  if [ -n "$PLAN_BREW" ]; then
+    # shellcheck disable=SC2086
+    run_cmd brew install $PLAN_BREW; rc=$?
+    for p in $PLAN_BREW; do
+      case "$p" in pandoc) record pandoc "$rc" ;; mpack) record munpack "$rc" ;; esac
+    done
+  fi
+  if [ "$PLAN_WINGET" = 1 ]; then
+    if [ "$YES" = 1 ]; then
+      run_cmd winget install --id JohnMacFarlane.Pandoc -e --accept-package-agreements --accept-source-agreements; rc=$?
+    else
+      run_cmd winget install --id JohnMacFarlane.Pandoc -e; rc=$?
+    fi
+    record pandoc "$rc"
+  fi
+}
+
+apply_results() {  # after detecting again: installed, blocked or dry-run notes
+  local it r c
+  for it in msg pandoc munpack; do
+    r="$(get result "$it")"
+    c="$(get cmd "$it")"
+    [ -n "$r" ] || continue
+    case "$r" in
+      dry) add_note "$it" "dry run: would run: $c" ;;
+      *)
+        if [ "$(get st "$it")" = found ]; then
+          set_var st "$it" installed
+          add_note "$it" "installed now with: $c"
+        else
+          set_var st "$it" blocked
+          add_note "$it" "install failed ($c): $(get err "$it")"
+        fi ;;
+    esac
+  done
+}
+
+# ---------------------------------------------------------------- verify on tools/fixtures/
+exp_values() {
+  EXP_HASH=""
+  EXP_EML_ID=""
+  EXP_MSG_ID=""
+  EXP_MARKER=""
+  EXP_ATT=""
+  if [ -f "$EXP" ]; then
+    local text
+    text="$(tr -d '\r' < "$EXP" | grep -v '^[[:space:]]*#')"
+    EXP_HASH="$(printf '%s\n' "$text" | grep -i 'sha' | grep -iv 'msg\|docx' | grep -oE '[0-9a-fA-F]{64}' | head -n 1)"
+    [ -n "$EXP_HASH" ] || EXP_HASH="$(printf '%s\n' "$text" | grep -oE '[0-9a-fA-F]{64}' | head -n 1)"
+    EXP_HASH="$(printf '%s' "$EXP_HASH" | tr 'A-F' 'a-f')"
+    EXP_EML_ID="$(printf '%s\n' "$text" | grep -i 'message' | grep -iv 'msg' | grep -oE '[^][<>[:space:]"=:]+@[^][<>[:space:]"=]+' | head -n 1)"
+    [ -n "$EXP_EML_ID" ] || EXP_EML_ID="$(printf '%s\n' "$text" | grep -i 'eml' | grep -oE '[^][<>[:space:]"=:]+@[^][<>[:space:]"=]+' | head -n 1)"
+    EXP_MSG_ID="$(printf '%s\n' "$text" | grep -i 'msg' | grep -oE '[^][<>[:space:]"=:]+@[^][<>[:space:]"=]+' | head -n 1)"
+    EXP_MARKER="$(printf '%s\n' "$text" | awk '
+      { line = $0; i = index(line, ":"); j = index(line, "="); if (i == 0 || (j > 0 && j < i)) i = j
+        if (i == 0) next
+        key = tolower(substr(line, 1, i - 1)); val = substr(line, i + 1)
+        gsub(/^[ \t"]+|[ \t"]+$/, "", val)
+        if (key ~ /marker|insert|docx/ && key !~ /sha/ && val != "") { print val; exit } }')"
+    EXP_ATT="$(printf '%s\n' "$text" | awk '
+      { line = $0; i = index(line, ":"); j = index(line, "="); if (i == 0 || (j > 0 && j < i)) i = j
+        if (i == 0) next
+        key = tolower(substr(line, 1, i - 1)); val = substr(line, i + 1)
+        gsub(/^[ \t"]+|[ \t"]+$/, "", val)
+        if (key ~ /attach/ && key !~ /sha|msg/ && val != "") { print val; exit } }')"
+  fi
+  # sample.msg Message-ID is fixed by the build spec (section G).
+  [ -n "$EXP_MSG_ID" ] || EXP_MSG_ID="fixture.202610010900@kestrel-eng.de"
+}
+
+verified() { set_var st "$1" verified; add_note "$1" "$2"; }
+failed() { add_note "$1" "verification failed: $(clean "$2")"; FAIL=1; }
+present() { case "$(get st "$1")" in found|installed) return 0 ;; esac; return 1; }
+
+verify() {
+  exp_values
+  local out rc f
+  # sha256 of sample.eml
+  if [ ! -f "$FIX/sample.eml" ] || [ -z "$EXP_HASH" ]; then
+    add_note sha256 "not verified: fixture missing"
+  elif present sha256; then
+    f="$(sha256_of "$FIX/sample.eml")"
+    if [ "$f" = "$EXP_HASH" ]; then verified sha256 "sample.eml hash matches EXPECTED.txt"
+    else failed sha256 "sample.eml hash $f is not $EXP_HASH (line endings changed on checkout?)"
+    fi
+  fi
+  # unpack-email reads sample.eml (proves python3 with the tools)
+  if present python3; then
+    if [ ! -f "$FIX/sample.eml" ] || [ -z "$EXP_EML_ID" ]; then add_note python3 "not verified: fixture missing"
+    elif [ ! -f "$ROOT/tools/unpack-email" ]; then add_note python3 "not verified: tools/unpack-email missing"
+    else
+      out="$(bash "$ROOT/tools/unpack-email" "$FIX/sample.eml" 2>&1)"; rc=$?
+      if [ "$rc" = 0 ] && printf '%s' "$out" | grep -qF "$EXP_EML_ID"; then verified python3 "unpack-email read sample.eml"
+      else failed python3 "unpack-email exit $rc, Message-ID $EXP_EML_ID not reported"
+      fi
+    fi
+  fi
+  # msg2eml converts sample.msg
+  if present msg; then
+    if [ ! -f "$FIX/sample.msg" ]; then add_note msg "not verified: fixture missing"
+    elif [ ! -f "$ROOT/tools/msg2eml" ]; then add_note msg "not verified: tools/msg2eml missing"
+    else
+      mkdir -p "$TMPD/msg"
+      out="$(bash "$ROOT/tools/msg2eml" "$FIX/sample.msg" --outdir "$TMPD/msg" 2>&1)"; rc=$?
+      f="$(ls "$TMPD/msg"/*.eml 2>/dev/null | head -n 1)"
+      if [ "$rc" = 0 ] && [ -n "$f" ] && grep -qF "$EXP_MSG_ID" "$f"; then verified msg "msg2eml converted sample.msg"
+      else failed msg "msg2eml exit $rc; no .eml with $EXP_MSG_ID"
+      fi
+    fi
+  fi
+  # pandoc reads tracked changes in sample.docx
+  if present pandoc; then
+    if [ ! -f "$FIX/sample.docx" ] || [ -z "$EXP_MARKER" ]; then add_note pandoc "not verified: fixture missing"
+    else
+      out="$(pandoc --track-changes=all "$FIX/sample.docx" -t plain 2>&1)"; rc=$?
+      if [ "$rc" = 0 ] && printf '%s' "$out" | grep -qF "$EXP_MARKER"; then verified pandoc "tracked insertion read from sample.docx"
+      else failed pandoc "pandoc exit $rc; inserted text '$EXP_MARKER' not found"
+      fi
+    fi
+  fi
+  # munpack or ripmime extracts the attachment of sample.eml
+  if present munpack; then
+    if [ ! -f "$FIX/sample.eml" ]; then add_note munpack "not verified: fixture missing"
+    else
+      mkdir -p "$TMPD/mime"
+      if have munpack; then (cd "$TMPD/mime" && munpack -q -C "$TMPD/mime" "$FIX/sample.eml") >/dev/null 2>&1
+      else ripmime -i "$FIX/sample.eml" -d "$TMPD/mime" >/dev/null 2>&1
+      fi
+      if [ -n "$EXP_ATT" ]; then
+        if [ -f "$TMPD/mime/$EXP_ATT" ]; then verified munpack "extracted $EXP_ATT from sample.eml"
+        else failed munpack "$EXP_ATT not extracted from sample.eml"
+        fi
+      elif [ -n "$(cd "$TMPD/mime" && ls | grep -v '^part[0-9]*$\|\.desc$\|^textfile[0-9]*$')" ]; then
+        verified munpack "extracted the attachment of sample.eml"
+      else
+        failed munpack "no attachment extracted from sample.eml"
+      fi
+    fi
+  fi
+}
+
+# ---------------------------------------------------------------- TOOLING.md
+dash() { if [ -n "$1" ]; then clean "$1"; else printf '%s' "-"; fi; }
+write_tooling() {
+  local it tmp="$ROOT/.TOOLING.md.$$.tmp"
+  {
+    echo "# Tooling"
+    echo "Written by tools/tooling-setup on $NOW. OS: $OS_DESC."
+    printf 'Package managers: %s. PowerShell: %s.' "${MGRS:-none found}" "${PS:-not found}"
+    [ "$IS_WIN" = 1 ] && printf ' Outlook desktop: %s.' "$([ "$HAS_OUTLOOK" = 1 ] && echo found || echo not found)"
+    echo
+    echo "Run bash tools/tooling-setup again after anything is installed. Hooks and deny rules are proved at cold start."
+    echo
+    echo "item | status | version | fallback in use | note"
+    for it in $ITEMS; do
+      printf '%s | %s | %s | %s | %s\n' "$(label "$it")" "$(get st "$it")" "$(dash "$(get ver "$it")")" \
+        "$(dash "$(get fb "$it")")" "$(dash "$(get note "$it")")"
+    done
+  } > "$tmp" && mv "$tmp" "$ROOT/TOOLING.md"
+}
+
+# ---------------------------------------------------------------- run
+detect
+plan
+if [ "$INSTALL" = 1 ]; then
+  if [ -z "$ASK_PKGS" ]; then
+    echo "Nothing to install with the package managers found here."
+  else
+    if [ "$YES" = 0 ] && [ "$DRY" = 0 ] && [ -t 0 ]; then
+      printf 'May I install: %s (using %s)? [y/N] ' "$ASK_PKGS" "$ASK_MGRS"
+      read -r answer
+      case "$answer" in y|Y|yes|Yes|YES) ;; *) echo "Nothing installed."; INSTALL=0 ;; esac
+    fi
+    if [ "$INSTALL" = 1 ]; then
+      do_install
+      detect
+      apply_results
+    fi
+  fi
+fi
+verify
+if [ "$INSTALL" = 0 ]; then
+  for it in msg pandoc munpack; do
+    c="$(get cmd "$it")"
+    [ "$(get st "$it")" = missing ] && [ -n "$c" ] && add_note "$it" "install with: $c"
+  done
+fi
+write_tooling
+
+summary=""
+for st in verified installed found configured missing blocked; do
+  n=0
+  for it in $ITEMS; do [ "$(get st "$it")" = "$st" ] && n=$((n + 1)); done
+  [ "$n" -gt 0 ] && summary="$summary${summary:+, }$n $st"
+done
+echo "TOOLING.md written: $summary"
+for it in $ITEMS; do
+  case "$(get st "$it")" in
+    missing|blocked)
+      n="$(get note "$it")"
+      [ "$n" = "-" ] && n=""
+      echo "$(get st "$it"): $(label "$it") (fallback: $(dash "$(get fb "$it")"))${n:+: $(clean "$n")}" ;;
+  esac
+  case "$(get note "$it")" in *"verification failed"*) echo "check failed: $(label "$it"): $(get note "$it")" ;; esac
+done
+if [ "$VERIFY_ONLY" = 0 ] && [ "$INSTALL" = 0 ]; then
+  plan
+  if [ -n "$ASK_PKGS" ]; then
+    echo "Install commands:"
+    print_commands
+    echo "Ask the human once: May I install: $ASK_PKGS (using $ASK_MGRS)?"
+    echo "If yes: run bash tools/tooling-setup --install"
+  fi
+  if [ -n "$HUMAN_APT" ]; then
+    echo "apt-get needs a sudo password here. Ask the human to run: sudo apt-get install -y $HUMAN_APT"
+  fi
+  [ -z "$ASK_PKGS$HUMAN_APT" ] && echo "Nothing to install."
+fi
+[ "$FAIL" = 1 ] && exit 1
+exit 0

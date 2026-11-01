@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# drop-batch: put one demo batch of emails into a workspace inbox, filling in {{REF:Gxx}}.
+# Usage: bash demo/scripts/drop-batch N [--workspace DIR] [--force]
+#   N               1, 2 or 3
+#   --workspace DIR the demo workspace (default: the workspace this script sits in, or the one
+#                   demo/workspace* made by setup inside this repository)
+#   --force         drop even if the inbox already has files
+# Each {{REF:Gxx}} becomes the reference of group Gxx: the matter folder holding the earliest
+# expected email of Gxx (demo/expected.csv), found by Message-ID under areas/**/correspondence/.
+# A placeholder that cannot be resolved stays as it is and is listed.
+# Exit: 0 ok, 1 inbox not empty or a placeholder unresolved, 2 usage error, 3 Python missing.
+# Fallback without Python: copy demo/batches/N/* into inbox/ and replace each {{REF:Gxx}} by hand with the reference of that group's matter.
+FALLBACK="copy demo/batches/N/* into inbox/ and replace each {{REF:Gxx}} by hand with the reference of that group's matter"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/../../tools/lib/find-python.sh"
+exec $PY "$here/lib/drop_batch.py" "$@"

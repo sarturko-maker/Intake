@@ -1,0 +1,60 @@
+# What git keeps and what it never keeps.
+# The repository is the workspace template plus the invented demo.
+# A live workspace's data (emails, matters, knowledge, indexes, logs) is never committed.
+
+# Live data folders: keep only the empty folders (.gitkeep) and knowledge/TYPES.md.
+/areas/*
+!/areas/.gitkeep
+
+/inbox/**
+!/inbox/**/
+!/inbox/**/.gitkeep
+
+/knowledge/**
+!/knowledge/**/
+!/knowledge/**/.gitkeep
+!/knowledge/TYPES.md
+
+/seeds/**
+!/seeds/**/
+!/seeds/**/.gitkeep
+
+/digests/*
+!/digests/.gitkeep
+
+/changes/*
+!/changes/.gitkeep
+
+# Files a live workspace generates at its root.
+/MANIFEST.csv
+/INDEX.csv
+/INDEX.md
+/JOURNAL.md
+/WORKFLOW-LOG.md
+/BUDGET.md
+/TOOLING.md
+/DASHBOARD.html
+*.new.csv
+
+# A demo workspace created inside the repository.
+/demo/workspace*/
+
+# Build output and local environments.
+node_modules/
+/demo/build/**/out/
+.venv*/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Per-user Claude Code settings. The shared settings are .claude/settings.json.
+/.claude/settings.local.json
+
+# Operating system and editor junk.
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
+*.tmp
+.~lock*
+*.swp

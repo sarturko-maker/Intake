@@ -1,0 +1,61 @@
+From: Alex Morgan <alex.morgan@kestrel-eng.co.uk>
+To: Priya Shah <priya.shah@kestrel-eng.co.uk>
+Subject: RE: Volta Rail RFQ - tender terms review (bid due 30 Oct) [{{REF:G04}}]
+Date: Thu, 22 Oct 2026 17:15:46 +0100
+Message-ID: <b2-09.202610221715@kestrel-eng.co.uk>
+In-Reply-To: <b1-08.202610141015@kestrel-eng.co.uk>
+References: <b1-08.202610141015@kestrel-eng.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+
+Hi Priya,
+
+I have been through Volta's terms. Most of the 40 pages are standard and we can comply. Two pages matter: page 23 (section 21, Liability) and page 31 (section 29, Intellectual property and warranty). These are the five exceptions I recommend for the compliance form at Appendix D, in order of importance:
+
+1. Consequential loss (clause 21.3, page 23). Volta want unlimited liability for indirect and consequential loss, including lost revenue and the penalties they pay to train operators. We cannot accept this. Proposed wording: "Neither party shall be liable for any indirect or consequential loss, or for any loss of profit, revenue or use, however arising."
+
+2. Overall cap (clause 21.1, page 23). The terms put no cap on our liability. Propose a cap of 100% of the charges paid or payable in the 12 months before the claim, which is our standard position, with the usual exceptions for death or personal injury and fraud.
+
+3. Liquidated damages (clause 21.5, page 23). A cap of 20% of the whole contract price is high, and the damages are not Volta's only remedy for delay. Propose 10% of the price of the delayed goods, with liquidated damages as Volta's sole remedy for delay.
+
+4. Background IP (clause 29.2, page 31). Volta want an assignment of all IP in the deliverables, including our background IP. Propose instead that Kestrel keeps its background IP and grants Volta a non-exclusive, royalty-free licence to use it to operate, maintain and repair the pumps.
+
+5. Warranty (clause 29.6, page 31). Thirty-six months from acceptance is longer than our standard terms. Propose 24 months from acceptance if you are willing to price the extra cover; otherwise our standard warranty.
+
+Please do not list anything else as an exception. The rest can be accepted, raised as clarification questions before the deadline at 12:00 tomorrow, or dealt with in the price, for example the cost of the 10% performance bond in section 24.
+
+If Volta reject exception 1 or 4, please come back to me before you confirm the bid. Those are the two I would walk away on.
+
+Our ref: {{REF:G04}}
+
+Best,
+Alex
+
+Alex Morgan
+Senior Legal Counsel
+Kestrel Engineering Ltd
+T +44 114 496 0230
+alex.morgan@kestrel-eng.co.uk
+
+This email may contain confidential and legally privileged information. If you have received it in error, please tell the sender and delete it.
+
+On Wed, 14 Oct 2026 at 10:15, Priya Shah <priya.shah@kestrel-eng.co.uk> wrote:
+> Hi Alex,
+>
+> Volta Rail have issued their invitation to tender for depot drainage, wash-plant and cooling-water pumps (ITT VR-T-2026-117). Bids are due at 12:00 on Friday 30 October.
+>
+> The tender pack includes their contract terms, attached (40 pages). Bidders have to list any exceptions to the terms in the compliance form at Appendix D, and Volta say they will score exceptions down, so I only want to raise the ones that really matter.
+>
+> From a quick read, the liability section and the IP and warranty section worry me most, but I am not a lawyer. Could you review the terms and send me a short list of the exceptions we must take, by Thursday 22 October? That gives me a week to price them in.
+>
+> The estimated contract value is GBP 2.1m over five years, including maintenance.
+>
+> Thanks
+> Priya
+>
+> Priya Shah
+> Bid Manager
+> Kestrel Engineering Ltd
+> T +44 114 496 0351 | M +44 7700 900351
+> priya.shah@kestrel-eng.co.uk

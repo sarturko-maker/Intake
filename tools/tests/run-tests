@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# run-tests: run the tool tests: Python unit tests, then the shell checks.
+# Usage: bash tools/tests/run-tests [unittest options, e.g. -v]
+# Runs from the workspace root: python3 -m unittest discover -s tools/tests -p 'test_*.py' (python or py -3 when
+#   python3 is missing), then bash tools/tests/test_shell.sh. Tests build temporary workspaces (INTAKE_ROOT); the
+#   real workspace is not touched.
+# Exit: 0 all passed, 1 a test failed (or Python is missing, so the unit tests could not run), 2 usage error.
+# Fallback without Python: run bash tools/tests/test_shell.sh alone and record in WORKFLOW-LOG.md that the unit tests did not run.
+FALLBACK="run bash tools/tests/test_shell.sh alone and record in WORKFLOW-LOG.md that the unit tests did not run."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+ROOT="$(cd "$here/../.." && pwd)"
+cd "$ROOT" || exit 2
+unset INTAKE_ROOT
+
+PY=""
+for cand in python3 python "py -3"; do
+  # shellcheck disable=SC2086
+  if command -v ${cand%% *} >/dev/null 2>&1 && $cand -c 'import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)' >/dev/null 2>&1; then
+    PY="$cand"
+    break
+  fi
+done
+
+rc_py=0
+if [ -n "$PY" ]; then
+  echo "== unit tests: $PY -m unittest discover -s tools/tests -p 'test_*.py' $*"
+  PYTHONDONTWRITEBYTECODE=1 $PY -m unittest discover -s tools/tests -p 'test_*.py' "$@" || rc_py=1
+else
+  echo "Python 3.8 or later was not found, so the unit tests did not run." >&2
+  rc_py=1
+fi
+
+echo "== shell checks: bash tools/tests/test_shell.sh"
+rc_sh=0
+bash tools/tests/test_shell.sh || rc_sh=1
+
+if [ "$rc_py" = 0 ] && [ "$rc_sh" = 0 ]; then
+  echo "run-tests: all passed"
+  exit 0
+fi
+echo "run-tests: FAILED (unit tests: $([ "$rc_py" = 0 ] && echo ok || echo failed), shell checks: $([ "$rc_sh" = 0 ] && echo ok || echo failed))"
+exit 1

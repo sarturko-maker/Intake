@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(bash tools/budget-update *)",
+      "Bash(bash tools/hash-files *)",
+      "Bash(bash tools/history-copy *)",
+      "Bash(bash tools/index-rebuild *)",
+      "Bash(bash tools/lint-facts *)",
+      "Bash(bash tools/lint-received *)",
+      "Bash(bash tools/msg2eml *)",
+      "Bash(bash tools/new-matter *)",
+      "Bash(bash tools/place-email *)",
+      "Bash(bash tools/scan-changes *)",
+      "Bash(bash tools/skills-sync *)",
+      "Bash(bash tools/tooling-setup *)",
+      "Bash(bash tools/unpack-email *)",
+      "Bash(bash tools/work-bundle *)",
+      "Bash(bash demo/scripts/check-filing *)",
+      "Bash(bash demo/scripts/drop-batch *)",
+      "Bash(bash demo/scripts/setup *)"
+    ],
+    "deny": [
+      "Edit(**/corrections.md)",
+      "Edit(**/roster.confirmed.md)",
+      "Edit(/house/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/before-write\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/after-write\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

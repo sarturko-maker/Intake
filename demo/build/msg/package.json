@@ -1,0 +1,17 @@
+{
+  "name": "kestrel-demo-msg-writer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dev tool: writes the demo's Outlook .msg files (MS-OXMSG) from JSON specs. Outputs are committed; node_modules is not.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node make_msg.mjs specs/*.json"
+  },
+  "dependencies": {
+    "cfb": "1.2.2"
+  }
+}

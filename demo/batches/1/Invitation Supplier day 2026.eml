@@ -1,0 +1,96 @@
+From: Kestrel Events <events@kestrel-eng.co.uk>
+To: Kestrel Legal <legal@kestrel-eng.co.uk>
+Subject: Invitation: Supplier day 2026
+Date: Tue, 13 Oct 2026 12:00:50 +0100
+Message-ID: <b1-11.202610131200@kestrel-eng.co.uk>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_Mix_b111_00"
+
+------=_Mix_b111_00
+Content-Type: multipart/alternative; boundary="----=_Alt_b111_01"
+
+------=_Alt_b111_01
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+
+You are invited to Kestrel's Supplier day 2026.
+
+When: Thursday 19 November 2026, 09:30 to 16:00 (UK time)
+Where: Training Centre, Kestrel Engineering, Sheffield
+
+Our key suppliers will present their 2027 plans, followed by a factory tour and the supplier awards. Lunch is provided. Please accept or decline this invitation so that we can confirm numbers for catering by 6 November.
+
+Kestrel Events
+events@kestrel-eng.co.uk
+
+------=_Alt_b111_01
+Content-Type: text/calendar; charset="us-ascii"; method=REQUEST
+Content-Transfer-Encoding: 7bit
+
+BEGIN:VCALENDAR
+PRODID:-//Kestrel Engineering//Events calendar//EN
+VERSION:2.0
+METHOD:REQUEST
+BEGIN:VTIMEZONE
+TZID:Europe/London
+BEGIN:STANDARD
+DTSTART:19701025T020000
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0000
+TZNAME:GMT
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:19700329T010000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+TZOFFSETFROM:+0000
+TZOFFSETTO:+0100
+TZNAME:BST
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:supplier-day-2026@kestrel-eng.co.uk
+DTSTAMP:20261013T110000Z
+DTSTART;TZID=Europe/London:20261119T093000
+DTEND;TZID=Europe/London:20261119T160000
+SUMMARY:Supplier day 2026
+LOCATION:Training Centre\, Kestrel Engineering\, Sheffield
+ORGANIZER;CN=Kestrel Events:mailto:events@kestrel-eng.co.uk
+ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=Kestrel Legal:mailto:legal@k
+ estrel-eng.co.uk
+DESCRIPTION:Presentations from key suppliers on their 2027 plans\, factory
+  tour and supplier awards. Lunch is provided.
+SEQUENCE:0
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR
+
+------=_Alt_b111_01--
+
+------=_Mix_b111_00
+Content-Type: application/ics; name="invite.ics"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invite.ics"
+
+QkVHSU46VkNBTEVOREFSDQpQUk9ESUQ6LS8vS2VzdHJlbCBFbmdpbmVlcmluZy8vRXZlbnRzIGNh
+bGVuZGFyLy9FTg0KVkVSU0lPTjoyLjANCk1FVEhPRDpSRVFVRVNUDQpCRUdJTjpWVElNRVpPTkUN
+ClRaSUQ6RXVyb3BlL0xvbmRvbg0KQkVHSU46U1RBTkRBUkQNCkRUU1RBUlQ6MTk3MDEwMjVUMDIw
+MDAwDQpSUlVMRTpGUkVRPVlFQVJMWTtCWU1PTlRIPTEwO0JZREFZPS0xU1UNClRaT0ZGU0VURlJP
+TTorMDEwMA0KVFpPRkZTRVRUTzorMDAwMA0KVFpOQU1FOkdNVA0KRU5EOlNUQU5EQVJEDQpCRUdJ
+TjpEQVlMSUdIVA0KRFRTVEFSVDoxOTcwMDMyOVQwMTAwMDANClJSVUxFOkZSRVE9WUVBUkxZO0JZ
+TU9OVEg9MztCWURBWT0tMVNVDQpUWk9GRlNFVEZST006KzAwMDANClRaT0ZGU0VUVE86KzAxMDAN
+ClRaTkFNRTpCU1QNCkVORDpEQVlMSUdIVA0KRU5EOlZUSU1FWk9ORQ0KQkVHSU46VkVWRU5UDQpV
+SUQ6c3VwcGxpZXItZGF5LTIwMjZAa2VzdHJlbC1lbmcuY28udWsNCkRUU1RBTVA6MjAyNjEwMTNU
+MTEwMDAwWg0KRFRTVEFSVDtUWklEPUV1cm9wZS9Mb25kb246MjAyNjExMTlUMDkzMDAwDQpEVEVO
+RDtUWklEPUV1cm9wZS9Mb25kb246MjAyNjExMTlUMTYwMDAwDQpTVU1NQVJZOlN1cHBsaWVyIGRh
+eSAyMDI2DQpMT0NBVElPTjpUcmFpbmluZyBDZW50cmVcLCBLZXN0cmVsIEVuZ2luZWVyaW5nXCwg
+U2hlZmZpZWxkDQpPUkdBTklaRVI7Q049S2VzdHJlbCBFdmVudHM6bWFpbHRvOmV2ZW50c0BrZXN0
+cmVsLWVuZy5jby51aw0KQVRURU5ERUU7Uk9MRT1SRVEtUEFSVElDSVBBTlQ7UEFSVFNUQVQ9TkVF
+RFMtQUNUSU9OO1JTVlA9VFJVRTtDTj1LZXN0cmVsIExlZ2FsOm1haWx0bzpsZWdhbEBrDQogZXN0
+cmVsLWVuZy5jby51aw0KREVTQ1JJUFRJT046UHJlc2VudGF0aW9ucyBmcm9tIGtleSBzdXBwbGll
+cnMgb24gdGhlaXIgMjAyNyBwbGFuc1wsIGZhY3RvcnkNCiAgdG91ciBhbmQgc3VwcGxpZXIgYXdh
+cmRzLiBMdW5jaCBpcyBwcm92aWRlZC4NClNFUVVFTkNFOjANClNUQVRVUzpDT05GSVJNRUQNClRS
+QU5TUDpPUEFRVUUNCkVORDpWRVZFTlQNCkVORDpWQ0FMRU5EQVINCg==
+
+------=_Mix_b111_00--

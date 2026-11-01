@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# check-filing: compare where the demo emails were filed with demo/expected.csv.
+# Usage: bash demo/scripts/check-filing [--workspace DIR] [--batch N] [--strict] [--json]
+#   --workspace DIR the demo workspace (default: the workspace this script sits in, or the one
+#                   demo/workspace* made by setup inside this repository)
+#   --batch N       check batches 1..N (default: the highest batch found in the workspace)
+#   --strict        treat warnings (flags, follows, labels, please-check notes) as failures
+#   --json          print JSON instead of the table
+# Checks kind (matter, noise, please-check), area, sub-area, subject, one folder per group and
+# the proposed outcome; b2-06 is accepted in please-check or, once re-filed, in G02's folder.
+# Prints PASS or FAIL per email and a total.
+# Exit: 0 all pass, 1 any FAIL, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: open demo/expected.csv and compare each row with where its email sits.
+FALLBACK="open demo/expected.csv and compare each row with where its email sits"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/../../tools/lib/find-python.sh"
+exec $PY "$here/lib/check_filing.py" "$@"

@@ -1,0 +1,386 @@
+#!/usr/bin/env bash
+# after-write: PostToolUse hook for Write, Edit and MultiEdit (see .claude/settings.json).
+# Usage: the harness runs  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/after-write"  with the hook
+#   JSON on stdin, after the write. It reads tool_input.file_path like before-write.
+#   - matter.md or subject.md over the cap (16,000 characters, PAGE_CAP in tools/lib/common.py):
+#     restores the newest history copy (made by before-write for this write), or with none moves
+#     the file to history/<stem>.rejected.<stamp>.md; reason on stderr, exit 2.
+#   - facts.md: bash tools/lint-facts FILE --previous <newest history copy>. On errors: restores
+#     the copy (or moves the file aside), lint output on stderr, exit 2. Errors the previous
+#     version already had do not block: the write stands, with a warning.
+#   - Anything else: exit 0, silent.
+# Exit: 0 fine; 2 rejected and restored (the harness shows stderr to the agent).
+# Never blocks on its own failure: unreadable input, or tools/lint-facts or Python missing, gives
+#   a warning (stderr, plus additionalContext JSON on stdout for the agent) and exit 0.
+# Needs bash 3.2+ and coreutils. JSON is read with python3/python/py, else jq, else sed.
+# What this enforces: RULES.md, Protections and Memory files. Without hooks: RULES.md, Harness notes.
+
+export LC_ALL=C
+export PYTHONIOENCODING=utf-8 PYTHONDONTWRITEBYTECODE=1
+HOOK=after-write
+
+# ---- shared block: identical in before-write and after-write ---------------------------------
+
+warn() { printf '%s: warning: %s\n' "$HOOK" "$*" >&2; }
+
+lower() { printf '%s' "$1" | tr 'A-Z' 'a-z'; }
+
+PY=""
+for cand in python3 python "py -3"; do
+  # shellcheck disable=SC2086
+  if command -v "${cand%% *}" >/dev/null 2>&1 &&
+     $cand -c 'import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)' >/dev/null 2>&1; then
+    PY="$cand"
+    break
+  fi
+done
+
+hook_input="$(cat 2>/dev/null)"
+
+# Print tool_input.file_path from the hook JSON. Return 1 when it cannot be read.
+extract_path() {
+  local out rc flat trimmed
+  if [ -n "$PY" ]; then
+    # shellcheck disable=SC2086
+    out="$(printf '%s' "$hook_input" | $PY -c '
+import json, sys
+try:
+    data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))
+except Exception:
+    sys.exit(3)
+ti = data.get("tool_input") if isinstance(data, dict) else None
+fp = ti.get("file_path") if isinstance(ti, dict) else None
+if not isinstance(fp, str):
+    sys.exit(3)
+sys.stdout.buffer.write(fp.encode("utf-8"))
+' 2>/dev/null)"
+    rc=$?
+    [ $rc -eq 0 ] && { printf '%s' "$out"; return 0; }
+    [ $rc -eq 3 ] && return 1
+    # Python itself failed: try jq, then sed.
+  fi
+  if command -v jq >/dev/null 2>&1; then
+    out="$(printf '%s' "$hook_input" | jq -je '.tool_input.file_path | strings' 2>/dev/null)" &&
+      { printf '%s' "$out"; return 0; }
+    return 1
+  fi
+  # sed fallback: the input must look like one whole JSON object.
+  flat="$(printf '%s' "$hook_input" | tr -d '\r\n')"
+  trimmed="${flat#"${flat%%[![:space:]]*}"}"
+  trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+  case "$trimmed" in "{"*"}") ;; *) return 1 ;; esac
+  out="$(printf '%s' "$flat" | grep -o -E '"file_path"[[:space:]]*:[[:space:]]*"([^"\\]|\\.)*"' | head -n 1)"
+  [ -n "$out" ] || return 1
+  out="${out#*:}"
+  out="${out#"${out%%[![:space:]]*}"}"
+  out="${out#\"}"
+  out="${out%\"}"
+  out="${out//\\\\/$'\001'}"
+  out="${out//\\\"/\"}"
+  out="${out//\\\//\/}"
+  out="${out//$'\001'/\\}"
+  printf '%s' "$out"
+}
+
+# Windows forms to POSIX: backslashes to slashes, C:/x and /cygdrive/c/x to /c/x.
+to_posix() {
+  local p="$1" d
+  p="${p//\\//}"
+  case "$p" in
+    [A-Za-z]: | [A-Za-z]:/*) d="$(lower "${p:0:1}")"; p="/$d${p:2}" ;;
+    /cygdrive/[A-Za-z] | /cygdrive/[A-Za-z]/*) d="$(lower "${p:10:1}")"; p="/$d${p:11}" ;;
+  esac
+  printf '%s' "$p"
+}
+
+# Absolute path without . and .. segments; $2 is the base for a relative path.
+canon() {
+  local p="$1" lead="" part out="" IFS
+  case "$p" in /*) ;; *) p="$2/$p" ;; esac
+  case "$p" in //[!/]*) lead="/" ;; esac
+  IFS=/
+  set -f
+  for part in $p; do
+    case "$part" in
+      '' | .) ;;
+      ..) out="${out%/*}" ;;
+      *) out="$out/$part" ;;
+    esac
+  done
+  set +f
+  printf '%s' "$lead${out:-/}"
+}
+
+# Path of $1 relative to directory $2, compared without case. Return 1 when outside.
+rel_to() {
+  local p_lc b_lc
+  p_lc="$(lower "$1")"
+  b_lc="$(lower "$2")"
+  case "$p_lc" in
+    "$b_lc"/*) printf '%s' "${1:$((${#2} + 1))}"; return 0 ;;
+  esac
+  return 1
+}
+
+# $1 with symlinks resolved, best effort. Prints nothing when it cannot.
+resolve() {
+  local p="$1" dir base target n=0
+  while :; do
+    dir="${p%/*}"
+    base="${p##*/}"
+    [ -n "$dir" ] || dir="/"
+    dir="$(cd "$dir" 2>/dev/null && pwd -P)" || return 0
+    dir="$(to_posix "$dir")"
+    p="${dir%/}/$base"
+    [ -L "$p" ] || break
+    n=$((n + 1))
+    [ $n -le 16 ] || return 0
+    target="$(readlink "$p" 2>/dev/null)" || return 0
+    target="$(to_posix "$target")"
+    case "$target" in /*) p="$target" ;; *) p="${dir%/}/$target" ;; esac
+    p="$(canon "$p" /)"
+  done
+  printf '%s' "$p"
+}
+
+# Newest history/<stem>.<YYYY-MM-DD_HHMMSS>[-N].md of $1, as common.latest_history picks it.
+latest_history() {
+  local f="$1" dir name stem ext c rest stamp n key best="" bestkey=""
+  dir="${f%/*}"
+  name="${f##*/}"
+  stem="${name%.*}"
+  ext=".${name##*.}"
+  [ -d "$dir/history" ] || return 0
+  for c in "$dir/history/$stem".*"$ext"; do
+    [ -f "$c" ] || continue
+    rest="${c##*/}"
+    rest="${rest#"$stem".}"
+    rest="${rest%"$ext"}"
+    stamp="${rest:0:17}"
+    n="${rest:17}"
+    case "$stamp" in
+      [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]) ;;
+      *) continue ;;
+    esac
+    case "$n" in
+      '') n=1 ;;
+      -*) n="${n#-}"; case "$n" in '' | *[!0-9]*) continue ;; esac ;;
+      *) continue ;;
+    esac
+    key="${stamp//[-_]/}$(printf '%012d' "$((10#$n))")"
+    if [ -z "$bestkey" ] || [[ "$key" > "$bestkey" ]]; then
+      best="$c"
+      bestkey="$key"
+    fi
+  done
+  printf '%s' "$best"
+}
+
+if ! raw="$(extract_path)" || [ -z "$raw" ]; then
+  warn "could not read tool_input.file_path from the hook input; nothing checked."
+  exit 0
+fi
+proj_raw="${CLAUDE_PROJECT_DIR:-$PWD}"
+proj="$(canon "$(to_posix "$proj_raw")" "$(to_posix "$PWD")")"
+proj="${proj%/}"
+abs="$(canon "$(to_posix "$raw")" "${proj:-/}")"
+rel="$(rel_to "$abs" "$proj")" || rel="$abs"
+base_lc="$(lower "${abs##*/}")"
+
+# ---- end of shared block -----------------------------------------------------------------------
+
+CAP=16000
+CONSOLIDATE=12000
+if [ -f "$proj/tools/lib/common.py" ]; then
+  v="$(sed -n 's/^PAGE_CAP[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$proj/tools/lib/common.py" | head -n 1)"
+  [ -n "$v" ] && CAP="$v"
+  v="$(sed -n 's/^PAGE_CONSOLIDATE_AT[[:space:]]*=[[:space:]]*\([0-9][0-9]*\).*/\1/p' "$proj/tools/lib/common.py" | head -n 1)"
+  [ -n "$v" ] && CONSOLIDATE="$v"
+fi
+
+json_escape() {
+  local s
+  s="$(printf '%s' "$1" | tr -d '\000-\010\013\014\016-\037')"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
+# A protection did not run, or let a write through: warn on stderr and tell the agent (exit 0
+# stderr never reaches it; additionalContext does).
+degraded() {
+  warn "$1"
+  printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"%s"}}\n' \
+    "$(json_escape "$HOOK: $1 Add a WORKFLOW-LOG.md line (RULES.md, Workflow log).")"
+}
+
+commas() {
+  local n="$1" out=""
+  while [ ${#n} -gt 3 ]; do
+    out=",${n: -3}$out"
+    n="${n:0:${#n}-3}"
+  done
+  printf '%s' "$n$out"
+}
+
+shown() { rel_to "$1" "$proj" || printf '%s' "$1"; }
+
+# Characters as common.char_count counts them: UTF-8 text, BOM dropped, CRLF as one.
+char_count() {
+  local n="" loc cr
+  if [ -n "$PY" ]; then
+    # shellcheck disable=SC2086
+    n="$($PY -c '
+import sys
+with open(sys.argv[1], "r", encoding="utf-8", errors="replace", newline="") as fh:
+    text = fh.read()
+if text.startswith("﻿"):
+    text = text[1:]
+sys.stdout.write(str(len(text.replace("\r\n", "\n"))))
+' "$1" 2>/dev/null)"
+    case "$n" in '' | *[!0-9]*) n="" ;; *) printf '%s' "$n"; return 0 ;; esac
+  fi
+  # Without Python: wc -m in a UTF-8 locale (bytes if none), minus carriage returns.
+  for loc in C.UTF-8 en_US.UTF-8 UTF-8 C; do
+    if [ "$loc" = C ] || [ "$(printf '\303\244' | LC_ALL="$loc" wc -m 2>/dev/null | tr -d ' \t')" = 1 ]; then
+      n="$(LC_ALL="$loc" wc -m < "$1" 2>/dev/null | tr -d ' \t')"
+      break
+    fi
+  done
+  cr="$(tr -cd '\r' < "$1" 2>/dev/null | wc -c | tr -d ' \t')"
+  case "$n" in '' | *[!0-9]*) return 1 ;; esac
+  case "$cr" in '' | *[!0-9]*) cr=0 ;; esac
+  printf '%s' "$((n - cr))"
+}
+
+# Move $1 to history/<stem>.rejected.<YYYY-MM-DD_HHMMSS>.md (-2 on a clash). Prints the new path.
+move_aside() {
+  local f="$1" dir name stem ext stamp dest n=2
+  dir="${f%/*}"
+  name="${f##*/}"
+  stem="${name%.*}"
+  ext=".${name##*.}"
+  mkdir -p "$dir/history" 2>/dev/null || return 1
+  stamp="$(date +%Y-%m-%d_%H%M%S)" || return 1
+  dest="$dir/history/$stem.rejected.$stamp$ext"
+  while [ -e "$dest" ]; do
+    dest="$dir/history/$stem.rejected.$stamp-$n$ext"
+    n=$((n + 1))
+  done
+  mv "$f" "$dest" 2>/dev/null || return 1
+  printf '%s' "$dest"
+}
+
+check_cap() {
+  local n prev dest msg_head msg_tail
+  [ -f "$abs" ] || exit 0
+  if ! n="$(char_count "$abs")"; then
+    degraded "could not count the characters of $rel, so the $(commas "$CAP") cap was not checked."
+    exit 0
+  fi
+  [ "$n" -gt "$CAP" ] || exit 0
+  msg_head="Rejected: $rel is $n characters; the cap is $(commas "$CAP")."
+  msg_tail="Consolidate below $(commas "$CONSOLIDATE") characters and write it again."
+  prev="$(latest_history "$abs")"
+  if [ -n "$prev" ]; then
+    if cp "$prev" "$abs" 2>/dev/null; then
+      printf '%s The previous version is restored. %s\n' "$msg_head" "$msg_tail" >&2
+    else
+      printf '%s Restoring the previous version failed: copy %s back over it. %s\n' \
+        "$msg_head" "$(shown "$prev")" "$msg_tail" >&2
+    fi
+    exit 2
+  fi
+  if dest="$(move_aside "$abs")"; then
+    printf '%s There was no previous version, so the file was moved to %s. %s\n' \
+      "$msg_head" "$(shown "$dest")" "$msg_tail" >&2
+  else
+    printf '%s There was no previous version and moving the file aside failed. %s\n' "$msg_head" "$msg_tail" >&2
+  fi
+  exit 2
+}
+
+# 0 when every error line in $1 (lint of file $2) also appears in $3 (lint of file $4).
+only_old_errors() {
+  local line old=$'\n'
+  while IFS= read -r line; do
+    case "$line" in "$4"*) old="$old${line#"$4"}"$'\n' ;; esac
+  done <<EOF
+$3
+EOF
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    case "$line" in "$2"*) line="${line#"$2"}" ;; *) return 1 ;; esac
+    case "$old" in *$'\n'"$line"$'\n'*) ;; *) return 1 ;; esac
+  done <<EOF
+$1
+EOF
+  return 0
+}
+
+check_facts() {
+  local lint dir name prev prev_rel out rc pout prc dest
+  [ -f "$abs" ] || exit 0
+  lint="$proj/tools/lint-facts"
+  if [ ! -f "$lint" ]; then
+    degraded "tools/lint-facts is missing, so $rel was not checked. Check by hand that earlier lines are unchanged, ids ascend and every line has source= (RULES.md, Memory files)."
+    exit 0
+  fi
+  dir="${abs%/*}"
+  name="${abs##*/}"
+  prev="$(latest_history "$abs")"
+  prev_rel=""
+  [ -n "$prev" ] && prev_rel="history/${prev##*/}"
+  # Lint from the matter folder: relative names keep the output short and the same everywhere.
+  if ! cd "$dir" 2>/dev/null; then
+    degraded "could not enter the folder of $rel, so tools/lint-facts did not check it."
+    exit 0
+  fi
+  if [ -n "$prev" ]; then
+    out="$(bash "$lint" "$name" --previous "$prev_rel" 2>&1)"
+  else
+    out="$(bash "$lint" "$name" 2>&1)"
+  fi
+  rc=$?
+  case $rc in
+    0) exit 0 ;;
+    1) ;;
+    3) degraded "Python is missing, so tools/lint-facts could not check $rel. Check it by hand (RULES.md, Memory files)."
+       exit 0 ;;
+    *) degraded "tools/lint-facts exited $rc on $rel, so it was not checked: $(printf '%s\n' "$out" | head -n 3)"
+       exit 0 ;;
+  esac
+  if [ -n "$prev" ]; then
+    pout="$(bash "$lint" "$prev_rel" 2>&1)"
+    prc=$?
+    if [ $prc -eq 1 ] && only_old_errors "$out" "$name" "$pout" "$prev_rel"; then
+      degraded "$rel already had these errors before this write, so the write stands. Ask the human to correct those lines: $(printf '%s\n' "$out" | head -n 5)"
+      exit 0
+    fi
+  fi
+  {
+    printf 'Rejected: %s failed tools/lint-facts.\n' "$rel"
+    printf '%s\n' "$out"
+    if [ -n "$prev" ]; then
+      if cp "$prev" "$abs" 2>/dev/null; then
+        printf 'facts.md is append-only: the previous version is restored. Append only new, complete lines at the end.\n'
+      else
+        printf 'facts.md is append-only. Restoring the previous version failed: copy %s back over it.\n' "$(shown "$prev")"
+      fi
+    elif dest="$(move_aside "$abs")"; then
+      printf 'facts.md is append-only: there was no previous version, so the file was moved to %s.\n' "$(shown "$dest")"
+    else
+      printf 'facts.md is append-only. There was no previous version and moving the file aside failed.\n'
+    fi
+  } >&2
+  exit 2
+}
+
+case "$base_lc" in
+  matter.md | subject.md) check_cap ;;
+  facts.md) check_facts ;;
+esac
+exit 0

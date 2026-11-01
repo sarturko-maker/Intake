@@ -1,0 +1,26 @@
+# Line endings: LF in the repository and in the working tree.
+* text=auto eol=lf
+
+# Scripts stay LF so bash runs them everywhere, including Git Bash on Windows.
+tools/** text eol=lf
+.claude/hooks/** text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.mjs text eol=lf
+
+# Bytes that must never be converted. Received emails and fixtures are hashed,
+# so a single changed line ending breaks them. These lines come last so they
+# also win inside tools/ (tools/fixtures/).
+*.eml -text diff
+*.msg binary
+*.ics -text
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
+*.pyc binary

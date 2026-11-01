@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# history-copy: copy memory files into history/ beside them, before a rewrite.
+# Usage: bash tools/history-copy FILE...
+# Each existing FILE goes to <dir>/history/<stem>.<YYYY-MM-DD_HHMMSS><ext> (local time; ext .md when the
+#   name has none), with -2, -3 on a clash: the same naming as common.history_copy. Prints each copy's path.
+# A missing file prints "no file: <path>" and is not an error.
+# Exit: 0 ok (missing files included), 1 a copy failed, 2 usage error.
+# Fallback without bash: copy the file by hand to history/<stem>.<YYYY-MM-DD_HHMMSS>.md beside it.
+FALLBACK="copy the file by hand to history/<stem>.<YYYY-MM-DD_HHMMSS>.md beside it."
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+[ "${1:-}" = "--" ] && shift
+if [ $# -eq 0 ]; then
+  echo "usage: bash tools/history-copy FILE..." >&2
+  exit 2
+fi
+
+status=0
+for f in "$@"; do
+  if [ ! -f "$f" ]; then
+    echo "no file: $f"
+    continue
+  fi
+  case "$f" in
+    */*) dir="${f%/*}"; name="${f##*/}" ;;
+    *) dir=""; name="$f" ;;
+  esac
+  # Split as Python's Path.stem/suffix: at the last dot, unless it is the first or last character.
+  base="${name%.*}"
+  after="${name##*.}"
+  if [ "$base" != "$name" ] && [ -n "$base" ] && [ -n "$after" ]; then
+    stem="$base"; ext=".$after"
+  else
+    stem="$name"; ext=".md"
+  fi
+  case "$f" in
+    /*) [ -z "$dir" ] && dir="/" ;;
+  esac
+  if [ -z "$dir" ]; then hist="history"
+  elif [ "$dir" = "/" ]; then hist="/history"
+  else hist="$dir/history"
+  fi
+  if ! mkdir -p "$hist"; then
+    echo "cannot create $hist" >&2
+    status=1
+    continue
+  fi
+  stamp="$(date +%Y-%m-%d_%H%M%S)"
+  dest="$hist/$stem.$stamp$ext"
+  n=2
+  while [ -e "$dest" ]; do
+    dest="$hist/$stem.$stamp-$n$ext"
+    n=$((n + 1))
+  done
+  if cp -p "$f" "$dest"; then
+    echo "$dest"
+  else
+    echo "copy failed: $f" >&2
+    status=1
+  fi
+done
+exit $status

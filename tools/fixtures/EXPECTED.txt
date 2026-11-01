@@ -1,0 +1,5 @@
+sample_eml_sha256=139466974d7aa1421dcf5fa68ec5307cbbfb776ed45f609e912fdfe1b3296f39
+sample_eml_message_id=fixture-eml.202610010900@kestrel-eng.co.uk
+sample_eml_attachment=fixture.docx
+sample_msg_message_id=fixture.202610010900@kestrel-eng.de
+sample_docx_marker=FIXTURE-INSERTED-TEXT
