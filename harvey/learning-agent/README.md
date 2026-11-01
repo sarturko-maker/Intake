@@ -32,7 +32,9 @@ Which upload route? Drag and drop is the recommended start.
   A few hundred files is normal. You stay in control of what goes in, and each email becomes one clean row.
 - **PST: worth one quick test.**
   - Harvey says Vault accepts `.pst` files since June 2026, up to 500 MB each, and extracts the emails and attachments.
-  - Export one month, or a date-filtered folder, under 500 MB.
+  - Harvey says it extracts emails **and attachments** from a PST, and that the extracted files count towards the project's file limit. It does not say whether an attachment stays with its email or becomes a separate file. With `.eml` and `.msg` files, Harvey's help pages say it reads the attachments together with the email.
+  - First, test with a small PST (three or four emails you know, with mark-ups attached). Look at the Vault file list, and run three columns: Category, Conversation key and Negotiation points.
+  - Then export one month, or a date-filtered folder, under 500 MB.
   - Check three things in the Vault: (a) each email appears as its own file, (b) attachments are there, and (c) the review table runs on them.
   - If all three hold, a PST is much less work for later months. If the export is blocked or the result is messy, go back to drag and drop.
   - Remember a PST brings in everything, sensitive emails included. The table is told to skip them, but they will sit in the Vault.

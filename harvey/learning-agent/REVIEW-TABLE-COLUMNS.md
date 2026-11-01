@@ -13,6 +13,7 @@ Rules for every column:
 - No phone numbers, bank details, ID numbers or other personal data.
 - Quotes: only our legal team's own wording, 25 words or fewer, in quotation marks.
 - If column 1 would say "noise" or "sensitive", answer every other column "skip".
+- If this file is an attachment on its own rather than an email (a PST upload may split them out), fill the columns from the document itself, and say in column 2 which email it came with, if that can be seen.
 - Plain English, British spelling, short sentences.
 
 ## Columns
@@ -24,6 +25,7 @@ Add these in order. Use the name exactly as shown. The prompt is what you paste.
 > Classify this email:
 > - "work": a request to legal, or legal work, or a reply about one;
 > - "noise": newsletter, marketing, auto-reply, system notification, calendar invitation;
+> - "attachment": a document on its own, not an email (for example, a draft or a mark-up split out of a PST);
 > - "sensitive": an HR or personal matter about an individual (health, conduct, grievance, pay), a colleague's personal legal question, whistleblowing, another party's privileged material, or an email sent to us by mistake.
 >
 > Answer with the one word only.
