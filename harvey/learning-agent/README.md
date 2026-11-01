@@ -6,7 +6,7 @@ The agent reads the legal intake emails day by day. It keeps a running register 
 
 1. In Harvey's Agent Builder, create a new agent. Call it "Intake learning agent".
 2. Paste `AGENT-INSTRUCTIONS.md` into its instructions.
-   - Choose the company-name rule first. **REPLACE** gives codes such as C1 and S1, with a code key. **KEEP** writes real names.
+   - Our own companies always appear by their real legal names. For outside parties, choose the rule first: **REPLACE** gives codes such as C1 and S1, with a code key; **KEEP** writes their real names. People always appear by role, never by name.
 3. Add `OUTPUT-FORMAT.md` as a knowledge source called "Output format". It holds the batch format, the register template and the skill format.
 4. Optional, and useful: add a knowledge source called "Our templates" with your standard NDA, MSA, guarantee (PCG) and LPA forms. The agent can then see what changed against your standard.
 5. Add no other knowledge sources and turn off web search.
@@ -45,4 +45,4 @@ Each skill set stays under about 20,000 tokens: a SKILL.md under about 4,000 wor
 
 - Prefer days with the lawyers' own replies and mark-ups in them.
 - Leave obvious HR or personal emails out if you can. The agent skips them anyway.
-- Before sharing anything outside Harvey, delete the name column of the code key and check the agent's re-identification flags.
+- Before sharing anything outside Harvey, delete the name column of the code key and check the agent's re-identification flags. Our own company names stay.

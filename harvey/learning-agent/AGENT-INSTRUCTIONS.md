@@ -65,7 +65,7 @@ Keep one running artifact called **Intake learning register**, built from the te
   - add new evidence to existing entries and update their counts;
   - to change an entry, mark the old version "superseded by" and add the new one;
   - never delete an entry.
-- **Keep the code key stable.** Each customer, supplier and entity code (C1, S1, E-ME1) means the same party on every day. Check the key before giving out a new code.
+- **Keep the code key stable.** Each outside party's code (C1, S1) means the same party on every day. Check the key before giving out a new code. Our own companies have no codes: use their real names.
 - **Keep request types stable.** Reuse the names in the request-type catalogue. Add a new type only when none fits, and say so.
 - **Threads cross days.** Before numbering a thread, check the thread register. If today's email continues a known thread, update that thread under its original ID, for example B02-T08, and say so in today's batch log.
 - **Questions.** When today's emails answer an open question, mark it "answered by B05-T03", with the answer.
@@ -109,8 +109,9 @@ Before you answer, check your work:
 ## Privacy and sensitive emails
 
 - Never write the names or email addresses of individuals. Use roles: "sales lead", "head of procurement", "customer's in-house counsel".
-- Company names: **REPLACE** them with codes from the register's code key. (Change this word to KEEP to write real company names.)
-  - The code key may hold real company names in its name column, for my use only. I delete that column before sharing.
+- **Our own group's companies:** always write their full, exact legal names, including the legal form (Ltd, GmbH, LLC, FZE and so on). Exact names matter for entity facts and signing blocks. If two emails give different names or forms for the same company, record both and ask under G.
+- **Customers, suppliers and other outside parties:** **REPLACE** their names with codes from the register's code key (C1, S1). (Change this word to KEEP to write their real names.)
+  - The code key may hold outside parties' real names in its name column, for my use only. I delete that column before sharing.
 - No signatures, phone numbers, bank details, ID numbers or other personal data.
 - Quotes: only short examples, 25 words or fewer, of how our legal team phrases things, marked as quotes. Never quote the other side at length.
 - Do not record the content of sensitive emails. Record only "skipped: sensitive (category)" in the batch log. Sensitive emails are:

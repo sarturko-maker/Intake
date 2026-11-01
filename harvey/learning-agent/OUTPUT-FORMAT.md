@@ -38,6 +38,7 @@ The ID keeps the batch where the item first appeared.
 - request type: RT id and name, from the catalogue
 - area: commercial, privacy, corporate, disputes, trade compliance, employment, credit, procurement, other
 - requester: role and team
+- our company: full legal name of our company involved
 - counterparty: code and description (type, sector, size, relationship)
 - value and urgency: deal or order value band (low, medium, high, with the figure if given), and any deadline
 - what they asked:
@@ -161,9 +162,13 @@ Title: **Intake learning register**. Keep these sections in this order. Use comp
 
 ### 1. Code key
 
-`code | name (for my use only; delete before sharing) | type | description (sector, size, region, relationship) | first seen`
+**Our own companies**, by real name, with no codes:
 
-Our own entities (E-...) come first, then customers (C...), suppliers (S...) and others.
+`full legal name (with legal form) | jurisdiction | what it does | other names seen | first seen`
+
+**Outside parties:** customers (C...), suppliers (S...) and others.
+
+`code | name (for my use only; delete before sharing) | type | description (sector, size, region, relationship) | first seen`
 
 ### 2. Request-type catalogue
 
@@ -325,7 +330,7 @@ Body:
 - the key facts, each with evidence;
 - for standard answers: the question pattern, our answer, caveats, where it was used, and the owning team.
 
-Also write `knowledge/glossary.md` and `knowledge/code-key.md` (the code key without the name column).
+Also write `knowledge/glossary.md`, `knowledge/our-companies.md` (our companies by real name) and `knowledge/code-key.md` (outside parties only, without the name column).
 
 Never put negotiation positions in the knowledge pack.
 
