@@ -2,7 +2,7 @@
 
 ## IDs
 
-Every ID except the thread pointer is permanent and lives in the files. The thread pointer only says where the evidence is.
+Every ID is permanent and lives in the files. Evidence points to matter IDs, and to the review-table row (conversation key and email date) where useful.
 
 | Item | ID |
 |---|---|
@@ -14,7 +14,6 @@ Every ID except the thread pointer is permanent and lives in the files. The thre
 | Front-door note | F001 |
 | Question | Q001 |
 | Document to fetch | D001 |
-| Thread pointer | B07-T03 |
 
 Leave a field empty rather than guess.
 
@@ -26,10 +25,10 @@ Leave a field empty rather than guess.
 # Legal matters
 
 ## Status
-- batches covered: B01 to B07; email dates from 2026-09-14 to 2026-11-02
+- review-table rows used: 0 (work 0, noise 0, sensitive 0); email dates from 2026-09-14 to 2026-11-02
 - matters: 0 (open 0, done 0, unknown 0)
 - by source: intake 0, lawyer's mailbox 0
-- last updated: B07
+- last updated: pass name and date
 ```
 
 Then one entry per matter, newest matter first, by the date of its latest email.
@@ -44,7 +43,7 @@ Then one entry per matter, newest matter first, by the date of its latest email.
 - work: judgement | effort: medium | legal output: mark-up, then approval
 - turnaround: first reply after 1 day; finished after 22 days; 1 chaser
 - legal response visible: partly | negotiation: M012-N1, M012-N2 | knowledge: K004 | to fetch: D003
-- evidence: B01-T02, B05-T07
+- evidence: rows "Example UK Ltd | C2 | Mutual NDA for data centre projects", 2026-09-02 to 2026-10-06 (4 rows)
 Sales asked whether the customer's mutual NDA could be signed. The mailbox owner routed it to a commercial counsel the same day, who sent redlines through sales and asked whether the customer would accept them. After two rounds, with one chaser, legal approved the changes and asked sales to sign and return the executed copy. Afterwards sales asked to change our signing company; that is open. The content of our redlines is not visible.
 ```
 
@@ -57,7 +56,7 @@ Field values:
 Paragraph rules:
 - 60 to 150 words, in date order, start to finish.
 - Say what was asked, what legal did, the positions and the outcome, why, and what is still open.
-- Rewrite the whole paragraph when new emails arrive, older or newer.
+- Rewrite the whole paragraph when new rows arrive, older or newer.
 - Merged matters keep the lower ID. Add "(merged from M045)" to the header.
 
 ---
@@ -66,11 +65,11 @@ Paragraph rules:
 
 ### 0. Status
 
-- batches covered and email date range
+- review-table rows used and email date range
 - counts: work types, ways-of-working entries, positions topics, precedents, front-door notes, knowledge entries, glossary terms, open and answered questions, documents to fetch (open and fetched)
-- last updated: the batch
+- last updated: pass name and date
 
-### 1. Work-types report (kept current every day)
+### 1. Work-types report (kept current after every pass)
 
 One block per work type:
 
@@ -155,16 +154,16 @@ Who does what, by role only: the legal team, US or group legal, credit, procurem
 
 ### 10. Open questions
 
-`Q id | question | affects | evidence | status (open, or answered by <thread> with the answer)`
+`Q id | question | affects | evidence | status (open, or answered by <matter> with the answer)`
 
 ### 11. Documents to fetch
 
-`D id | matter | what is missing | where it probably is | why it matters | status (open, or fetched in <batch>)`
+`D id | matter | what is missing | where it probably is | why it matters | status (open, or fetched on <date>)`
 
 ### 12. Change log
 
-One line per batch:
-- the batch and the email dates;
+One line per pass:
+- the pass and the date;
 - matters added, updated and merged;
 - entries added, updated and superseded;
 - questions answered;
@@ -172,62 +171,14 @@ One line per batch:
 
 ---
 
-## The daily chat report
+## Your reply after each pass
 
-### A. Batch log
-
-- batch and email date range
-- emails received, and from which source (intake or a lawyer's mailbox)
-- threads: count and pointers
-- skipped as noise: number and kinds
-- skipped as sensitive: number and categories only
-- attachments read; attachments not readable, with name and reason
-- legal response visible: in how many threads out of how many
-- re-identification risks
-- notes
-
-### B. Matters touched
-
-For each matter: the ID, new, updated or merged, the title, and one line on what changed.
-
-### C. Negotiation records
-
-One block per new or changed negotiated point.
-
-```
-#### M012-N1 | clause topic
-- document: for example, customer's master agreement, on their paper
-- their position:
-- our position: or "not visible" (then add a D entry)
-- our standard: if "Our templates" is attached
-- gap:
-- their reaction:
-- outcome: accepted ours, agreed fallback, we conceded, they conceded, open, or walked away
-- final position:
-- why (context): or "context not visible"
-- who approved:
-- email date:
-- evidence: thread pointers
-- observed or stated:
-- confidence:
-```
-
-### D–H. Changes made today
-
-One short line per item, with its ID:
-- D: knowledge changes;
-- E: ways-of-working changes;
-- F: front-door and work-type changes;
-- G: new questions;
-- H: documents to fetch.
-
-### I. File check
-
-- both files saved: yes or no
-- counts before and after, for each file
-- confirmation that no count went down
-
-`END OF BATCH B07`
+Reply in chat with:
+- what you built or changed;
+- how many rows you used, and how many you skipped (noise and sensitive);
+- the counts before and after for each file;
+- new open questions and documents to fetch, one line each;
+- confirmation that both working files are saved and that no count went down.
 
 ---
 

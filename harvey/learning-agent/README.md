@@ -1,64 +1,74 @@
-# Harvey learning agent: how to run it
+# Harvey learning set-up: how to run it
 
-The agent reads the legal team's emails batch by batch, mostly from the intake mailbox and some from your own. It keeps two working files up to date:
+Goal: learn how the legal team works from a month or more of emails. The emails come mostly from the intake mailbox, plus some of your own. The output is drafts of three things: a work-types report, skills (how we work) and knowledge (facts about the company). You and Claude Code check everything later.
 
-- **`legal-matters.md`**: one paragraph per matter, with a short header (work type, who asked, who handled it, effort, outcome). There is no duplication: when new or older emails arrive for a matter, it rewrites that matter's paragraph.
-- **`legal-learning-register.md`**: everything learned across matters:
-  - the work-types report;
-  - ways of working;
-  - positions and precedents;
-  - the front door;
-  - knowledge;
-  - our companies, the glossary, roles and the code key;
-  - open questions and documents to fetch;
-  - a change log.
+## Why a Vault and a review table
 
-When you ask, it builds the work-types report, draft skills and the knowledge pack from those two files. Everything it writes is a draft. You and Claude Code check it later.
+Asking a question across a whole Vault works by search: Harvey looks up the passages that seem relevant. That is fine for finding things. It is weak for "summarise how we handle every NDA", because it may never look at half of them.
 
-## Set up (about 15 minutes)
+A **review table** is different. It reads **every file**, one row per file, and answers the same questions (columns) for each. Nothing is skipped. Harvey's help pages say a table can take up to 10,000 files, and columns are unlimited.
 
-1. In Harvey's Agent Builder, create a new agent. Call it "Legal team learning agent".
+So the set-up has three steps:
+
+1. **Vault.** Upload the emails into one Vault project.
+2. **Review table.** It reads every email and records the same facts for each one. The table becomes the record of every matter, including our side of each negotiation and the context.
+3. **Building from the table.** Two ways, best done both:
+   - a Harvey agent builds the work-types report, the matter list, the register and the skills, using the table as its knowledge source;
+   - you export the table to Excel and give it to Claude Code, which does the same work locally, with no limit on size.
+
+## Step 1. Create the Vault project and upload
+
+Create a Vault project, for example "Legal learning: September to October".
+
+Which upload route? Drag and drop is the recommended start.
+
+- **Drag and drop: recommended start.**
+  1. In Outlook, use conversation view.
+  2. Take the latest email of each conversation: it carries the earlier messages quoted below it.
+  3. Add any earlier email that carries a mark-up or a draft as an attachment. Add your own sent replies that carry mark-ups.
+  4. Leave out HR or personal emails, newsletters and anything obviously irrelevant.
+  5. Drag the emails into a Windows folder (classic Outlook gives `.msg`; new Outlook gives `.eml`), then upload the folder to the Vault.
+
+  A few hundred files is normal. You stay in control of what goes in, and each email becomes one clean row.
+- **PST: worth one quick test.**
+  - Harvey says Vault accepts `.pst` files since June 2026, up to 500 MB each, and extracts the emails and attachments.
+  - Export one month, or a date-filtered folder, under 500 MB.
+  - Check three things in the Vault: (a) each email appears as its own file, (b) attachments are there, and (c) the review table runs on them.
+  - If all three hold, a PST is much less work for later months. If the export is blocked or the result is messy, go back to drag and drop.
+  - Remember a PST brings in everything, sensitive emails included. The table is told to skip them, but they will sit in the Vault.
+
+## Step 2. Run the review table
+
+1. In the Vault project, create a review table over all files.
+2. Paste the table-wide rules from `REVIEW-TABLE-COLUMNS.md` into the table's instructions field.
+3. Add the columns from the same file, one by one, with their names and prompts.
+4. Run it. Spot-check ten rows against the emails. If a column is weak, edit its prompt and re-run that column.
+5. Export the table to Excel. Save it as `review-table-<dates>.xlsx`. This is the master record.
+
+## Step 3. Build from the table
+
+**In Harvey:**
+1. Create an agent in Agent Builder called "Legal team learning agent".
 2. Paste `AGENT-INSTRUCTIONS.md` into its instructions.
-   - Our own companies always appear by their full legal names.
-   - Outside parties get codes (C1, S1) unless you change REPLACE to KEEP.
-   - People always appear by role, never by name.
 3. Add `OUTPUT-FORMAT.md` as a knowledge source called "Output format".
-4. Optional, and useful: add a knowledge source called "Our templates" with your standard NDA, MSA, guarantee (PCG) and LPA forms.
-5. Add no other knowledge sources and turn off web search.
+4. Add the review table as a knowledge source. Harvey says a review-table source holds only the extracted data, so also add the Vault project as a second source, for checking the emails themselves.
+5. Optional: add a knowledge source called "Our templates" with your standard NDA, MSA, guarantee and LPA forms.
+6. Use the messages in `PROMPTS.md`, in order:
+   1. the work-types report;
+   2. matters, one work type at a time;
+   3. the register;
+   4. skills, one work type at a time;
+   5. the knowledge pack.
 
-## Each batch
+**With Claude Code:** put the Excel export (and anything the agent built) into `seeds/harvey/` in the workspace. Claude Code builds the same outputs, compares them with Harvey's, and asks you the open questions.
 
-You are going backwards: the most recent emails first, then older ones.
+## Adding more months later
 
-1. Attach the batch as `.eml` or `.msg` files (print to PDF if needed), with their attachments. Mixing intake emails and your own is fine.
-2. Send the message from `PROMPTS.md`. For the first batch, use the START FILES message.
-3. Check the reply:
-   - it ends with `END OF BATCH Bxx`;
-   - its file check says both files were saved and no count went down.
-   - If it stops at "CONTINUED", say "continue".
-4. Section H lists documents to fetch, usually our replies and mark-ups from the lawyers' sent items. That is where the judgement is. When you find them, give them to the agent with the "documents" message.
-5. Every few days, download both files and keep dated copies (`legal-matters-2026-11-07.md`). This is your backup, and what you attach if a new conversation cannot see the files.
+Upload the new emails to the same Vault project and run the table on the new rows. Export again, then re-run the agent messages. Newer facts replace older ones; older ones are kept as "earlier position".
 
-## After about a month
+## Before sharing
 
-Send the BUILD SKILLS message. Save each `=== FILE: ... ===` part as its own file, keeping the folders.
-
-In the workspace, save to:
-- `seeds/harvey/files/` for the two working files;
-- `seeds/harvey/build/` for the reports, skills and knowledge.
-
-Claude Code then:
-- checks them;
-- asks you the open questions;
-- turns them into approved skills and knowledge, after your yes.
-
-## Size
-
-- **Skill sets:** each stays under about 20,000 tokens. A SKILL.md is under about 4,000 words, with detail in `positions.md` and `precedents.md`. Each works on its own as a command in Claude Code (for example `/nda-review`), or pasted into a Harvey agent.
-- **Matters file:** about 300 paragraphs a month is fine. It is a working file, not a skill.
-
-## Tips
-
-- If the agent seems to lose entries when it rewrites a file, ask for the optional check. Keep your dated copies.
-- Leave obvious HR or personal emails out if you can. The agent skips them anyway.
-- Before sharing anything outside Harvey, delete the name column of the code key and check the agent's re-identification flags. Our own company names stay.
+- People appear by role only.
+- Our own companies appear by their full legal names.
+- Outside parties appear by name in the table, because Harvey is your secure environment. The agent codes them (C1, S1) in everything it builds.
+- Delete the name column of the code key before sharing outside Harvey.
