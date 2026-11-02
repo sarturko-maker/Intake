@@ -2,10 +2,11 @@
 
 ## IDs
 
-Every ID is permanent and lives in the files. Evidence points to matter IDs, and to the review-table row (conversation key and email date) where useful.
+Every ID is permanent and lives in the files. Evidence points to matter IDs and email IDs.
 
 | Item | ID |
 |---|---|
+| Email | E0001 |
 | Matter | M001 |
 | Negotiation record | M012-N1 |
 | Knowledge | K001 |
@@ -19,13 +20,42 @@ Leave a field empty rather than guess.
 
 ---
 
-## File 1. `legal-matters.md`
+## File 1. `legal-email-index.md`
+
+```
+# Legal email index
+
+## Status
+- emails: 0 (work 0, noise 0, sensitive 0); not opened: 0
+- sent dates from 2026-09-01 to 2026-10-31
+- read in full: 0 of 0 work emails
+- emails per week: 2026-09-01 12 | 2026-09-08 15 | ...
+- last updated: pass name and date
+```
+
+Then one line per email, in sent-date order, oldest first:
+
+`E0001 | file name | sent date and time | from: role, organisation code | subject | source | category | conversation key | matter | read`
+
+- **from:** for example "credit risk analyst, Example UK Ltd" or "buyer, C3".
+- **source:** intake or lawyer's mailbox.
+- **category:** work, noise or sensitive.
+- **conversation key:** our company short name, counterparty code, and the subject without RE:, FW:, AW: or WG:.
+- **matter:** the M ID once the email has been read.
+- **read:** the pass that read it in full, for example R03, or empty.
+- **Noise:** subject and key may stay empty.
+- **Sensitive:** subject and key must be empty.
+- **Unopenable:** "could not open" and the reason, in place of the subject.
+
+---
+
+## File 2. `legal-matters.md`
 
 ```
 # Legal matters
 
 ## Status
-- review-table rows used: 0 (work 0, noise 0, sensitive 0); email dates from 2026-09-14 to 2026-11-02
+- emails used: 0; email dates from 2026-09-01 to 2026-10-31
 - matters: 0 (open 0, done 0, unknown 0)
 - by source: intake 0, lawyer's mailbox 0
 - last updated: pass name and date
@@ -43,7 +73,7 @@ Then one entry per matter, newest matter first, by the date of its latest email.
 - work: judgement | effort: medium | legal output: mark-up, then approval
 - turnaround: first reply after 1 day; finished after 22 days; 1 chaser
 - legal response visible: partly | negotiation: M012-N1, M012-N2 | knowledge: K004 | to fetch: D003
-- evidence: rows "Example UK Ltd | C2 | Mutual NDA for data centre projects", 2026-09-02 to 2026-10-06 (4 rows)
+- evidence: E0014, E0019, E0031, E0057
 Sales asked whether the customer's mutual NDA could be signed. The mailbox owner routed it to a commercial counsel the same day, who sent redlines through sales and asked whether the customer would accept them. After two rounds, with one chaser, legal approved the changes and asked sales to sign and return the executed copy. Afterwards sales asked to change our signing company; that is open. The content of our redlines is not visible.
 ```
 
@@ -56,16 +86,16 @@ Field values:
 Paragraph rules:
 - 60 to 150 words, in date order, start to finish.
 - Say what was asked, what legal did, the positions and the outcome, why, and what is still open.
-- Rewrite the whole paragraph when new rows arrive, older or newer.
+- Rewrite the whole paragraph when new emails arrive, older or newer.
 - Merged matters keep the lower ID. Add "(merged from M045)" to the header.
 
 ---
 
-## File 2. `legal-learning-register.md`
+## File 3. `legal-learning-register.md`
 
 ### 0. Status
 
-- review-table rows used and email date range
+- emails used and email date range
 - counts: work types, ways-of-working entries, positions topics, precedents, front-door notes, knowledge entries, glossary terms, open and answered questions, documents to fetch (open and fetched)
 - last updated: pass name and date
 
@@ -175,10 +205,11 @@ One line per pass:
 
 Reply in chat with:
 - what you built or changed;
-- how many rows you used, and how many you skipped (noise and sensitive);
-- the counts before and after for each file;
+- emails in scope, emails read in full, emails skipped (noise and sensitive), and emails you could not open, with the reason;
+- matters added, updated and merged;
+- the counts before and after for each working file;
 - new open questions and documents to fetch, one line each;
-- confirmation that both working files are saved and that no count went down.
+- confirmation that all three working files are saved and that no count went down.
 
 ---
 
