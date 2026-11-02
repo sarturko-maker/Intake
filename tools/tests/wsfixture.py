@@ -116,7 +116,7 @@ class Workspace:
                               universal_newlines=True, encoding="utf-8")
 
     def cleanup(self):
-        shutil.rmtree(str(self.tmp), ignore_errors=True)
+        common.force_rmtree(self.tmp)   # copes with read-only received files
 
     # ------------------------------------------------------------ files
 

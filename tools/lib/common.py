@@ -14,6 +14,7 @@ import io
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 from pathlib import Path
@@ -467,6 +468,45 @@ def is_legacy_matter_dir(d):
     d = Path(d)
     return (bool(MATTER_DIR_RE.match(d.name)) and (d / "matter.md").is_file() and not (d / AGENT).is_dir()
             and not inside_a_matter(d))
+
+
+def is_received_path(path):
+    """True for a file in a matter's agent/correspondence/ or agent/documents/received/."""
+    parts = Path(path).parts
+    for i in range(1, len(parts)):
+        if parts[i] == AGENT and MATTER_DIR_RE.match(parts[i - 1]):
+            rest = parts[i + 1:]
+            return ((len(rest) >= 2 and rest[0] == "correspondence")
+                    or (len(rest) >= 3 and rest[0] == "documents" and rest[1] == "received"))
+    return False
+
+
+def protect(path):
+    """Make a received file read-only (on Windows, the read-only attribute), so no program saves over
+    it: Word adding a sensitivity label when the file is opened, for example. Opening and reading still
+    work. Best effort. True when the file was changed to read-only."""
+    try:
+        mode = os.stat(str(path)).st_mode
+        if mode & 0o222:
+            os.chmod(str(path), stat.S_IMODE(mode) & ~0o222)
+            return True
+    except OSError:
+        pass
+    return False
+
+
+def force_rmtree(path):
+    """shutil.rmtree that also removes read-only files (Windows refuses to delete them otherwise)."""
+    def _retry(func, p, _exc):
+        try:
+            os.chmod(p, stat.S_IWRITE | stat.S_IREAD)
+            func(p)
+        except OSError:
+            pass
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(str(path), onexc=_retry)
+    else:
+        shutil.rmtree(str(path), onerror=_retry)
 
 
 def matter_of_path(root, path):

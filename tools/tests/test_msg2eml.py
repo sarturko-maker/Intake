@@ -209,3 +209,113 @@ class PowerShellScriptTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ForgivingDecodeTest(unittest.TestCase):
+    """A .msg labelled UTF-8 that holds a Windows-1252 byte (a curly quote): python-oxmsg raises on it,
+    and msg2eml used to write the email with an empty body. Now the raw property is read and decoded."""
+
+    def setUp(self):
+        import msg2eml
+        self.m = msg2eml
+
+    def test_decode_8bit(self):
+        raw = "Bitte prüfen – it".encode("utf-8") + b"\x92s urgent"
+        self.assertEqual(self.m.decode_8bit(raw, "utf-8"), "Bitte prüfen – it’s urgent")
+        self.assertEqual(self.m.decode_8bit(b"caf\xe9 \x80 5", "cp1252"), "caf\xe9 € 5")
+        self.assertEqual(self.m.decode_8bit(b"caf\xe9", "no-such-code-page"), "caf\xe9")
+        self.assertEqual(self.m.decode_8bit("ok \xfc".encode("utf-8"), "utf-8"), "ok \xfc")
+
+    def fake(self, body_raw, html_raw=None):
+        """Stands in for an oxmsg Message whose body properties are 8-bit and labelled UTF-8."""
+        class Prop:
+            def __init__(self, pid, ptyp):
+                self.pid, self.ptyp = pid, ptyp
+
+        class Storage:
+            def property_stream_bytes(self, pid, ptyp):
+                return {0x1000: body_raw, 0x1013: html_raw}[pid]
+
+        class Props:
+            body_encoding = "utf-8"
+            _storage = Storage()
+
+            def _get_property(self, pid, ptyps):
+                if pid == 0x1000 and body_raw is not None and 0x001E in ptyps:
+                    return Prop(pid, 0x001E)
+                if pid == 0x1013 and html_raw is not None and 0x0102 in ptyps:
+                    return Prop(pid, 0x0102)
+                return None
+
+        class Msg:
+            properties = Props()
+
+            @property
+            def body(self):            # strict, as python-oxmsg 0.0.2 decodes: raises on a stray byte
+                return body_raw.decode("utf-8") if body_raw is not None else None
+
+            @property
+            def html_body(self):
+                return html_raw.decode("utf-8") if html_raw is not None else None
+
+        return Msg()
+
+    def test_body_is_kept_when_the_library_cannot_decode_it(self):
+        msg = self.fake(b"We can\x92t accept clause 9.\r\n")
+        self.assertEqual(self.m.body_text(msg), "We can’t accept clause 9.\r\n")
+        self.assertIsNone(self.m.html_text(msg))
+        msg = self.fake(b"plain", html_raw=b"<p>Caf\xe9 \x96 noted</p>")
+        self.assertEqual(self.m.html_text(msg), "<p>Caf\xe9 – noted</p>")
+
+    def test_no_body_stays_empty(self):
+        self.assertEqual(self.m.body_text(self.fake(None)), "")
+
+    @unittest.skipUnless(FIXTURE.is_file(), "tools/fixtures/sample.msg not present yet")
+    def test_raw_reading_matches_the_library_on_a_good_file(self):
+        try:
+            from oxmsg import Message
+        except ImportError:
+            self.skipTest("python-oxmsg not installed")
+        msg = Message.load(str(FIXTURE))
+        want = msg.body
+        self.assertTrue(want)
+        self.assertEqual(self.m._prop_text(msg.properties, self.m.PID_BODY, self.m.TEXT_TYPES, ""), want)
+        self.assertEqual(self.m.body_text(msg), want.replace("\x00", ""))
+
+
+@unittest.skipUnless(FIXTURE.is_file() and HAVE_OXMSG_TOOL, "needs tools/fixtures/sample.msg and python-oxmsg")
+class RefreshTest(unittest.TestCase):
+    """msg2eml --refresh: a filed email that an older version converted without its body is re-converted
+    from the .msg original kept beside it."""
+
+    def test_refresh_restores_a_lost_body(self):
+        sys.path.insert(0, str(HERE))
+        from test_new_matter import Workspace
+        import common
+        import msg2eml
+        ws = Workspace()
+        self.addCleanup(ws.cleanup)
+        ref, m = ws.new_matter("commercial", "kestrel", "poa", sub_area="customers")
+        corr = m / "agent" / "correspondence"
+        name = "2026-10-20_0900_in_lena-vogt_vollmacht"
+        shutil.copy2(str(FIXTURE), str(corr / (name + ".msg")))
+        empty = (b"From: Lena Vogt <lena.vogt@kestrel-eng.de>\r\nSubject: Vollmacht\r\nMessage-ID: <x@y>\r\n"
+                 b"Content-Type: text/plain; charset=utf-8\r\n\r\n")
+        eml = corr / (name + ".eml")
+        eml.write_bytes(empty)
+        os.chmod(str(eml), 0o444)              # received files are read-only on disk
+        common.append_line(m / "agent" / "documents.md", common.join_pipe(
+            [eml.name, "correspondence", "received", "lena.vogt@kestrel-eng.de", "2026-10-20 09:00", "", "x@y",
+             common.sha256_file(eml), "yes", "empty", ""]))
+        r = ws.run("msg2eml", "--refresh", "--run", "R1")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("1 emails re-converted", r.stdout)
+        self.assertTrue(msg2eml.eml_body_text(eml.read_bytes()))
+        self.assertFalse(os.stat(str(eml)).st_mode & 0o222)
+        self.assertEqual((m / "agent" / "history" / (name + ".empty-body.eml")).read_bytes(), empty)
+        rows = common.read_pipe_records(m / "agent" / "documents.md", common.DOCUMENTS_COLUMNS)
+        self.assertEqual((rows[0]["hash"], rows[0]["read"]), (common.sha256_file(eml), "pending"))
+        self.assertIn("re-converted correspondence/%s.eml" % name, (m / "agent" / "log.md").read_text())
+        self.assertEqual(ws.run("lint-received").returncode, 0)
+        # a good email is left alone
+        self.assertIn("0 emails re-converted", ws.run("msg2eml", "--refresh", "--run", "R2").stdout)

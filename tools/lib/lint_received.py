@@ -4,6 +4,10 @@ Run through the wrapper: bash tools/lint-received [MATTER_FOLDER|REF ...]   (def
 For every documents.md row whose folder is correspondence or documents/received, the file's
 sha256 is recomputed and compared. Reports changed files, missing files, rows without a hash,
 and files in those folders that have no row. Exit 0 clean, 1 findings, 2 usage error.
+
+--accept FILE...: the lawyer has confirmed the change is not to the content (typically Word saving a
+sensitivity label into a file that was opened): record the file's new sha256 in documents.md, log the
+old one in log.md, and make the file read-only so it cannot happen again. The file itself is untouched.
 """
 
 import argparse
@@ -96,12 +100,65 @@ def lint_matter(root, mdir):
     return findings, checked
 
 
+def accept(root, files, reason, run):
+    """Record the current sha256 of changed received files (see --accept). Exit 0, or 2 on a bad path."""
+    status = 0
+    for f in files:
+        p = Path(f)
+        p = p if p.is_absolute() else (Path.cwd() / p if (Path.cwd() / p).exists() else root / p)
+        m = common.matter_of_path(root, p) if p.is_file() else None
+        if m is None:
+            print("not a file in a matter: %s" % f)
+            status = 2
+            continue
+        agent = common.agent_dir(m)
+        try:
+            relp = p.resolve().relative_to(agent.resolve()).as_posix()
+        except ValueError:
+            relp = ""
+        folder, _, name = relp.rpartition("/")
+        if folder not in CHECKED_FOLDERS:
+            print("not a received file (correspondence/ or documents/received/): %s" % f)
+            status = 2
+            continue
+        docs = agent / "documents.md"
+        lines = common.read_text(docs).split("\n") if docs.is_file() else []
+        new, old, hit = common.sha256_file(p), "", False
+        for i, line in enumerate(lines):
+            if common.is_record_line(line):
+                fields = common.split_pipe(line)
+                if len(fields) > 7 and fields[0] == name and fields[1] == folder:
+                    hit, old = True, fields[7]
+                    fields[7] = new
+                    lines[i] = common.join_pipe(fields)
+        if not hit:
+            print("no documents.md row for %s" % common.rel(p, root))
+            status = 2
+            continue
+        if old == new:
+            print("unchanged: %s" % common.rel(p, root))
+        else:
+            common.write_text_atomic(docs, "\n".join(lines))
+            common.append_line(agent / "log.md", common.join_pipe(
+                [common.stamp(root), "accepted a change to received file %s (%s); sha256 was %s" % (relp, reason, old),
+                 relp, run]))
+            print("accepted: %s" % common.rel(p, root))
+        common.protect(p)
+    return status
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="bash tools/lint-received",
                                  description="Recompute hashes of received files and compare with documents.md.")
     ap.add_argument("matters", nargs="*", metavar="MATTER_FOLDER")
+    ap.add_argument("--accept", nargs="+", metavar="FILE",
+                    help="record the new sha256 of these changed received files, after the lawyer's yes")
+    ap.add_argument("--reason", default="the lawyer confirmed only a sensitivity label or similar changed")
+    ap.add_argument("--run")
     a = ap.parse_args(argv)
     root = common.find_root()
+    if a.accept:
+        return accept(root, a.accept, a.reason, a.run or common.run_id(root))
     if a.matters:
         mdirs = [resolve_matter(root, m) for m in a.matters]
     else:

@@ -5,6 +5,7 @@ Run: python3 -m unittest discover -s tools/tests -p 'test_*.py'
 
 import hashlib
 import json
+import os
 import sys
 import unittest
 from email.message import EmailMessage
@@ -73,6 +74,9 @@ class IntoMatterTest(PlaceBase):
             ("Acme_MSA_v1.docx", "documents/received", "received", "pending")])
         for r in rows:
             self.assertEqual(r["message_id"], "b1-04.202610150847@acme-automotive.de")
+        # received files are read-only on disk, so no program (Word adding a label) can save over them
+        for p in (dest, stored):
+            self.assertFalse(os.stat(str(p)).st_mode & 0o222, p.name)
             self.assertEqual(r["from"], "j.schmidt@acme-automotive.de")
             self.assertEqual(r["date"], info["date"])
         self.assertEqual(rows[0]["hash"], before)

@@ -101,12 +101,16 @@ def move_file(src, dest):
         shutil.move(str(src), str(dest))
     except OSError as exc:
         raise Failure("could not move %s to %s: %s (is it open in another program?)" % (src, dest, exc))
+    if common.is_received_path(dest):
+        common.protect(dest)      # received files are never edited: read-only on disk
     return dest
 
 
 def write_new(dest, data):
     with open(str(dest), "xb") as fh:
         fh.write(data)
+    if common.is_received_path(dest):
+        common.protect(dest)
 
 
 def msg_sibling(path):

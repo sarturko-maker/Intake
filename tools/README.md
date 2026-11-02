@@ -103,8 +103,10 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 
 - Writes `<stem>.eml` beside each .msg (or in DIR); keeps the .msg. Methods in order: python-oxmsg (headers from PR_TRANSPORT_MESSAGE_HEADERS, else rebuilt from properties), then msgconvert (Perl Email::Outlook::Message).
 - Neither works: prints how to use `tools/msg2eml.ps1` (Windows with Outlook desktop) or to ask the human to save as .eml from new or web Outlook; exit 3. The caller writes the JOURNAL `converted` line.
+- Text in a .msg labelled UTF-8 that holds Windows-1252 bytes (curly quotes, dashes, the euro sign) is read as Windows-1252; the body is never dropped for it.
+- `--refresh [MATTER_FOLDER|REF ...] [--run RUN]`: filed emails whose body an older version lost (empty body, .msg original with text beside it) are re-converted; the old .eml goes to `agent/history/<stem>.empty-body.eml`, documents.md gets the new sha256 and `read: pending`, log.md a line.
 - Reads: the .msg files. Writes: the .eml files.
-- Exit: 0, 2 usage, 3 no converter or Python missing.
+- Exit: 0, 1 a --refresh conversion failed, 2 usage, 3 no converter or Python missing.
 - Fallback: `powershell -NoProfile -ExecutionPolicy Bypass -File tools\msg2eml.ps1 -Path FILE.msg` on Windows with Outlook desktop (untested in the build container); else ask for .eml.
 
 ## hash-files
@@ -143,6 +145,7 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 - For every documents.md row whose folder is `correspondence` or `documents/received`: recompute sha256 and compare. Lines: `changed: <path>`, `missing: <path>`, `no hash: <path>`, `no row: <path>` (file in those folders without a row). Rows with `duplicate_of`, `read=no: signature image` or `read=no: calendar part` have no stored file by design; a `.msg` beside its `.eml` needs no row of its own. OS junk ignored.
 - Summary: `lint-received: N files checked in M matters, K findings`.
 - Reads: documents.md and the files. Writes nothing. Never repair: list findings under Please check.
+- `--accept FILE... [--reason TEXT] [--run RUN]`: only after the lawyer confirms the change is not to the content (typically Word saving a sensitivity label into an opened file): records the new sha256 in documents.md, logs the old one in log.md, makes the file read-only. The file is not changed.
 - Exit: 0 clean, 1 findings, 2 usage (not a matter folder, unknown reference), 3 Python missing.
 - Fallback: hash-files on each file, compare with the hash column by eye.
 

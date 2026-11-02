@@ -8,7 +8,7 @@ model: opus
 # Checkpoint
 
 The close wrap-up without closing: status, closed date and flags stay as they are. Rules: RULES.md 'Wrap-up and learning', 'Memory files', 'Knowledge'. Ask in plain chat, one short question at a time; never assume an answer.
-No subagents in this harness: do the distiller's steps yourself.
+Only if the harness has no subagents: do the distiller's steps yourself.
 R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`. Today = house date.
 
 1. Folder: the `folder` of REF's row in INDEX.csv, or `find areas -type d -name '<REF>_*' -not -path '*/history/*'`. None: say so and stop.

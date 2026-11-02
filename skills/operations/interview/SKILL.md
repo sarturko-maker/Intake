@@ -66,4 +66,4 @@ Record the lawyer's choice, and keep the difference visible:
 - Tell the lawyer what is next: "draft a skill for <topic>" builds the draft from the interview, the evidence and the seeds; or "interview me about <next topic>".
 - `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "interview <topic>"`, where m is the BUDGET.md price key of the model.
 
-No subagents in this harness: none are needed. The orchestrator runs the interview itself.
+No subagents are needed: the orchestrator runs the interview itself.

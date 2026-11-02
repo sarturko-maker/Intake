@@ -7,6 +7,10 @@
 #   changed: (hash differs)  missing: (row, no file)  no hash: (row without sha256)  no row: (file, no row)
 # Rows marked duplicate_of, "no: signature image" or "no: calendar part" have no stored file by design.
 # A .msg beside its converted .eml is the original and needs no row of its own. Reads only; writes nothing.
+# Usage: bash tools/lint-received --accept FILE... [--reason TEXT] [--run RUN]
+#   Only after the lawyer confirms the change is not to the content (typically Word saving a sensitivity label
+#   into a received file that was opened): records the new sha256 in documents.md, logs the old one in log.md,
+#   and makes the file read-only. The file itself is not changed.
 # Exit: 0 ok, 1 findings or check failed, 2 usage error, 3 Python missing (fallback printed).
 # Fallback without Python: bash tools/hash-files on each file in correspondence/ and documents/received/, compare with the hash column of documents.md by eye.
 FALLBACK="run bash tools/hash-files on each file in correspondence/ and documents/received/ and compare with the hash column of documents.md."

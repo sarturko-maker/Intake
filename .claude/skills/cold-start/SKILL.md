@@ -6,7 +6,7 @@ description: "First run on a machine, or when TOOLING.md is missing: check the h
 # Cold start
 
 Show each result; never assert it. Ask in plain chat, one short question at a time; never assume an answer. Never invent names, areas or positions.
-No subagents in this harness: do the indexer's and drafter's work yourself, one folder or area at a time.
+Only if the harness has no subagents: do the indexer's and drafter's work yourself, one folder or area at a time.
 R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 
 ## 1. House files

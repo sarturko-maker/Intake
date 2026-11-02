@@ -1,5 +1,6 @@
 """Tests for tools/lint-facts and tools/lint-received (spec D8, D9)."""
 
+import os
 import sys
 import time
 import unittest
@@ -298,6 +299,18 @@ class LintReceivedTest(unittest.TestCase):
         r = self.lint()
         self.assertEqual(r.returncode, 1)
         self.assertIn("changed: %s/agent/documents/received/Acme_MSA_v1.docx" % self.ws.rel(self.m), r.stdout)
+
+    def test_accept_records_the_new_hash_after_the_lawyers_yes(self):
+        self.doc.write_bytes(b"PK\x03\x04 version one, now with a sensitivity label")
+        self.assertEqual(self.lint().returncode, 1)
+        r = self.lint("--accept", str(self.doc), "--run", "R1")
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("accepted:", r.stdout)
+        self.assertEqual(self.lint().returncode, 0)
+        log = (self.m / "agent" / "log.md").read_text(encoding="utf-8")
+        self.assertIn("accepted a change to received file documents/received/Acme_MSA_v1.docx", log)
+        self.assertFalse(os.stat(str(self.doc)).st_mode & 0o222, "read-only from now on")
+        self.assertEqual(self.lint("--accept", str(self.ours)).returncode, 2)
 
     def test_changed_msg_original(self):
         self.msg.write_bytes(b"\xd0\xcf\x11\xe0 resaved")

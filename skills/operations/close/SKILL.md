@@ -8,7 +8,7 @@ model: opus
 # Close
 
 Closing is the lawyer's decision and only a status: nothing moves or is deleted, and new mail reopens the matter by itself. Rules: RULES.md 'Wrap-up and learning', 'Memory files', 'Knowledge'. Ask in plain chat, one short question at a time; never assume an answer.
-No subagents in this harness: do the distiller's steps yourself.
+Only if the harness has no subagents: do the distiller's steps yourself.
 R = the open run's id when intake or status calls this skill; else `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`. Today = house date.
 
 ## Close

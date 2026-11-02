@@ -206,6 +206,19 @@ def start_here(root, matter, meta, rows, pending, edits, stamp_text):
     return "\n".join(L)
 
 
+def protect_received(matter):
+    """Received files (agent/correspondence/, agent/documents/received/) are never edited: make any that
+    are still writable read-only, so Word cannot save a sensitivity label into them. Returns how many."""
+    n = 0
+    for sub in ("correspondence", "documents/received"):
+        d = common.agent_dir(matter) / sub
+        if d.is_dir():
+            for f in d.rglob("*"):
+                if f.is_file() and not is_junk(f.name) and common.protect(f):
+                    n += 1
+    return n
+
+
 def sync_matter(root, matter, run, manifest, stamp_text, do_register=True, written=None):
     rep = {"matter": common.rel(matter, root), "registered": [], "changed": [], "pending": [],
            "edits": [], "errors": []}
@@ -226,6 +239,7 @@ def sync_matter(root, matter, run, manifest, stamp_text, do_register=True, writt
                     if reset_changed(matter, rows, path, folder, name, sha, stamp_text, run):
                         rep["changed"].append(path.relative_to(matter).as_posix())
         rows = doc_rows(matter)
+        rep["protected"] = protect_received(matter)
     pending = [r for r in rows if (r.get("read") or "").strip().lower() == "pending" and r.get("folder")]
     rep["pending"] = [(r["folder"] if r["folder"].startswith(common.HUMAN) else "agent/" + r["folder"])
                       + "/" + r["name"] for r in pending]
@@ -289,6 +303,9 @@ def main(argv=None):
     head = "matter-sync: %d matters, %d need a reader, START-HERE.md pages up to date" % (len(reports), len(needs))
     if legacy:
         head += "; %d in the old layout (run bash tools/matter-migrate)" % len(legacy)
+    protected = sum(r.get("protected", 0) for r in reports)
+    if protected:
+        head += "; %d received files set to read-only" % protected
     if not a.pages_only:
         out = Path(root) / "changes" / ("%s-matters.md" % run)
         common.write_text_atomic(out, "# Matters to read, run %s\n\n%s\n" % (run, "\n".join(lines) or "None."))

@@ -60,6 +60,7 @@ A matter lives under its area, sub-area and subject: `areas/commercial/customers
 
 - In a matter, write what is true in `corrections.md`. The agent must follow it.
 - Each matter folder has three things: `START-HERE.md` (open this: status, next step and links to everything), `human/` (yours) and `agent/` (the agent's). Put anything of yours in `human/`; the next run picks it up and reads it. You may also change files in `agent/`; your change wins.
+- Emails and documents that came in are read-only on disk, so nothing (Word adding a sensitivity label, for example) can change them. Open them to read. To work on a document, use Save As into the matter's `human/` folder.
 - You do not need to write notes. Tell Claude what is not in the emails, such as a call, a meeting, a Teams chat or your thinking: "note 2026-0042: called Sam, they accept the cap at 150%". It adds a dated line to the matter's notes (`agent/notes.md`), reads them every run, and puts them in the Harvey pack. Each run it asks you at most three short questions. All are optional: answer "1 yes, 2 skip". You can also type in that file yourself. Claude only adds lines at the end and never changes yours.
 - Every run ends with a short summary per matter (five bold-titled bullets) and links to open the brief, the email to answer, the key document and the Harvey pack. Say "draft a reply to 2026-0042" for a reply to copy into Outlook.
 - Confirm who is who in `roster.confirmed.md`.

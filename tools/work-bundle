@@ -280,7 +280,9 @@ else
 fi
 
 # ---------------------------------------------------------------- finish the pack
+chmod -R u+w "$B" 2>/dev/null   # received files are read-only in the matter; their copies here need not be
 if [ "$SNAPSHOT" = 0 ]; then
+  [ -d "$FINAL" ] && chmod -R u+w "$FINAL" 2>/dev/null
   rm -rf "$FINAL" && mv "$B" "$FINAL" || { echo "work-bundle: cannot replace $B_REL (open in another program?)" >&2; rm -rf "$B"; exit 1; }
   B="$FINAL"
   : > "$B/.stamp"

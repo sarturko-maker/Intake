@@ -7,7 +7,7 @@ argument-hint: "[all]"
 # Index
 
 The indexer subagent reads and writes; you dispatch and ask. Rules: RULES.md 'Knowledge'. Ask in plain chat, one short question at a time; never assume an answer.
-No subagents in this harness: do the indexer's steps yourself, one folder at a time.
+Only if the harness has no subagents: do the indexer's steps yourself, one folder at a time.
 R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 
 1. Scope. `find house knowledge seeds -type f ! -name .gitkeep ! -path knowledge/INDEX.md ! -path knowledge/TYPES.md -print0 | xargs -0 bash tools/hash-files`. Compare each hash with that file's `<!-- sha256: -->` line in knowledge/INDEX.md: new, changed, gone. Called by intake with a file list: those files. "all", or no INDEX.md yet: every file.

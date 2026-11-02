@@ -103,6 +103,16 @@ class WorkBundleTest(unittest.TestCase):
         r = self.bundle("--all", "--force")
         self.assertIn("3 refreshed, 0 unchanged", r.stdout)
 
+    def test_read_only_received_files_still_bundle_and_rebuild(self):
+        doc = self.m / "agent" / "documents" / "received" / "Acme_MSA_v1.docx"
+        os.chmod(str(doc), 0o444)                     # as place-email and matter-sync leave them
+        for _ in range(2):
+            r = self.bundle("2026-0002")
+            self.assertEqual(r.returncode, 0, r.stderr)
+        copy = self.m / "agent" / "2026-0002_harvey-pack" / "documents" / "received" / "Acme_MSA_v1.docx"
+        self.assertTrue(os.stat(str(copy)).st_mode & 0o200, "the copy in the pack is writable")
+        self.assertFalse(os.stat(str(doc)).st_mode & 0o222, "the received file stays read-only")
+
     def test_all_skips_closed_matters(self):
         mf = self.m / "agent" / "matter.md"
         mf.write_text(mf.read_text().replace("status: open", "status: closed"))

@@ -163,7 +163,7 @@ def repair_packs(root, run, dry):
                     dest = free_name(human / f.name)
                     shutil.move(str(f), str(dest))
                     did.append("moved %s from the pack to human/%s" % (f.name, dest.name))
-            shutil.rmtree(str(pack))
+            common.force_rmtree(pack)
         stray = [f for f in sorted(human.glob("log.md*")) if f.is_file() and is_split_log(f)] if human.is_dir() else []
         for f in stray:
             dest = free_name(agent / "history" / ("log.split-pack.%s.md" % run))

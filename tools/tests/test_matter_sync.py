@@ -96,6 +96,15 @@ class MatterSyncTest(WorkspaceTest):
         self.ws.run("scan-changes", "--run", "R2", "--write-manifest")
         self.assertFalse(ledger.exists())
 
+    def test_received_files_are_made_read_only(self):
+        f = self.m / "agent" / "documents" / "received" / "MSA.docx"
+        f.write_bytes(b"PK received")
+        os.chmod(str(f), 0o644)
+        r = self.sync()
+        self.assertIn("1 received files set to read-only", r.stdout)
+        self.assertFalse(os.stat(str(f)).st_mode & 0o222)
+        self.assertNotIn("read-only", self.sync().stdout)
+
     def test_pages_only_writes_nothing_else(self):
         (self.m / "human" / "x.txt").write_text("x")
         self.sync("--pages-only")

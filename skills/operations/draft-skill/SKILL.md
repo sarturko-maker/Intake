@@ -8,7 +8,7 @@ model: opus
 # Draft a skill
 
 Shape from the template; content from this organisation only. Never invent a position. Rules: RULES.md 'Skills', 'Knowledge'. Ask in plain chat, one or two short questions at a time; never assume an answer.
-No subagents in this harness: do the researcher's reading yourself.
+Only if the harness has no subagents: do the researcher's reading yourself.
 R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`. Today = house date.
 
 1. Name: kebab-case from the request (nda-review). Area: from the request or house/areas.md; unclear → ask "Which area is this skill for?". Path: skills/<area>/<name>/SKILL.md. It exists: ask whether to redraft it.
