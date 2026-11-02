@@ -5,7 +5,7 @@
 #   --date D           bundle date (default: today, house time); a second bundle that day gets -2, -3
 #   --skill NAME       controlling skill to include (default: controlling_skill in matter.md)
 # Writes <matter>/work-product/bundle-<date>/ with exactly: brief.md, matter.md, facts-live.md (live facts view),
-#   subject.md, roster.md, roster.confirmed.md, corrections.md, correspondence/, documents/received/,
+#   subject.md, roster.md, roster.confirmed.md, corrections.md, notes.md, correspondence/, documents/received/,
 #   documents/ours/, skill.md (the controlling skill's SKILL.md), intake.md (the area's).
 # Never other subjects, history/ or the knowledge base. A missing piece is left out with a warning.
 # Prints the path, the file count and the upload notes. Warns over 50 files, or any file over 500 MB.
@@ -195,6 +195,7 @@ copy_file "$SUBJ_DIR/subject.md" subject.md "subject.md"
 copy_file "$M/roster.md" roster.md "roster.md"
 copy_file "$M/roster.confirmed.md" roster.confirmed.md "roster.confirmed.md"
 copy_file "$M/corrections.md" corrections.md "corrections.md"
+copy_file "$M/notes.md" notes.md "notes.md"
 copy_dir "$M/correspondence" correspondence
 copy_dir "$M/documents/received" documents/received
 copy_dir "$M/documents/ours" documents/ours

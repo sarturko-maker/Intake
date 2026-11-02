@@ -464,23 +464,25 @@ class IndexRebuildTest(unittest.TestCase):
         self.assertEqual([h for h in re.findall(r"^## .*$", text, re.M)], heads)
         self.assertIn("\nconfirm nothing needed: NOISE-0001, NOISE-0002\n", text)
         nothing = text.split(heads[0])[1].split(heads[1])[0]
-        self.assertIn("2026-0006 Signed Acme NDA received", nothing, "matters proposing nothing_needed too")
+        self.assertIn("2026-0006](../areas/", nothing)
+        self.assertIn("Signed Acme NDA received", nothing, "matters proposing nothing_needed too")
         check = text.split(heads[1])[1].split(heads[2])[0]
         self.assertIn("No tag, and two open Acme matters could fit.", check)
         self.assertIn("Candidates: 2026-0002, 2026-0006.", check)
         quiet = text.split(heads[2])[1].split(heads[3])[0]
-        self.assertEqual(re.findall(r"^- (\S+)", quiet, re.M), ["2026-0001", "2026-0006", "2026-0004"])
+        self.assertEqual(re.findall(r"^- \[?([A-Z0-9-]+)", quiet, re.M), ["2026-0001", "2026-0006", "2026-0004"])
         self.assertIn("quiet for 16 days (last activity 2026-10-16)", quiet)
         steps = text.split(heads[4])[1].strip().splitlines()
         self.assertEqual([s.split(" ")[0] for s in steps], ["1.", "2.", "3.", "4.", "5.", "6.", "7."])
-        firsts = [s.split(" ")[1] for s in steps]
+        firsts = [re.sub(r"^\[([^\]]+)\]\(.*", r"\1", s.split(" ")[1]) for s in steps]
         self.assertEqual(firsts, ["2026-0002", "2026-0005",   # due soonest
                                   "2026-0001",                # waiting on you, oldest first
                                   "NOISE-0001,", "2026-0006",  # confirmations
                                   "please-check",             # please-check items
                                   "2026-0004"])               # stale
-        self.assertIn("2026-0002 Acme MSA: liability cap: Wait for the reply on the cap (due 2026-11-03)", steps[0])
-        self.assertIn("2026-0004 Northgate invoice short payment: Route to accounts payable (quiet for 16 days)",
+        self.assertIn("Acme MSA: liability cap: Wait for the reply on the cap (due 2026-11-03)", steps[0])
+        self.assertIn("[2026-0002](../", steps[0])
+        self.assertIn("Northgate invoice short payment: Route to accounts payable (quiet for 16 days)",
                       steps[6])
 
     def test_json_output(self):

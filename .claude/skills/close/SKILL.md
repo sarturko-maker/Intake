@@ -2,6 +2,7 @@
 name: close
 description: "Close a matter on the lawyer's word and run its wrap-up: closing note, subject profile, up to three why questions kept as decision facts, knowledge confirm flow. Use for 'close 2026-0042', '/close REF', and for each closed-by-lawyer line from index-rebuild (already closed in INDEX.csv, wrap-up-pending)."
 argument-hint: "<REF>"
+model: opus
 ---
 
 # Close

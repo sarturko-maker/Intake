@@ -32,10 +32,10 @@ MATTER_DIR_RE = re.compile(r"^((?:[A-Z0-9]{1,6}-)?20[0-9]{2}-[0-9]{4,})_")
 NOISE_RE = re.compile(r"^NOISE-([0-9]{4,})$")
 
 MATTER_FILES = ("matter.md", "brief.md", "facts.md", "roster.md",
-                "roster.confirmed.md", "corrections.md", "log.md", "documents.md")
+                "roster.confirmed.md", "corrections.md", "notes.md", "log.md", "documents.md")
 MATTER_DIRS = ("correspondence", "documents/received", "documents/ours",
                "documents/reference", "work-product", "drafts", "history")
-HUMAN_ONLY_NAMES = ("corrections.md", "roster.confirmed.md")
+HUMAN_ONLY_NAMES = ("corrections.md", "roster.confirmed.md", "notes.md")
 CAPPED_NAMES = ("matter.md", "subject.md")
 HISTORY_NAMES = ("matter.md", "facts.md", "subject.md")
 PAGE_CAP = 16000

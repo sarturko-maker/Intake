@@ -19,7 +19,8 @@ No subagents in this harness: do each subagent step yourself, in order, one matt
 5. Order the .eml files by Date, oldest first: `bash tools/unpack-email --json --no-signals --body-chars 200 inbox/*.eml`.
 
 ## 2. File (filer)
-Dispatch ONE filer with R, mode, thresholds and the ordered list. It applies the rules below and reports, per email: action, destination, reference, reason, confidence, flags; then matters touched (folder, new or existing, new files, reopen yes/no, filing flags), reopen proposals, proposed sub-areas, new subjects, please-check items, carried over, workflow-log lines. Journal from it: `reopen-proposed` per proposal, `carried-over` per file left. Check: inbox/ top level holds only carried-over files.
+Small batch (5 emails or fewer): no filer; file them yourself by the rules below (it saves a subagent start). Readers only for matters with new inbound content; a matter touched only by our own sent reply gets a log line and its status and next step updated by you.
+Otherwise dispatch ONE filer with R, mode, thresholds and the ordered list. It applies the rules below and reports, per email: action, destination, reference, reason, confidence, flags; then matters touched (folder, new or existing, new files, reopen yes/no, filing flags), reopen proposals, proposed sub-areas, new subjects, please-check items, carried over, workflow-log lines. Journal from it: `reopen-proposed` per proposal, `carried-over` per file left. Check: inbox/ top level holds only carried-over files.
 
 Filing rules:
 - One email at a time, in the given order, so a reply files after what it answers. Unpack each only when you reach it, `bash tools/unpack-email "<file>"`: its signals depend on what was placed before.
@@ -40,7 +41,7 @@ Paused mode: no filer. File yourself by rules 1, 3 (internal or roster-address o
 1. One reader per matter touched, dispatched at once; matters under one subject run one after another (they share subject.md). Pass R, mode, folder, the new files, reopen yes/no, filing flags, and why (new mail, work product, consistency pass). It follows skills/operations/intake-reading and matter-memory and reports: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, a summary of at most five bullets, questions for the lawyer, knowledge proposals, please-check items, unread files, workflow-log lines, and `chars read: N, chars written: M`.
 2. From changes/<R>.md, outside inbox/:
    - New file with no documents.md row in a matter's correspondence/, documents/ or work-product/ (not bundle-*): `bash tools/place-email --register <path> --run <R>`, then a reader for that matter (row read and summarised, log line, refreshed matter.md and brief.md).
-   - corrections.md or roster.confirmed.md new or modified: reader consistency pass on that matter.
+   - corrections.md, notes.md or roster.confirmed.md new or modified: reader consistency pass on that matter.
    - An email the lawyer moved between matters: register it in the new matter, drop its row from the old documents.md, log both, WORKFLOW-LOG.md `corrected`, readers for both.
    - house/, knowledge/ or seeds/ file new, modified, moved or deleted (not knowledge/INDEX.md): indexer for those files only (index skill).
    - skills/ changed: `bash tools/skills-sync`. INDEX.csv: index-rebuild applies it.
@@ -55,7 +56,9 @@ Paused mode: no filer. File yourself by rules 1, 3 (internal or roster-address o
 6. Journal `run-end | filed <n>, new <n>, noise <n>, please-check <n>, carried over <n> | digests/<R>.md | est USD <x> | -`.
 
 ## 5. Reply
-The numbered "What you should do next" list, then up to five questions, one short line each; knowledge proposals are asked by the knowledge confirm flow (close skill, step 8). End with "Details: digests/LATEST.md".
+1. Bundles: for each matter proposed ready_for_lawyer that got new material this run, `bash tools/work-bundle <REF>` (skip noise, please-check, sensitive).
+2. The task format (RULES.md 'Index and digest'): for each matter that needs the lawyer, in What-you-should-do-next order, a `### [REF](<folder>/brief.md) Title` heading, at most five bullets with bold inline titles, and a Links line (email to answer, key document, Harvey pack, draft if any). Other matters one line each. Where the next step is a reply, end the task with: say "draft a reply to <REF>".
+3. Then up to five questions, one short line each; knowledge proposals go through the knowledge confirm flow (close skill, step 8). End with "Details: [digest](digests/LATEST.md) · [index](INDEX.md)".
 
 ## 6. Modes (RULES.md 'Budget')
 lean: readers deep-read only mark-ups and referenced pages; no drafts. minimal: filing and brief.md only, memory from the email text alone. paused: tools only (section 2); no subagents, no reading. Spend order: filing, brief and index, memory, attachments, drafts, learning. One read per thread; never re-read a hashed duplicate. At the ceiling carry over; never overrun.

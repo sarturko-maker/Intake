@@ -243,7 +243,7 @@ class BeforeWriteRefusalTest(HookCase):
 
     @unittest.skipUnless(POSIX, "symlinks")
     def test_symlink_into_house(self):
-        link = self.matter / "notes.md"
+        link = self.matter / "memo.md"
         os.symlink(self.ws / "house" / "brief.md", link)
         self.assertRefused(link, "house/brief.md")
 
@@ -381,7 +381,7 @@ class WindowsPathTest(HookCase):
         self.assertEqual(err, REFUSED.format("house/brief.md"))
 
     def test_drive_letter_ordinary_file(self):
-        rc, out, err = self.run_win(self.win("areas", "commercial", "notes.md"))
+        rc, out, err = self.run_win(self.win("areas", "commercial", "memo.md"))
         self.assertEqual((rc, out, err), (0, "", ""))
 
     @unittest.skipUnless(POSIX, "backslash paths map onto real files only on POSIX here")

@@ -2,6 +2,7 @@
 name: checkpoint
 description: "Wrap up a phase of an open matter without closing it: checkpoint note, subject history and follows links, up to three why questions kept as decision facts, knowledge confirm flow. Use for 'checkpoint 2026-0042', '/checkpoint REF', for example after a signed NDA or an agreed round."
 argument-hint: "<REF>"
+model: opus
 ---
 
 # Checkpoint

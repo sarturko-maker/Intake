@@ -2,6 +2,7 @@
 name: interview
 description: "Interview the lawyer about how the team works on one type of work, from dictated answers, and record them with caution as dated statements for the skills. Use for 'interview me about NDAs', '/interview nda-review', 'let's do the interview', and after cold start when there are no approved skills."
 argument-hint: "<work type or skill name>"
+model: opus
 ---
 
 # Interview about ways of working

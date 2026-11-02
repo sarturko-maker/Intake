@@ -683,8 +683,8 @@ def render_index_md(root, rows, today, mlines):
               "| Reference | Title | Status | Waiting on | Next step | Due | Days open |",
               "|---|---|---|---|---|---|---|"]
         for r in group:
-            L.append("| %s |" % " | ".join(md_cell(r[c]) for c in
-                     ("reference", "title", "status", "waiting_on", "next_step", "due", "days_open")))
+            L.append("| %s |" % " | ".join([ref_link(r)] + [md_cell(r[c]) for c in
+                     ("title", "status", "waiting_on", "next_step", "due", "days_open")]))
         L.append("")
     L += ["## Noise awaiting confirmation", ""]
     if not noise_open:
@@ -708,9 +708,9 @@ def render_index_md(root, rows, today, mlines):
         L += ["| Reference | Title | Closed | Proposed | Confirmed | Lawyer minutes |",
               "|---|---|---|---|---|---|"]
         for c, r in recent:
-            L.append("| %s |" % " | ".join(md_cell(x) for x in
-                     (r["reference"], r["title"], c.isoformat(), r["proposed_outcome"],
-                      r["confirmed_outcome"], r["lawyer_minutes"])))
+            L.append("| %s |" % " | ".join([ref_link(r)] + [md_cell(x) for x in
+                     (r["title"], c.isoformat(), r["proposed_outcome"],
+                      r["confirmed_outcome"], r["lawyer_minutes"])]))
         L.append("")
     L += ["## Measures", ""] + mlines + [""]
     return "\n".join(L)
@@ -762,9 +762,18 @@ def waiting_on_you(r):
     return r["status"] == "waiting_lawyer" or (r["waiting_on"] or "").strip().lower() == "you"
 
 
+def ref_link(r, prefix=""):
+    """Markdown link from a row's reference to its brief (matters) or its file (noise)."""
+    folder = (r.get("folder") or "").strip()
+    if not folder:
+        return r["reference"]
+    target = folder if r.get("kind") == "noise" else folder + "/brief.md"
+    return "[%s](%s%s)" % (r["reference"], prefix, target.replace(" ", "%20"))
+
+
 def item_line(r, extra=""):
     step = r["next_step"] or "no next step recorded"
-    return "%s %s: %s%s" % (r["reference"], r["title"] or "(no title)", step, extra)
+    return "%s %s: %s%s" % (ref_link(r, "../"), r["title"] or "(no title)", step, extra)
 
 
 def render_digest_parts(rows, today, mlines, notes):

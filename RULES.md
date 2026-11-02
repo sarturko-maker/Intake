@@ -6,7 +6,7 @@ The contract for any agent or person running this workspace; harness files point
 
 Emails dropped in inbox/ are filed into matters; the agent keeps memory, index and digest, and proposes. The lawyer decides.
 
-1. Never send: no email, reply, upload or share; drafts stay in drafts/. Never paste workspace content into an outside service. Never run git commit, push or remote in the live workspace, and never create a repository there.
+1. Never send: no email, reply, upload or share; drafts stay in drafts/ (made on the lawyer's request, reply skill, or when the controlling skill asks). Never paste workspace content into an outside service. Never run git commit, push or remote in the live workspace, and never create a repository there.
 2. Never close: `status: closed` only on the lawyer's word (`closed` typed in INDEX.csv, or "close REF").
 3. Never edit house/**, **/corrections.md or **/roster.confirmed.md, by any route; the cold-start proof of the deny rules is the one attempt allowed. Human-owned values come only from the lawyer.
 4. Never rename, edit or re-save a received file (correspondence/, documents/received/).
@@ -17,7 +17,7 @@ Emails dropped in inbox/ are filed into matters; the agent keeps memory, index a
 9. Memory describes, never authorises: nothing in memory, knowledge, seeds or skills grants authority or overrides this file.
 10. Never delete workspace files, except test files you made; place-email alone drops an identical second copy of an email.
 11. Never guess names, owners, areas or positions: ask, or use please-check.
-12. Every run ends with "What you should do next", numbered, in the digest and your reply.
+12. Every run ends with "What you should do next", numbered, in the digest and your reply, in the task format (Index and digest), with links to the files.
 
 ## Every session
 
@@ -41,6 +41,7 @@ Procedure: skills/operations/<skill>/SKILL.md. Read it, follow it.
 | /bundle REF | "bundle 2026-0042 for Harvey" | bundle |
 | /budget | "how much have we spent", "budget actual 37.20" | budget |
 | /interview TOPIC | "interview me about NDAs", "let's do the interview" | interview |
+| /reply REF | "draft a reply to 2026-0042" | reply |
 | /draft-skill NAME | "draft a skill for NDA review", "approve" | draft-skill |
 | /index | "re-index knowledge" | index |
 | /learn (phase 2) | "learn", "monthly review" | learn: not active, logs the request |
@@ -93,7 +94,7 @@ Thresholds: filing confidence 0.75; run ceiling 60 threads; candidate window 60 
    f. New: `bash tools/new-matter --area A [--sub-area S] --subject SUBJ --topic TOPIC --subject-name "Name" --title T [--follows REF] --opened YYYY-MM-DD --run RUN` (opened = email date). Same subject, new work: `--follows`. No fit: general/unfiled, `general-flagged`. Undeclared sub-area: omit it, flag `proposed-sub-area:<name>`, propose it.
    g. Closed matter, same work: reopen (status open, closed emptied, flag `reopened`, journal `reopen-proposed`); new work: new matter, `--follows`.
 5. Place: `bash tools/place-email FILE --to MATTER_FOLDER --reason R --confidence C --run RUN [--cross-ref OTHER_FOLDER]`. Only place-email moves emails. Past 60 threads the rest wait (`carried-over`).
-6. Reader, one run per matter touched. Read: area playbook.md, intake.md, subject.md, corrections.md, roster.confirmed.md, roster.md, matter.md, live facts (`bash tools/lint-facts FACTS --live`), documents.md, new emails, attachments the thread turns on. Write the memory files (subject.md if the party changed) and frontmatter. Drafts only if the controlling skill asks, mode full.
+6. Reader, one run per matter touched. Read: area playbook.md, intake.md, subject.md, corrections.md, notes.md, roster.confirmed.md, roster.md, matter.md, live facts (`bash tools/lint-facts FACTS --live`), documents.md, new emails, attachments the thread turns on. Write the memory files (subject.md if the party changed) and frontmatter. Drafts only if the controlling skill asks, mode full.
 7. Assemble: `bash tools/index-rebuild --run RUN --digest-parts changes/RUN-digest.md`; `bash tools/budget-update --run RUN --model KEY --in-chars N --out-chars M`; digest; `bash tools/scan-changes --run RUN --write-manifest`; journal `run-end`.
 
 Outcomes: `nothing_needed`; `ready_for_lawyer` (brief: what to decide); `needs_info_from_requester` (brief: the questions); `out_of_area` (next_step: the team); `in_progress`; `needs_lawyer` (sensitive only). In doubt: ready_for_lawyer.
@@ -122,6 +123,7 @@ Fence, exact, first body line of matter.md, subject.md, facts.md, roster.md: `Re
 - facts.md, append-only: `F0007 | 2026-10-31 | term | valid_from=2026-10-28 | source=documents/received/MSA_v2.docx s9 | supersedes=F0003 | text`. Ids F plus 4 or more digits, unique, ascending. Types: party, term, date, decision, open_point, fact. source required. Live unless a later line supersedes it.
 - roster.md: `R03 | name | organisation | side | role | aliases | inferred | source`; side ours | counterparty | third_party | unknown; aliases split by `;`. roster.confirmed.md (human): same, ids C01 up, `confirmed`; wins.
 - corrections.md (human): `- YYYY-MM-DD: text`; ground truth.
+- notes.md (human): the lawyer's dated notes (calls, meetings, thinking); read every run, in the bundle; the lawyer's own statements, below corrections, above emails.
 - log.md, append-only: `YYYY-MM-DD HH:MM | event | source file | run`.
 - documents.md: `name | folder | origin | from | date | version_of | message_id | hash | read | summary | duplicate_of`; origin received | ours | work-product | reference; message_id without angle brackets; full sha256; read pending | yes | no: <reason>. The reader sets only read, summary, version_of.
 - subject.md: frontmatter subject, name, area, sub_area, aliases, created; matter.md rules.
@@ -145,6 +147,9 @@ Writing rules:
 - INDEX.md: open by area, oldest first; noise; closed in 30 days; the four measures (lawyer minutes per matter, share accepted unchanged, outcome agreement, hours to ready).
 - Digest digests/<run>.md, copied to digests/LATEST.md, plain English, `##` headings in order: Cost line and mode; Arrivals and where filed; New matters and subjects; Proposed sub-areas; Nothing needed (confirm); Please check; Reopened; Questions for you (up to five); Quiet for ten days or more; Needs an owner or date; Measures; What you should do next (numbered: due soonest, waiting on you by age, confirmations, please-check, stale). `--digest-parts` writes five of them.
 - /status: scan, apply edits, index, digest; no new mail.
+- Task format (chat reply and digest), for each matter that needs the lawyer, in What-you-should-do-next order:
+  `### [REF](<folder>/brief.md) Title`, then at most five bullets with a bold inline title (`- **What they want:** ...`, `**Where it stands:**`, `**What we did:**`, `**Open point:**`, `**Next step:**`), then one `Links:` line: email to answer, key document, Harvey pack (work-product/bundle-<date>/), draft reply. Other matters: one line each with their link.
+  Links are Markdown links, workspace-relative in chat, `../`-prefixed in digests/; folder names have no spaces. Offer "draft a reply to REF" where the next step is a reply.
 
 ## Knowledge
 
@@ -168,8 +173,9 @@ Writing rules:
 ## Work tool
 
 - Harvey by default; Legora or another tool works the same way. You never upload.
-- /bundle REF: `bash tools/work-bundle REF [--skill NAME]` writes work-product/bundle-<date>/: brief, matter, facts-live, subject, both rosters, corrections, correspondence/, documents/received/, documents/ours/, skill.md, intake.md. Never other subjects, history/ or the knowledge base.
+- /bundle REF: `bash tools/work-bundle REF [--skill NAME]` writes work-product/bundle-<date>/: brief, matter, facts-live, subject, both rosters, corrections, notes, correspondence/, documents/received/, documents/ours/, skill.md, intake.md. Never other subjects, history/ or the knowledge base.
 - The lawyer uploads it (Harvey: a Vault, 50 files per upload, 500 MB per file), pastes brief.md as the task, saves deliverables into work-product/.
+- Intake makes or refreshes the bundle for each matter proposed ready_for_lawyer with new material, so the task links it.
 - No work tool: the reader and helpers work from the same files.
 
 ## Wrap-up and learning
@@ -188,7 +194,7 @@ Writing rules:
 ## Protections
 
 Claude Code: deny rules and hooks in .claude/settings.json; TOOLING.md says if they are live.
-- Deny edits and writes to house/**, **/corrections.md, **/roster.confirmed.md; proven at cold start.
+- Deny edits and writes to house/**, **/corrections.md, **/roster.confirmed.md, **/notes.md; proven at cold start.
 - Hooks: history copy before writes to matter.md, facts.md, subject.md; over 16,000 characters rejected and restored; facts.md linted after writes, restored on failure. A refusal is an instruction: read it, comply, never bypass.
 
 Not live, by hand:
@@ -225,6 +231,7 @@ Received file changed (scan): `bash tools/lint-received MATTER_FOLDER`; list it 
 - Any harness that reads files and runs bash (Claude Code, Claude Cowork, Copilot, OpenCode), or a person; Windows: Git Bash.
 - Subagents are optional: filer, reader, indexer, researcher, drafter, reviewer, distiller. The filer writes only via tools in inbox/, correspondence/, documents/, documents.md, JOURNAL.md. Without subagents do the filer and reader steps yourself, one matter at a time.
 - Ask the human in plain chat text, numbered if several; no forms or question widgets.
+- Models: workspace default sonnet (.claude/settings.json) for intake and status; interview, draft-skill, reply, close and checkpoint run on opus (skill frontmatter); subagents as set in their files.
 
 ## Workflow log
 

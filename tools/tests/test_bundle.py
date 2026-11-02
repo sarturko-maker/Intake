@@ -11,7 +11,7 @@ from wsfixture import Workspace, common, make_bin  # noqa: E402
 
 EMAIL = "2026-10-15_0847_in_jschmidt_acme-master-supply-agreement.eml"
 TOP_LEVEL = ["brief.md", "corrections.md", "correspondence", "documents", "facts-live.md", "intake.md",
-             "matter.md", "roster.confirmed.md", "roster.md", "skill.md", "subject.md"]
+             "matter.md", "notes.md", "roster.confirmed.md", "roster.md", "skill.md", "subject.md"]
 FACTS = [
     "F0001 | 2026-10-15 | party | valid_from= | source=correspondence/%s | supersedes= | Customer is Acme Automotive GmbH" % EMAIL,
     "F0002 | 2026-10-15 | term | valid_from=2026-10-15 | source=documents/received/Acme_MSA_v1.docx cl.12 | supersedes= | General cap 200% of annual fees",
@@ -73,7 +73,7 @@ class WorkBundleTest(unittest.TestCase):
         self.assertEqual(self.files(b), sorted([
             "brief.md", "corrections.md", "correspondence/" + EMAIL, "documents/ours/Acme_MSA_v1_Kestrel_markup.docx",
             "documents/received/Acme_MSA_v1.docx", "facts-live.md", "intake.md", "matter.md",
-            "roster.confirmed.md", "roster.md", "skill.md", "subject.md"]))
+            "notes.md", "roster.confirmed.md", "roster.md", "skill.md", "subject.md"]))
         self.assertEqual((b / "matter.md").read_bytes(), (self.m / "matter.md").read_bytes())
         self.assertEqual((b / "subject.md").read_bytes(), (self.m.parent / "subject.md").read_bytes())
         self.assertEqual((b / "skill.md").read_bytes(),
@@ -110,7 +110,7 @@ class WorkBundleTest(unittest.TestCase):
         r = self.bundle(self.mrel, "--date", "2026-11-01")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("Bundle written: %s/work-product/bundle-2026-11-01" % self.mrel, r.stdout)
-        self.assertIn("Files: 12", r.stdout)
+        self.assertIn("Files: 13", r.stdout)
         self.assertIn("Harvey; Legora or another tool works the same way", r.stdout)
         self.assertIn("at most 50 files per upload, 500 MB per file", r.stdout)
         self.assertIn("Paste brief.md as the task.", r.stdout)
@@ -153,8 +153,8 @@ class WorkBundleTest(unittest.TestCase):
         for i in range(45):
             self.put("documents/received/annex-%02d.pdf" % i, b"%PDF")
         r = self.bundle("2026-0002", "--date", "2026-11-01")
-        self.assertIn("Files: 57", r.stdout)
-        self.assertIn("warning: 57 files: more than 50, so upload in 2 batches of at most 50", r.stdout)
+        self.assertIn("Files: 58", r.stdout)
+        self.assertIn("warning: 58 files: more than 50, so upload in 2 batches of at most 50", r.stdout)
 
     @unittest.skipUnless(sys.platform.startswith("linux"), "sparse files keep the test small on Linux")
     def test_file_over_500_mb_warns(self):

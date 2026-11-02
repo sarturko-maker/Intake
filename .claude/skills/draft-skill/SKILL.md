@@ -2,6 +2,7 @@
 name: draft-skill
 description: "Draft a legal skill from this organisation's own knowledge, closed matters and a short interview with the lawyer, then stamp it on approval. Use for 'draft a skill for NDA review', '/draft-skill nda-review', and 'approve' after a draft skill, playbook or intake file is shown."
 argument-hint: "<skill-name> [area]"
+model: opus
 ---
 
 # Draft a skill
