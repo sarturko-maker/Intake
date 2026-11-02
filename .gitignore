@@ -3,6 +3,10 @@
 # A live workspace's data (emails, matters, knowledge, indexes, logs) is never committed.
 
 # Live data folders: keep only the empty folders (.gitkeep) and knowledge/TYPES.md.
+# house/ holds your filled-in house files: never in git (the blank ones are in templates/house/).
+/house/*
+!/house/.gitkeep
+
 /areas/*
 !/areas/.gitkeep
 
@@ -27,6 +31,28 @@
 
 /changes/*
 !/changes/.gitkeep
+
+# Legal skills drafted with the lawyer hold your organisation's positions: never in git.
+# Only the operational skills, POINTERS.md and their generated mirror are kept.
+/skills/*
+!/skills/operations/
+!/skills/POINTERS.md
+/.claude/skills/*
+!/.claude/skills/.generated
+!/.claude/skills/budget/
+!/.claude/skills/bundle/
+!/.claude/skills/checkpoint/
+!/.claude/skills/close/
+!/.claude/skills/cold-start/
+!/.claude/skills/draft-skill/
+!/.claude/skills/index/
+!/.claude/skills/intake/
+!/.claude/skills/intake-reading/
+!/.claude/skills/interview/
+!/.claude/skills/learn/
+!/.claude/skills/matter-memory/
+!/.claude/skills/reply/
+!/.claude/skills/status/
 
 # Files a live workspace generates at its root.
 /MANIFEST.csv

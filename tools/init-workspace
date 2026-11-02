@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# init-workspace: put the blank house files in place when they are missing (never overwrites).
+# Usage: bash tools/init-workspace
+# Copies templates/house/brief.md and templates/house/areas.md into house/ only if house/ lacks them.
+# Your filled-in house files are never in git (see .gitignore), so updates never touch them.
+# Exit: 0 ok, 1 a template is missing.
+# Fallback: copy templates/house/brief.md and templates/house/areas.md into house/ by hand.
+FALLBACK="copy templates/house/brief.md and templates/house/areas.md into house/ by hand."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+ROOT="${INTAKE_ROOT:-$here/..}"
+ROOT="$(cd "$ROOT" && pwd -P)"
+mkdir -p "$ROOT/house"
+rc=0
+for f in brief.md areas.md; do
+  if [ -f "$ROOT/house/$f" ]; then
+    echo "kept: house/$f (yours; never overwritten)"
+  elif [ -f "$ROOT/templates/house/$f" ]; then
+    cp "$ROOT/templates/house/$f" "$ROOT/house/$f"
+    echo "created: house/$f from templates/house/$f. Fill it in, then change status: template to status: ready."
+  else
+    echo "missing template: templates/house/$f" >&2
+    rc=1
+  fi
+done
+exit $rc

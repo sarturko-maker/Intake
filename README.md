@@ -38,7 +38,7 @@ Follow [COLD-START-HUMAN.md](COLD-START-HUMAN.md). It is one page and takes abou
 |---|---|---|
 | `inbox/` | Emails you drop in; noise and please-check piles | You drop; the assistant sorts |
 | `areas/` | Matters, by area, sub-area and subject | The assistant |
-| `house/` | Your organisation and your practice areas | You only |
+| `house/` | Your organisation and your practice areas | You (Claude only with your yes); never in git |
 | `knowledge/` | Company facts: policies, companies, people, standard answers, templates, positions | You add files; the assistant indexes them and asks before it writes |
 | `seeds/` | Starting material, such as an extraction from old emails | You |
 | `skills/` | How the assistant works, and legal skills drafted with you | The assistant, after your approval |

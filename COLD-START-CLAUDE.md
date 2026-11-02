@@ -30,7 +30,7 @@ If Python is blocked by policy, record it and move on. Record every workaround i
 2. Missing playbook or intake file: draft it from the area description and the templates in `skills/operations/cold-start/templates/`, `status: draft`.
 3. `knowledge/TYPES.md` ships with the defaults; if it is missing, tell the human. Create `BUDGET.md` for this month with `bash tools/budget-update --init`.
 4. Run `bash tools/skills-sync`. Run `bash tools/scan-changes --run RUN --write-manifest` to create `MANIFEST.csv`.
-5. Prove the protections. Deny rules: try to edit `house/brief.md` and report the refusal; if the edit goes through, undo it at once so the file is exactly as before. Hooks: write a test `matter.md` and check that a history copy appears; then remove the test folder. Record both lines in `TOOLING.md`: verified, or not live with the RULES.md obligations as the fallback.
+5. Prove the protections. Deny rules: try to create `areas/_protection-test/human/corrections.md` and report the refusal; if it goes through, delete the test folder at once. (house/ is not denied: Claude Code asks the lawyer before each change there.) Hooks: write a test `matter.md` and check that a history copy appears; then remove the test folder. Record both lines in `TOOLING.md`: verified, or not live with the RULES.md obligations as the fallback.
 
 ## Step 3. Read and index what the human put in
 

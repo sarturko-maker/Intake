@@ -10,8 +10,9 @@ No subagents in this harness: do the indexer's and drafter's work yourself, one 
 R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 
 ## 1. House files
+0. No house/brief.md or house/areas.md: `bash tools/init-workspace` copies the blank ones in.
 1. Read RULES.md, HANDOFF.md if present, house/brief.md, house/areas.md, BUDGET.md if present.
-2. Stop if house/brief.md or house/areas.md has `status: template`, or a brief key is empty: organisation, legal_entities, house_domains, legal_addresses, intake_mailbox, timezone, lawyer_name. Tell the lawyer exactly what to fill in: each empty key by name, the body prompts still unanswered, each area block to check (key, name, code, unit_label, description, sub_areas, subject_rule, examples), and `status: ready` in both files. reference_prefix may stay empty. Only the lawyer edits house/.
+2. Stop if house/brief.md or house/areas.md has `status: template`, or a brief key is empty: organisation, legal_entities, house_domains, legal_addresses, intake_mailbox, timezone, lawyer_name. Tell the lawyer exactly what to fill in: each empty key by name, the body prompts still unanswered, each area block to check (key, name, code, unit_label, description, sub_areas, subject_rule, examples), and `status: ready` in both files. reference_prefix may stay empty. Offer to help fill them in from the lawyer's answers: show each change and write it only after a yes (Claude Code also asks for permission).
 
 ## 2. Tools
 3. `bash tools/tooling-setup`. Show what it found and what is missing.
@@ -22,7 +23,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 6. Per area block in house/areas.md: areas/<key>/, areas/<key>/proposals/, and areas/<key>/<sub-area>/ for each declared sub-area. Always areas/general/. Subject folders come later, with matters.
 7. knowledge/TYPES.md must exist (it ships with the workspace). Missing: tell the lawyer.
 8. `bash tools/budget-update --init`, then `bash tools/skills-sync`.
-9. Prove the deny rules: try to edit house/brief.md (add one comment line at the end). Refused: verified-live. Allowed: remove the line at once so the file is exactly as before: not-live. Replace the `deny rules` line in TOOLING.md with `deny rules | verified | - | - | verified-live: edit of house/brief.md refused <date>` or `deny rules | configured | - | RULES.md 'Protections' obligations | not-live: edit went through and was reverted <date>`.
+9. Prove the deny rules: try to create areas/_protection-test/human/corrections.md with Write (one line). Refused: verified-live (nothing was created). Allowed: delete that test folder at once: not-live. Replace the `deny rules` line in TOOLING.md with `deny rules | verified | - | - | verified-live: write to a human-only file refused <date>` or `deny rules | configured | - | RULES.md 'Protections' obligations | not-live: the write went through and was removed <date>`. house/ is not denied: it asks the lawyer before every change.
 10. Prove the hooks on a real file. With your write tool, create areas/general/unfiled/subject.md from skills/operations/matter-memory/templates/subject.md (subject unfiled, name Unfiled, area general, sub_area empty, created today). Then edit it once: under '## Who they are' write "Mail that fits no area, kept here until the lawyer decides (house/areas.md)." A copy in areas/general/unfiled/history/ means verified-live. Replace the `hooks` line the same way. Not-live: RULES.md 'Protections' applies (`bash tools/history-copy` before every memory rewrite, `bash tools/lint-facts` after every facts.md append). Never delete a file to tidy up a test.
 11. `bash tools/scan-changes --run <R> --write-manifest` (the first run reports everything as new).
 

@@ -109,7 +109,9 @@ class HookCase(unittest.TestCase):
             shutil.copy2(SETTINGS, self.ws / ".claude" / "settings.json")
         house = self.ws / "house"
         house.mkdir()
-        brief = ROOT / "house" / "brief.md"
+        (self.ws / "areas" / "h" / "human").mkdir(parents=True)
+        (self.ws / "areas" / "h" / "human" / "brief.md").write_text("mine\n", encoding="utf-8")
+        brief = ROOT / "templates" / "house" / "brief.md"
         if brief.exists():
             shutil.copy2(brief, house / "brief.md")
         else:
@@ -220,10 +222,14 @@ class BeforeWriteRefusalTest(HookCase):
         self.assertRefused(p, self.rel(p))
 
     def test_house_brief_md(self):
-        self.assertRefused(self.ws / "house" / "brief.md", "house/brief.md")
+        self.assertRefused(self.ws / "areas" / "h" / "human" / "brief.md", "areas/h/human/brief.md")
+
+    def test_house_is_not_refused_by_the_hook(self):
+        rc, _, err = self.before(self.ws / "house" / "brief.md")
+        self.assertEqual(rc, 0, err)
 
     def test_new_file_under_house(self):
-        self.assertRefused(self.ws / "house" / "notes" / "extra.md", "house/notes/extra.md")
+        self.assertRefused(self.ws / "areas" / "h" / "human" / "notes" / "extra.md", "areas/h/human/notes/extra.md")
 
     def test_human_only_names_at_any_depth(self):
         self.assertRefused(self.ws / "corrections.md", "corrections.md")
@@ -231,31 +237,31 @@ class BeforeWriteRefusalTest(HookCase):
                            "areas/commercial/roster.confirmed.md")
 
     def test_case_variants(self):
-        self.assertRefused(self.ws / "House" / "Brief.md", "House/Brief.md")
+        self.assertRefused(self.ws / "areas" / "H" / "Human" / "Brief.md", "areas/H/Human/Brief.md")
         p = self.matter / "CORRECTIONS.md"
         self.assertRefused(p, self.rel(p))
 
     def test_dot_dot_segments(self):
-        p = str(self.ws / "areas") + "/../house/./brief.md"
-        self.assertRefused(p, "house/brief.md")
+        p = str(self.ws / "areas") + "/x/../h/human/./brief.md"
+        self.assertRefused(p, "areas/h/human/brief.md")
 
     def test_relative_path_resolves_against_project(self):
-        self.assertRefused("house/brief.md", "house/brief.md", cwd=self.tmp)
+        self.assertRefused("areas/h/human/brief.md", "areas/h/human/brief.md", cwd=self.tmp)
 
     def test_without_project_dir_uses_current_directory(self):
-        self.assertRefused("house/brief.md", "house/brief.md", project=False)
+        self.assertRefused("areas/h/human/brief.md", "areas/h/human/brief.md", project=False)
 
     @unittest.skipUnless(POSIX, "symlinks")
     def test_symlink_into_house(self):
         link = self.matter / "memo.md"
-        os.symlink(self.ws / "house" / "brief.md", link)
-        self.assertRefused(link, "house/brief.md")
+        os.symlink(self.ws / "areas" / "h" / "human" / "brief.md", link)
+        self.assertRefused(link, "areas/h/human/brief.md")
 
     @unittest.skipUnless(POSIX, "symlinks")
     def test_symlinked_project_dir(self):
         alias = self.tmp / "alias-ws"
         os.symlink(self.ws, alias)
-        self.assertRefused(self.ws / "house" / "brief.md", "house/brief.md",
+        self.assertRefused(self.ws / "areas" / "h" / "human" / "brief.md", "areas/h/human/brief.md",
                            env={"CLAUDE_PROJECT_DIR": str(alias)})
 
     def test_ordinary_files_pass_silently(self):
@@ -344,7 +350,7 @@ class MalformedInputTest(HookCase):
              b'{"tool_input": {"file_path": 5}}', b'{"tool_input": {}}', b"\xff\xfe\x00garbage"]
 
     def test_never_blocks(self):
-        truncated = '{"tool_name": "Write", "tool_input": {"file_path": "%s"' % (self.ws / "house" / "brief.md")
+        truncated = '{"tool_name": "Write", "tool_input": {"file_path": "%s"' % (self.ws / "areas" / "h" / "human" / "brief.md")
         for hook in ("before-write", "after-write"):
             for data in self.CASES + [truncated.encode("utf-8")]:
                 rc, out, err = self.run_hook(hook, data)
@@ -365,14 +371,14 @@ class WindowsPathTest(HookCase):
         return self.run_hook("before-write", data, env={"CLAUDE_PROJECT_DIR": project or self.WIN_PROJECT})
 
     def test_drive_letter_house(self):
-        rc, out, err = self.run_win(self.win("house", "brief.md"))
+        rc, out, err = self.run_win(self.win("areas", "h", "human", "brief.md"))
         self.assertEqual(rc, 2)
-        self.assertEqual(err, REFUSED.format("house/brief.md"))
+        self.assertEqual(err, REFUSED.format("areas/h/human/brief.md"))
 
     def test_drive_letter_case_and_mixed_slashes(self):
-        rc, _, err = self.run_win("c:/users/ALEX/legal ws/House\\Brief.md")
+        rc, _, err = self.run_win("c:/users/ALEX/legal ws/areas/h/Human\\Brief.md")
         self.assertEqual(rc, 2)
-        self.assertEqual(err, REFUSED.format("House/Brief.md"))
+        self.assertEqual(err, REFUSED.format("areas/h/Human/Brief.md"))
 
     def test_drive_letter_corrections_anywhere(self):
         rc, _, err = self.run_win("D:\\other\\place\\corrections.md")
@@ -380,9 +386,9 @@ class WindowsPathTest(HookCase):
         self.assertIn("corrections.md is human-only", err)
 
     def test_cygdrive_form(self):
-        rc, _, err = self.run_win("/cygdrive/c/Users/alex/legal ws/house/brief.md")
+        rc, _, err = self.run_win("/cygdrive/c/Users/alex/legal ws/areas/h/human/brief.md")
         self.assertEqual(rc, 2)
-        self.assertEqual(err, REFUSED.format("house/brief.md"))
+        self.assertEqual(err, REFUSED.format("areas/h/human/brief.md"))
 
     def test_drive_letter_ordinary_file(self):
         rc, out, err = self.run_win(self.win("areas", "commercial", "memo.md"))
@@ -395,9 +401,9 @@ class WindowsPathTest(HookCase):
         self.assertEqual(rc, 0, err)
         self.assertEqual(len(self.history(p)), 1)
         rc, _, err = self.run_hook("before-write",
-                                   self.payload(str(self.ws / "house" / "brief.md").replace("/", "\\")))
+                                   self.payload(str(self.ws / "areas" / "h" / "human" / "brief.md").replace("/", "\\")))
         self.assertEqual(rc, 2)
-        self.assertEqual(err, REFUSED.format("house/brief.md"))
+        self.assertEqual(err, REFUSED.format("areas/h/human/brief.md"))
 
 
 class AfterWriteCapTest(HookCase):
@@ -606,9 +612,9 @@ class NonAsciiWorkspaceTest(HookCase):
     ws_name = "legal w\u00f6rk space"
 
     def test_refusal_copy_and_cap(self):
-        rc, _, err = self.before(self.ws / "house" / "brief.md")
+        rc, _, err = self.before(self.ws / "areas" / "h" / "human" / "brief.md")
         self.assertEqual(rc, 2)
-        self.assertEqual(err, REFUSED.format("house/brief.md"))
+        self.assertEqual(err, REFUSED.format("areas/h/human/brief.md"))
         p = self.matter / "matter.md"
         original = self.read(p)
         rc, _, err = self.write_cycle(p, "x" * 16001)
@@ -638,17 +644,17 @@ class NoPythonFallbackTest(HookCase):
         self.assertIsNone(shutil.which("python3", path=self.path_env))
 
     def test_refusals(self):
-        for p, shown in ((self.matter / "corrections.md", None), (self.ws / "house" / "brief.md", "house/brief.md")):
+        for p, shown in ((self.matter / "corrections.md", None), (self.ws / "areas" / "h" / "human" / "brief.md", "areas/h/human/brief.md")):
             rc, _, err = self.before(p, path_env=self.path_env)
             self.assertEqual(rc, 2, err)
             self.assertEqual(err, REFUSED.format(shown or self.rel(p)))
 
     def test_windows_path(self):
-        data = {"tool_input": {"file_path": "C:\\Users\\alex\\ws\\house\\brief.md"}}
+        data = {"tool_input": {"file_path": "C:\\Users\\alex\\ws\\areas\\h\\human\\brief.md"}}
         rc, _, err = self.run_hook("before-write", data, path_env=self.path_env,
                                    env={"CLAUDE_PROJECT_DIR": "C:\\Users\\alex\\ws"})
         self.assertEqual(rc, 2)
-        self.assertEqual(err, REFUSED.format("house/brief.md"))
+        self.assertEqual(err, REFUSED.format("areas/h/human/brief.md"))
 
     def test_history_copy_and_restore(self):
         p = self.matter / "matter.md"
@@ -691,14 +697,14 @@ class NoPythonNoJqFallbackTest(NoPythonFallbackTest):
     drop_jq = True
 
     def test_truncated_json_is_not_acted_on(self):
-        data = '{"tool_input": {"file_path": "%s"' % (self.ws / "house" / "brief.md")
+        data = '{"tool_input": {"file_path": "%s"' % (self.ws / "areas" / "h" / "human" / "brief.md")
         rc, _, err = self.run_hook("before-write", data, path_env=self.path_env)
         self.assertEqual(rc, 0, err)
 
     def test_content_mentioning_file_path_is_ignored(self):
         data = {"tool_name": "Write",
                 "tool_input": {"file_path": str(self.matter / "brief.md"),
-                               "content": '{"file_path": "%s"}' % (self.ws / "house" / "brief.md")}}
+                               "content": '{"file_path": "%s"}' % (self.ws / "areas" / "h" / "human" / "brief.md")}}
         rc, out, err = self.run_hook("before-write", data, path_env=self.path_env)
         self.assertEqual((rc, out, err), (0, "", ""))
 
@@ -717,8 +723,11 @@ class SettingsTest(unittest.TestCase):
 
     def test_deny_rules(self):
         deny = self.data["permissions"]["deny"]
-        for rule in ("Edit(**/corrections.md)", "Edit(**/roster.confirmed.md)", "Edit(/house/**)"):
+        for rule in ("Edit(**/corrections.md)", "Edit(**/roster.confirmed.md)", "Edit(**/notes.md)",
+                     "Edit(/areas/**/human/**)"):
             self.assertIn(rule, deny)
+        self.assertNotIn("Edit(/house/**)", deny)
+        self.assertIn("Edit(/house/**)", self.data["permissions"]["ask"], "house/ asks the lawyer first")
         for rule in deny:
             self.assertNotRegex(rule, r"^(Write|MultiEdit|NotebookEdit)\(", "path rules for these never match")
 

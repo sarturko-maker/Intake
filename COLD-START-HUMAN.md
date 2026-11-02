@@ -11,7 +11,7 @@ One page. Half an hour.
 
 - `house/brief.md`: legal names and entities, the email domains that count as "us", the addresses of the legal team and the shared legal mailbox, timezone, who legal acts for, where signing authority and approval limits are written down, the tone for drafts. Prompts are in the file.
 - `house/areas.md`: your practice areas. For each: key, name, what you call a unit of work there, a sentence on what belongs in it, sub-areas if any (customers, suppliers, partners), what names a subject folder (counterparty, project code name, programme), and example request types. Defaults are filled in; change them freely.
-- When a file is done, change `status: template` at the top to `status: ready`. Only you edit these two files.
+- When a file is done, change `status: template` at the top to `status: ready`. These two files are yours, and they are never sent to GitHub. Claude can help you fill them in: it shows each change and writes it only after you say yes (Claude Code also asks for permission).
 
 ## 3. Put company facts into `knowledge/`
 
