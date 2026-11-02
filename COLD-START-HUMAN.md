@@ -33,6 +33,8 @@ Treat `standard-answers/` as the most sensitive folder and set its permissions a
 
 Say "cold start". It asks once before it installs anything. From then on, "process the inbox".
 
+Then teach it how you work, one type of work at a time: say "interview me about NDAs" and dictate your answers. About 15 minutes each. It asks open questions first, reads back every number and name, then shows where your answers differ from what the emails show and asks you to settle each point. Memory is fallible, so your answers are kept as dated statements; nothing becomes a skill until you approve the read-back and then the draft ("draft a skill for NDA review").
+
 ## 6. Where to look
 
 - `digests/LATEST.md`: what came in, what was proposed, up to five questions, and "what you should do next".

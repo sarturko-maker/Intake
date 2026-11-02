@@ -40,4 +40,4 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 
 ## 7. Report
 18. Five lines or fewer: tools found, installed or blocked, with fallbacks; what was created; what was indexed; what needs an owner or date; where to look (digests/LATEST.md, INDEX.md, inbox/please-check/).
-19. Tell the lawyer what to do next: answer any open question above; read and approve the draft playbook.md and intake.md per area (say "approve the commercial playbook" or what to change); drop emails into inbox/ and say "process the inbox".
+19. Tell the lawyer what to do next: answer any open question above; read and approve the draft playbook.md and intake.md per area (say "approve the commercial playbook" or what to change); with no approved legal skills yet, start the interviews, most frequent work type first ("interview me about <type>"), then "draft a skill for <type>"; drop emails into inbox/ and say "process the inbox".

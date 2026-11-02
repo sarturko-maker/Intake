@@ -17,8 +17,9 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - closed matters of this kind: INDEX.csv rows with status closed and a matching label, and `grep -rl --include=matter.md 'controlling_skill: <name>' areas`; their closing notes and decision facts;
    - seeds/: leads only, never truth;
    - skills/POINTERS.md: shape and checklists only; nothing from it becomes a position without the lawyer;
-   - areas/<area>/playbook.md and intake.md.
-4. Interview: at most eight questions, one or two at a time. Before each, show in one line what the sources say, with the source, so the lawyer can confirm or correct it. Skip what is already answered.
+   - areas/<area>/playbook.md and intake.md;
+   - seeds/interviews/*<topic>*.notes.md: confirmed interview statements only (interview skill).
+4. Interview: at most eight questions, one or two at a time, only on what the interview notes and sources leave open (no notes yet: suggest "interview me about <topic>" first). Ask the open question first; then show in one line what the sources say, with the source, so the lawyer can confirm or correct it. Skip what is already answered.
    1. When does this kind of request come in, and from whom?
    2. What do you check first?
    3. What do you never accept?
@@ -28,7 +29,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    7. How do you phrase the reply?
    8. Tell me about one that went badly.
    A seed that contradicts knowledge or an answer: say so and ask. The lawyer's answer wins.
-5. Draft from skills/operations/draft-skill/templates/skill-template.md into the path: `status: draft`, `version: 0`, description starting "DRAFT, not yet approved.". Every position line ends with its source: (interview <date>), (knowledge/<file>), (matter <REF>) or (seed (lead, unverified)). No source, no line. No party names or identifying figures: cite references.
+5. Draft from skills/operations/draft-skill/templates/skill-template.md into the path: `status: draft`, `version: 0`, description starting "DRAFT, not yet approved.". Every position line ends with its source: (interview <date>, S<nn>), (knowledge/<file>), (matter <REF>) or (seed (lead, unverified)). Where the interview and the evidence differ, the lawyer's recorded choice decides the line; the exceptions go under 'How it has gone' with their context. No source, no line. No party names or identifying figures: cite references.
 6. Show the draft: the path and each section in brief. Ask: "Approve, or tell me what to change?" Apply changes. A line resting on a seed alone is confirmed by the lawyer or removed before approval.
 7. On "approve": `status: approved`, `version: 1`, `last_reviewed: <today>`, `supporting_matters: <REF, REF>`, description without the DRAFT prefix. Add the skill to 'Which skill controls which document' in areas/<area>/playbook.md. `bash tools/skills-sync`, then `bash tools/skills-sync --check` (exit 0).
 8. Answers that are company facts not yet in knowledge/ (a position, an approval limit): offer the knowledge confirm flow (close skill, step 8).
