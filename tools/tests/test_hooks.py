@@ -211,6 +211,10 @@ class BeforeWriteRefusalTest(HookCase):
         self.assertRefused(p, self.rel(p))
         self.assertFalse((self.matter / "history").exists() and any((self.matter / "history").iterdir()))
 
+    def test_any_file_in_a_matters_human_folder(self):
+        p = self.matter / "human" / "call-note.md"
+        self.assertRefused(p, self.rel(p))
+
     def test_roster_confirmed_md(self):
         p = self.matter / "roster.confirmed.md"
         self.assertRefused(p, self.rel(p))

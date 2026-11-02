@@ -164,27 +164,27 @@ class IndexRebuildTest(unittest.TestCase):
         meta = self.ws.meta(self.m["B"])
         self.assertEqual((meta["confirmed_outcome"], meta["confirmed_by"], meta["lawyer_minutes"],
                           meta["accepted_unchanged"]), ("ready_for_lawyer", "you", "25", "no"))
-        hist = list((self.m["B"] / "history").glob("matter.*.md"))
+        hist = list((self.m["B"] / "agent" / "history").glob("matter.*.md"))
         self.assertEqual(len(hist), 1, "one history copy before the frontmatter change")
         row = self.rows()["2026-0002"]
         self.assertEqual((row["confirmed_outcome"], row["lawyer_minutes"], row["accepted_unchanged"]),
                          ("ready_for_lawyer", "25", "no"))
         self.assertEqual(self.journal().count("human-edit-applied | 2026-0002"), 4)
-        self.assertIn("lawyer columns updated in INDEX.csv", (self.m["B"] / "log.md").read_text())
+        self.assertIn("lawyer columns updated in INDEX.csv", (self.m["B"] / "agent" / "log.md").read_text())
         again = self.rebuild()
         self.assertNotIn("applied:", again.stdout, "nothing to apply on an unedited index")
-        self.assertEqual(len(list((self.m["B"] / "history").glob("matter.*.md"))), 1)
+        self.assertEqual(len(list((self.m["B"] / "agent" / "history").glob("matter.*.md"))), 1)
         self.edit({"2026-0002": {"lawyer_minutes": ""}})
         self.rebuild()
         self.assertEqual(self.ws.meta(self.m["B"])["lawyer_minutes"], "", "a cleared cell clears the value")
 
     def test_value_already_in_matter_md_is_not_applied_again(self):
         self.rebuild()
-        common.update_frontmatter_file(self.m["B"] / "matter.md", {"lawyer_minutes": "25"}, history=False)
+        common.update_frontmatter_file(self.m["B"] / "agent" / "matter.md", {"lawyer_minutes": "25"}, history=False)
         self.edit({"2026-0002": {"lawyer_minutes": "25", "confirmed_by": "you"}})
         r = self.rebuild()
         applied = [x for x in r.stdout.splitlines() if x.startswith("applied:")]
-        self.assertEqual(applied, ["applied: 2026-0002 confirmed_by = you (%s/matter.md)" % self.ws.rel(self.m["B"])])
+        self.assertEqual(applied, ["applied: 2026-0002 confirmed_by = you (%s/agent/matter.md)" % self.ws.rel(self.m["B"])])
         self.assertNotIn("2026-0002 lawyer_minutes", self.journal())
 
     def test_closed_typed_in_csv(self):
@@ -197,7 +197,7 @@ class IndexRebuildTest(unittest.TestCase):
         self.assertEqual((meta["status"], meta["closed"]), ("closed", TODAY))
         self.assertIn("wrap-up-pending", [f.strip() for f in meta["flags"].split(",")])
         self.assertIn("| closed-by-lawyer | 2026-0001 |", self.journal())
-        self.assertIn("closed by the lawyer in INDEX.csv", (self.m["A"] / "log.md").read_text())
+        self.assertIn("closed by the lawyer in INDEX.csv", (self.m["A"] / "agent" / "log.md").read_text())
         row = self.rows()["2026-0001"]
         self.assertEqual((row["status"], row["days_open"]), ("closed", "20"))
         closed_part = self.ws.read("INDEX.md").split("## Closed in the last 30 days")[1]
@@ -206,7 +206,7 @@ class IndexRebuildTest(unittest.TestCase):
         self.assertNotIn("closed-by-lawyer", again.stdout, "reported once")
 
     def test_closing_keeps_other_flags(self):
-        common.update_frontmatter_file(self.m["A"] / "matter.md", {"flags": "personal-address"}, history=False)
+        common.update_frontmatter_file(self.m["A"] / "agent" / "matter.md", {"flags": "personal-address"}, history=False)
         self.rebuild()
         self.edit({"2026-0001": {"status": "closed"}})
         self.rebuild()
@@ -276,7 +276,7 @@ class IndexRebuildTest(unittest.TestCase):
 
     def test_agent_owned_edits_are_ignored_with_a_warning(self):
         self.rebuild()
-        before = (self.m["B"] / "matter.md").read_text()
+        before = (self.m["B"] / "agent" / "matter.md").read_text()
         self.edit({"2026-0002": {"next_step": "Chase Acme today", "status": "open"},
                    "NOISE-0002": {"label": "event"}})
         r = self.rebuild()
@@ -284,7 +284,7 @@ class IndexRebuildTest(unittest.TestCase):
         self.assertIn("warning: 2026-0002: column next_step is kept by the agent; say it in chat instead", r.stdout)
         self.assertIn("warning: 2026-0002: column status is kept by the agent; say it in chat instead", r.stdout)
         self.assertIn("warning: NOISE-0002: column label is kept by the agent; say it in chat instead", r.stdout)
-        self.assertEqual((self.m["B"] / "matter.md").read_text(), before)
+        self.assertEqual((self.m["B"] / "agent" / "matter.md").read_text(), before)
         self.assertEqual(self.rows()["2026-0002"]["next_step"], "Wait for the reply on the cap")
 
     def test_excel_reformatting_is_not_an_edit(self):
@@ -298,7 +298,7 @@ class IndexRebuildTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout)
         self.assertNotIn("warning:", r.stdout)
         applied = [x for x in r.stdout.splitlines() if x.startswith("applied:")]
-        self.assertEqual(applied, ["applied: 2026-0001 lawyer_minutes = 12 (%s/matter.md)" % self.ws.rel(self.m["A"])])
+        self.assertEqual(applied, ["applied: 2026-0001 lawyer_minutes = 12 (%s/agent/matter.md)" % self.ws.rel(self.m["A"])])
         self.assertEqual(self.ws.meta(self.m["E"])["title"], "Vollmacht für die GmbH: wer zeichnet")
 
     def test_rows_added_or_deleted_in_csv_are_ignored(self):
@@ -318,8 +318,8 @@ class IndexRebuildTest(unittest.TestCase):
         self.edit({"2026-0001": {"status": "closed"}, "2026-0002": {"lawyer_minutes": "30"},
                    "NOISE-0001": {"status": "closed"}})
         index_before = (self.ws.root / "INDEX.csv").read_bytes()
-        a_before = (self.m["A"] / "matter.md").read_text()
-        b_before = (self.m["B"] / "matter.md").read_text()
+        a_before = (self.m["A"] / "agent" / "matter.md").read_text()
+        b_before = (self.m["B"] / "agent" / "matter.md").read_text()
         md_before = self.ws.read("INDEX.md")
         r = self.rebuild("--no-apply")
         self.assertEqual(r.returncode, 0, r.stdout)
@@ -328,8 +328,8 @@ class IndexRebuildTest(unittest.TestCase):
         self.assertIn("would confirm NOISE-0001", r.stdout)
         self.assertIn("nothing written: --no-apply", r.stdout)
         self.assertEqual((self.ws.root / "INDEX.csv").read_bytes(), index_before)
-        self.assertEqual((self.m["A"] / "matter.md").read_text(), a_before)
-        self.assertEqual((self.m["B"] / "matter.md").read_text(), b_before)
+        self.assertEqual((self.m["A"] / "agent" / "matter.md").read_text(), a_before)
+        self.assertEqual((self.m["B"] / "agent" / "matter.md").read_text(), b_before)
         self.assertEqual(self.ws.read("INDEX.md"), md_before)
         self.assertTrue((self.ws.root / "inbox" / "noise" / NOISE1).exists())
         self.assertNotIn("human-edit-applied", self.journal())
@@ -386,19 +386,19 @@ class IndexRebuildTest(unittest.TestCase):
                              title="", opened="")
         mismatch = ws.make_matter("2026-0008", "commercial", "volta-rail", "rfq", sub_area="customers",
                                   title="Volta RFQ")
-        common.update_frontmatter_file(mismatch / "matter.md", {"reference": "2026-0009"}, history=False)
+        common.update_frontmatter_file(mismatch / "agent" / "matter.md", {"reference": "2026-0009"}, history=False)
         r = self.rebuild()
         self.assertEqual(r.returncode, 1, r.stdout)
         self.assertRegex(r.stdout, r"integrity: duplicate reference 2026-0002: areas/.*acme-automotive.*; areas/.*halden-water")
-        self.assertIn("integrity: %s/matter.md: missing title, opened" % ws.rel(bad), r.stdout)
+        self.assertIn("integrity: %s/agent/matter.md: missing title, opened" % ws.rel(bad), r.stdout)
         self.assertIn("integrity: %s: folder name does not start with its reference 2026-0009" % ws.rel(mismatch),
                       r.stdout)
         self.assertTrue((ws.root / "INDEX.csv").exists(), "the index is still written")
 
     def test_folder_without_reference_is_reported(self):
         d = self.ws.root / "areas" / "commercial" / "customers" / "acme-automotive" / "acme-loose-folder"
-        d.mkdir(parents=True)
-        (d / "matter.md").write_text("---\nreference: 2026-0010\nkind: matter\narea: commercial\nsubject: acme-automotive\n"
+        (d / "agent").mkdir(parents=True)
+        (d / "agent" / "matter.md").write_text("---\nreference: 2026-0010\nkind: matter\narea: commercial\nsubject: acme-automotive\n"
                                      "title: Loose\nstatus: open\nopened: 2026-10-30\n---\n", encoding="utf-8")
         r = self.rebuild()
         self.assertEqual(r.returncode, 1)
@@ -408,12 +408,12 @@ class IndexRebuildTest(unittest.TestCase):
 
     def test_measures(self):
         ws = self.ws
-        common.update_frontmatter_file(self.m["C"] / "matter.md", {"lawyer_minutes": "45"}, history=False)
-        common.update_frontmatter_file(self.m["A"] / "matter.md",
+        common.update_frontmatter_file(self.m["C"] / "agent" / "matter.md", {"lawyer_minutes": "45"}, history=False)
+        common.update_frontmatter_file(self.m["A"] / "agent" / "matter.md",
                                        {"status": "closed", "closed": "2026-10-20", "lawyer_minutes": "15",
                                         "confirmed_outcome": "nothing_needed", "accepted_unchanged": "yes"},
                                        history=False)
-        common.update_frontmatter_file(self.m["B"] / "matter.md",
+        common.update_frontmatter_file(self.m["B"] / "agent" / "matter.md",
                                        {"accepted_unchanged": "no", "confirmed_outcome": "in_progress",
                                         "lawyer_minutes": "500"}, history=False)
         r = self.rebuild("--json")
@@ -494,7 +494,7 @@ class IndexRebuildTest(unittest.TestCase):
         self.assertIn("INDEX.csv", data["written"])
 
     def test_closed_without_closed_date_uses_last_activity(self):
-        common.update_frontmatter_file(self.m["C"] / "matter.md", {"closed": ""}, history=False)
+        common.update_frontmatter_file(self.m["C"] / "agent" / "matter.md", {"closed": ""}, history=False)
         self.rebuild()
         self.assertEqual(self.rows()["2026-0003"]["days_open"], "2")
 

@@ -13,10 +13,10 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 
 1. Folder: the `folder` of REF's row in INDEX.csv, or `find areas -type d -name '<REF>_*' -not -path '*/history/*'`. None: say so and stop.
 2. `bash tools/budget-update --mode`: minimal or paused → stop; tell the lawyer the checkpoint waits for budget.
-3. Files with no documents.md row in correspondence/, documents/ or work-product/ (not bundle-*): `bash tools/place-email --register <path> --run <R>` each.
+3. `bash tools/matter-sync <REF> --run <R>`: registers any file not yet recorded, in agent/ or human/.
 4. Follows links: this matter's `follows:`, and the INDEX.csv rows whose `follows` column is REF.
 5. Dispatch the distiller, call 1, with R, mode, REF, folder, the follows links and "checkpoint". It:
-   a. re-reads the matter from the start: matter.md, brief.md, every facts.md line (superseded too), log.md, documents.md, corrections.md, both rosters, correspondence oldest first, work-product/, subject.md, the controlling skill;
+   a. re-reads the matter from the start: matter.md, brief.md, every facts.md line (superseded too), log.md, documents.md, corrections.md, both rosters, correspondence oldest first, the files in human/, subject.md, the controlling skill;
    b. records new files (documents.md read and summary, log line);
    c. rewrites matter.md whole by the matter-memory skill, adding `### Checkpoint <today>` under '## Closing note': the phase reached, what was decided and why, what is still open, what comes next; every claim with a pointer; earlier checkpoints condensed, never dropped;
    d. rewrites subject.md: this matter's line under Matters (status, one line); 'Standing positions agreed before' (agreed so far, with pointers); 'What usually follows what' with each follows link ("NDA 2026-0036, then MSA 2026-0042");

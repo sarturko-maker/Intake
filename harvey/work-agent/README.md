@@ -12,11 +12,11 @@ The agent takes one matter's Harvey pack and does the work the brief asks for. E
 
 ## Each matter
 
-1. In Claude Code's task summary, click the matter's **Harvey pack** link. It opens the matter's `work-product/<reference>_harvey-pack/` folder, which is kept up to date after every run.
+1. In Claude Code's task summary, click the matter's **Harvey pack** link. It opens the matter's `agent/<reference>_harvey-pack/` folder, which is kept up to date after every run.
 2. Open the agent in Harvey and drop in all the files from that folder. Keep the subfolders if Harvey allows; otherwise the file names are enough.
    - Harvey takes at most 50 files per upload. If a pack is bigger, the task summary says so: drop the main files first (brief, skill, corrections, notes, matter, the latest emails and documents).
 3. Optionally type a line to narrow the task, for example "just the reply" or "focus on the liability clause". Then run it.
-4. Download what comes back into the matter's `work-product/` folder, not into the pack folder. The pack is rebuilt whenever the matter changes; anything saved there is moved out, but it is cleaner to save in the right place first.
+4. Download what comes back into the matter's `human/` folder, not into the pack folder. The pack is rebuilt whenever the matter changes; anything saved there is moved out, but it is cleaner to save in the right place first.
 5. On the next "process the inbox" or "where are we", Claude Code records the deliverables, updates the brief, and links them in the task summary.
 6. Send the reply yourself from Outlook, then drop your sent email into `inbox/`. The system notes whether it went as drafted.
 

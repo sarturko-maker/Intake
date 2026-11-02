@@ -18,9 +18,9 @@ R = the open run's id when intake or status calls this skill; else `TZ=<timezone
 4. `bash tools/budget-update --mode`: minimal or paused → stop here. Tell the lawyer the wrap-up waits for budget; wrap-up-pending stays.
 
 ## Wrap-up
-5. Files with no documents.md row in correspondence/, documents/ or work-product/ (not bundle-*): `bash tools/place-email --register <path> --run <R>` each.
+5. `bash tools/matter-sync <REF> --run <R>`: registers any file not yet recorded, in agent/ or human/.
 6. Dispatch the distiller, call 1, with R, mode, REF, folder and "close". It:
-   a. re-reads the matter from the start: matter.md, brief.md, every facts.md line (superseded too), log.md, documents.md, corrections.md, both rosters, correspondence oldest first, work-product/, subject.md, the controlling skill;
+   a. re-reads the matter from the start: matter.md, brief.md, every facts.md line (superseded too), log.md, documents.md, corrections.md, both rosters, correspondence oldest first, the files in human/, subject.md, the controlling skill;
    b. records new files (documents.md read and summary, log line);
    c. rewrites matter.md whole by the matter-memory skill, with '## Closing note': the outcome, what was decided and why, what we conceded, what to remember next time; every claim with a pointer;
    d. rewrites subject.md: this matter's line under Matters (closed, one line); 'Standing positions agreed before' (agreed here, with pointers); 'What usually follows what' from follows links ("NDA 2026-0036, then MSA 2026-0042");

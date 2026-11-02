@@ -1,6 +1,6 @@
 ---
 name: reader
-description: "Reads one matter and writes its memory: after filing (/intake step 6), after a new work-product or hand-placed file, or for a consistency pass when corrections.md or roster.confirmed.md changed. Writes brief.md, matter.md, facts, roster, documents.md read and summary, log, subject.md and the proposed outcome. One matter per call."
+description: "Reads one matter and writes its memory: after filing (/intake step 6), after a file the lawyer added or changed (human/ or agent/), or for a consistency pass when corrections.md or roster.confirmed.md changed. Writes brief.md, matter.md, facts, roster, documents.md read and summary, log, subject.md and the proposed outcome. One matter per call."
 tools: Read, Grep, Glob, Bash, Write, Edit
 model: sonnet
 ---
@@ -15,7 +15,7 @@ You are the reader. You read one matter and keep its memory true to its files. Y
 
 ## Input
 - `run`, `mode` (full, lean, minimal), `folder` (the matter), `new` (new files, workspace-relative), `reopen` (yes or no).
-- `why`: new mail (default), work product (a new file in work-product/ or put in by hand), or consistency pass (corrections.md, notes.md or roster.confirmed.md changed). A new email from legal that matches a draft in drafts/: log "sent as drafted" or "sent with changes: <one line>", and propose accepted_unchanged in the brief.
+- `why`: new mail (default), lawyer's files (new or changed files in human/, files put into agent/ by hand, edits to agent/ files: keep the lawyer's change), or consistency pass (corrections.md, notes.md or roster.confirmed.md changed). A new email from legal that matches a draft in drafts/: log "sent as drafted" or "sent with changes: <one line>", and propose accepted_unchanged in the brief.
 - `filing flags` from the filer: personal-address and the address, out-of-area and the suggested home, general-flagged, proposed-sub-area:<name>, sensitive and its label, cross-refs.
 
 ## Scope
@@ -54,7 +54,7 @@ Write or Edit only, never shell redirection, `tee`, `sed -i`, `cp` or `mv` on a 
 6. subject.md: Write, whole, only when the party's picture or this matter's line under Matters changed. Pointers name the matter: `(2026-0042 matter.md)`.
 7. log.md: Edit, append: `YYYY-MM-DD HH:MM | <event> | <source file or -> | <run>`.
 8. Knowledge the brief or a draft relies on: `cp` it into documents/reference/ (never change it), then `bash tools/place-email --register <path> --run RUN`.
-Never write corrections.md, notes.md, roster.confirmed.md, house/, JOURNAL.md or WORKFLOW-LOG.md.
+Never write in the matter's human/ folder (corrections.md, notes.md, roster.confirmed.md and the lawyer's files), house/, JOURNAL.md or WORKFLOW-LOG.md. Your files are in agent/; paths in them are relative to agent/.
 
 ## Frontmatter (matter.md)
 - Set: title (never when `title_locked: yes`), label, status, proposed_outcome, waiting_on, next_step, due, requester, counterparty, arrived, ready_at, last_activity, controlling_skill, flags (keep flags you did not set).

@@ -3,22 +3,22 @@
 # Usage: bash tools/work-bundle <REF|MATTER_FOLDER> [--skill NAME] [--date YYYY-MM-DD] [--quiet]
 #        bash tools/work-bundle --all [--force]
 #   REF|MATTER_FOLDER  the matter: reference (2026-0042) or folder path
-#   (default)          refresh the matter's Harvey pack: <matter>/work-product/<REF>_harvey-pack/, replaced in full
-#   --date D           write a dated snapshot instead: <matter>/work-product/bundle-<date>/ (-2, -3 for a second that day)
+#   (default)          refresh the matter's Harvey pack: <matter>/agent/<REF>_harvey-pack/, replaced in full
+#   --date D           write a dated snapshot instead: <matter>/agent/bundle-<date>/ (-2, -3 for a second that day)
 #   --skill NAME       controlling skill to include (default: controlling_skill in matter.md)
 #   --all              refresh the pack of every open matter whose files changed since its pack was built
 #   --force            with --all: rebuild every open matter's pack
 #   --quiet            one line of output
-# Files a person saved inside a pack are moved to work-product/ before the pack is replaced, never lost.
+# Files a person saved inside a pack are moved to the matter's human/ folder before the pack is replaced, never lost.
 # The pack (or snapshot) holds exactly: brief.md, matter.md, facts-live.md (live facts view),
-#   subject.md, roster.md, roster.confirmed.md, corrections.md, notes.md, correspondence/, documents/received/,
+#   subject.md, roster.md, roster.confirmed.md, corrections.md, notes.md, correspondence/, documents/received/, human/ (the lawyer's other files),
 #   documents/ours/, skill.md (the controlling skill's SKILL.md), intake.md (the area's).
 # Never other subjects, history/ or the knowledge base. A missing piece is left out with a warning.
 # Prints the path, the file count and the upload notes. Warns over 50 files, or any file over 500 MB.
 # Bash; Python only for the live facts view (bash tools/lint-facts FILE --live), awk when Python is missing.
 # Exit: 0 ok, 1 findings or check failed, 2 usage error.
 # Fallback without this script: create the bundle folder by hand and copy the list above; write facts-live.md as the facts.md lines no later line supersedes.
-FALLBACK="create work-product/bundle-<date>/ by hand and copy the files listed above; facts-live.md holds the facts.md lines that no later line supersedes."
+FALLBACK="create agent/<REF>_harvey-pack/ by hand and copy the files listed above; facts-live.md holds the facts.md lines that no later line supersedes."
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
 set -u
@@ -58,22 +58,23 @@ if [ "$ALL" = 1 ]; then
   if [ -d "$ROOT/areas" ]; then
     while IFS= read -r mf; do
       [ -n "$mf" ] || continue
-      d="$(dirname "$mf")"
-      case "$d" in */history/*|*/work-product/*) continue ;; esac
+      d="$(dirname "$(dirname "$mf")")"
+      case "$d" in */history/*|*/agent/*|*/human/*) continue ;; esac
       st="$(awk '{ sub(/\r$/, "") } NR == 1 && $0 != "---" { exit } NR > 1 && /^---/ { exit } /^status:/ { sub(/^status:[ \t]*/, ""); print; exit }' "$mf")"
       [ "$st" = "closed" ] && continue
       ref="${d##*/}"; ref="${ref%%_*}"
-      stamp="$d/work-product/${ref}_harvey-pack/.stamp"
+      stamp="$d/agent/${ref}_harvey-pack/.stamp"
       if [ "$FORCE" = 0 ] && [ -f "$stamp" ]; then
         area_key="$(awk '{ sub(/\r$/, "") } /^area:/ { sub(/^area:[ \t]*/, ""); print; exit }' "$mf")"
-        newer="$(find "$d" -path "$d/work-product" -prune -o -path "$d/history" -prune -o -path "$d/drafts" -prune \
-                   -o \( -type f -o -type d \) -newer "$stamp" -print 2>/dev/null | head -n 1)"
+        newer="$(find "$d" -path "$d/agent/${ref}_harvey-pack" -prune -o -path "$d/agent/history" -prune \
+                   -o -path "$d/agent/drafts" -prune -o -path "$d/agent/bundle-*" -prune -o -path "$d/agent/.*" -prune \
+                   -o -name START-HERE.md -prune -o \( -type f -o -type d \) -newer "$stamp" -print 2>/dev/null | head -n 1)"
         [ -z "$newer" ] && [ -f "$(dirname "$d")/subject.md" ] && [ "$(dirname "$d")/subject.md" -nt "$stamp" ] && newer=subject
         [ -z "$newer" ] && [ -n "$area_key" ] && [ -f "$ROOT/areas/$area_key/intake.md" ] && [ "$ROOT/areas/$area_key/intake.md" -nt "$stamp" ] && newer=intake
         if [ -z "$newer" ]; then skipped=$((skipped + 1)); continue; fi
       fi
       if bash "${BASH_SOURCE[0]}" "$d" --quiet; then refreshed=$((refreshed + 1)); else failed=$((failed + 1)); fi
-    done <<< "$(find "$ROOT/areas" -name matter.md -type f 2>/dev/null | sort)"
+    done <<< "$(find "$ROOT/areas" -path '*/agent/matter.md' -type f 2>/dev/null | sort)"
   fi
   echo "Harvey packs: $refreshed refreshed, $skipped unchanged, $failed failed."
   [ "$failed" = 0 ] || exit 1
@@ -107,8 +108,8 @@ if [[ $TARGET =~ $REF_RE ]]; then
   found=""
   if [ -d "$ROOT/areas" ]; then
     while IFS= read -r d; do
-      case "$d" in */history/*|*/work-product/*) continue ;; esac
-      [ -f "$d/matter.md" ] || continue
+      case "$d" in */history/*|*/agent/*|*/human/*) continue ;; esac
+      [ -f "$d/agent/matter.md" ] || continue
       if [ -n "$found" ]; then usage "two folders carry $TARGET: ${found#$ROOT/} and ${d#$ROOT/}; fix the duplicate first"; fi
       found="$d"
     done <<< "$(find "$ROOT/areas" -type d -name "${TARGET}_*" 2>/dev/null)"
@@ -117,15 +118,15 @@ if [[ $TARGET =~ $REF_RE ]]; then
   M="$found"
 else
   for cand in "$TARGET" "$ROOT/$TARGET"; do
-    if [ -f "$cand/matter.md" ]; then M="$(cd "$cand" && pwd -P)"; break; fi
+    if [ -f "$cand/agent/matter.md" ]; then M="$(cd "$cand" && pwd -P)"; break; fi
   done
-  [ -n "$M" ] || usage "not a matter folder (no matter.md): $TARGET"
+  [ -n "$M" ] || usage "not a matter folder (no agent/matter.md): $TARGET"
 fi
 M_REL="${M#$ROOT/}"
-REF="$(fm_get "$M/matter.md" reference)"
+REF="$(fm_get "$M/agent/matter.md" reference)"
 [ -n "$REF" ] || REF="${M##*/}"
 SUBJ_DIR="$(dirname "$M")"
-AREA="$(fm_get "$M/matter.md" area)"
+AREA="$(fm_get "$M/agent/matter.md" area)"
 if [ -z "$AREA" ]; then
   case "$M_REL" in areas/*) AREA="${M_REL#areas/}"; AREA="${AREA%%/*}" ;; esac
 fi
@@ -146,7 +147,7 @@ fi
 
 EXPLICIT=1
 if [ -z "$SKILL" ]; then
-  SKILL="$(fm_get "$M/matter.md" controlling_skill)"
+  SKILL="$(fm_get "$M/agent/matter.md" controlling_skill)"
   EXPLICIT=0
 fi
 SKILL_FILE=""
@@ -190,21 +191,22 @@ facts_live_awk() {
 
 # ---------------------------------------------------------------- write the bundle
 if [ "$SNAPSHOT" = 1 ]; then
-  B="$M/work-product/bundle-$DATE"
+  B="$M/agent/bundle-$DATE"
   n=2
-  while [ -e "$B" ]; do B="$M/work-product/bundle-$DATE-$n"; n=$((n + 1)); done
+  while [ -e "$B" ]; do B="$M/agent/bundle-$DATE-$n"; n=$((n + 1)); done
   FINAL="$B"
 else
-  FINAL="$M/work-product/${REF}_harvey-pack"
-  B="$M/work-product/.${REF}_harvey-pack.tmp$$"
+  FINAL="$M/agent/${REF}_harvey-pack"
+  B="$M/agent/.${REF}_harvey-pack.tmp$$"
   rm -rf "$B"
-  # Anything a person saved inside the old pack (newer than its stamp) is moved to work-product/ first.
+  # Anything a person saved inside the old pack (newer than its stamp) is moved to human/ first.
   if [ -d "$FINAL" ] && [ -f "$FINAL/.stamp" ]; then
     while IFS= read -r f; do
       [ -n "$f" ] || continue
-      dest="$M/work-product/${f##*/}"
-      k=2; while [ -e "$dest" ]; do dest="$M/work-product/${f##*/}-$k"; k=$((k + 1)); done
-      mv "$f" "$dest" && warn "moved ${f#$M/} out of the pack to ${dest#$M/}: save deliverables in work-product/, not in the pack"
+      mkdir -p "$M/human"
+      dest="$M/human/${f##*/}"
+      k=2; while [ -e "$dest" ]; do dest="$M/human/${f##*/}-$k"; k=$((k + 1)); done
+      mv "$f" "$dest" && warn "moved ${f#$M/} out of the pack to ${dest#$M/}: save deliverables in human/, not in the pack"
     done <<< "$(find "$FINAL" -type f ! -name .stamp -newer "$FINAL/.stamp" 2>/dev/null)"
   fi
 fi
@@ -226,10 +228,10 @@ copy_dir() {  # source dir, relative dir in bundle
   done
 }
 
-copy_file "$M/brief.md" brief.md "brief.md"
-copy_file "$M/matter.md" matter.md "matter.md"
+copy_file "$M/agent/brief.md" brief.md "brief.md"
+copy_file "$M/agent/matter.md" matter.md "matter.md"
 
-FACTS="$M/facts.md"
+FACTS="$M/agent/facts.md"
 if [ -f "$FACTS" ]; then
   live="$(bash "$here/lint-facts" "$FACTS" --live 2>/dev/null)"
   rc=$?
@@ -250,13 +252,18 @@ else
 fi
 
 copy_file "$SUBJ_DIR/subject.md" subject.md "subject.md"
-copy_file "$M/roster.md" roster.md "roster.md"
-copy_file "$M/roster.confirmed.md" roster.confirmed.md "roster.confirmed.md"
-copy_file "$M/corrections.md" corrections.md "corrections.md"
-copy_file "$M/notes.md" notes.md "notes.md"
-copy_dir "$M/correspondence" correspondence
-copy_dir "$M/documents/received" documents/received
-copy_dir "$M/documents/ours" documents/ours
+copy_file "$M/agent/roster.md" roster.md "roster.md"
+copy_file "$M/human/roster.confirmed.md" roster.confirmed.md "roster.confirmed.md"
+copy_file "$M/human/corrections.md" corrections.md "corrections.md"
+copy_file "$M/human/notes.md" notes.md "notes.md"
+copy_dir "$M/agent/correspondence" correspondence
+copy_dir "$M/agent/documents/received" documents/received
+copy_dir "$M/agent/documents/ours" documents/ours
+# the lawyer's other files (the three above are already at the top)
+if [ -d "$M/human" ] && [ -n "$(find "$M/human" -type f ! -name notes.md ! -name corrections.md ! -name roster.confirmed.md ! -name .gitkeep 2>/dev/null | head -n 1)" ]; then
+  copy_dir "$M/human" human
+  rm -f "$B/human/notes.md" "$B/human/corrections.md" "$B/human/roster.confirmed.md"
+fi
 
 if [ -n "$SKILL_FILE" ]; then
   cp -p "$SKILL_FILE" "$B/skill.md"
@@ -298,7 +305,7 @@ echo "Files: $COUNT"
 echo "Upload notes (Harvey; Legora or another tool works the same way):"
 echo "- Upload the bundle folder to a Vault for this matter: at most 50 files per upload, 500 MB per file."
 echo "- Paste brief.md as the task."
-echo "- Put the deliverables back into $M_REL/work-product/, not into the bundle folder (a pack is replaced whenever the matter changes)."
+echo "- Put the deliverables into $M_REL/human/, not into the pack folder (a pack is replaced whenever the matter changes)."
 if [ "$COUNT" -gt 50 ]; then
   warn "$COUNT files: more than 50, so upload in $(( (COUNT + 49) / 50 )) batches of at most 50"
 fi

@@ -268,13 +268,13 @@ class LintReceivedTest(unittest.TestCase):
             self.row("Acme_MSA_v1 (1).docx", "documents/received", self.doc, dup="Acme_MSA_v1.docx"),
         ]
         for r in rows:
-            common.append_line(self.m / "documents.md", r)
+            common.append_line(self.m / "agent" / "documents.md", r)
 
     def tearDown(self):
         self.ws.cleanup()
 
     def put(self, relp, data, matter=None):
-        p = (matter or self.m) / relp
+        p = (matter or self.m) / "agent" / relp
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(data)
         return p
@@ -297,7 +297,7 @@ class LintReceivedTest(unittest.TestCase):
         self.doc.write_bytes(b"PK\x03\x04 edited")
         r = self.lint()
         self.assertEqual(r.returncode, 1)
-        self.assertIn("changed: %s/documents/received/Acme_MSA_v1.docx" % self.ws.rel(self.m), r.stdout)
+        self.assertIn("changed: %s/agent/documents/received/Acme_MSA_v1.docx" % self.ws.rel(self.m), r.stdout)
 
     def test_changed_msg_original(self):
         self.msg.write_bytes(b"\xd0\xcf\x11\xe0 resaved")
@@ -310,18 +310,18 @@ class LintReceivedTest(unittest.TestCase):
         self.eml.unlink()
         r = self.lint()
         self.assertEqual(r.returncode, 1)
-        self.assertIn("missing: %s/correspondence/2026-10-15_0847_in_jschmidt_acme-msa.eml" % self.ws.rel(self.m),
+        self.assertIn("missing: %s/agent/correspondence/2026-10-15_0847_in_jschmidt_acme-msa.eml" % self.ws.rel(self.m),
                       r.stdout)
 
     def test_file_without_row(self):
         self.put("documents/received/dropped-by-hand.pdf", b"%PDF-1.4")
         r = self.lint()
         self.assertEqual(r.returncode, 1)
-        self.assertIn("no row: %s/documents/received/dropped-by-hand.pdf" % self.ws.rel(self.m), r.stdout)
+        self.assertIn("no row: %s/agent/documents/received/dropped-by-hand.pdf" % self.ws.rel(self.m), r.stdout)
 
     def test_row_without_hash(self):
         p = self.put("documents/received/nohash.pdf", b"%PDF")
-        common.append_line(self.m / "documents.md", common.join_pipe(
+        common.append_line(self.m / "agent" / "documents.md", common.join_pipe(
             ["nohash.pdf", "documents/received", "received", "x", "2026-10-15 08:47", "", "", "", "pending", "", ""]))
         r = self.lint()
         self.assertEqual(r.returncode, 1)
@@ -335,8 +335,8 @@ class LintReceivedTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout)
 
     def test_msg_without_row_beside_its_eml_is_the_original(self):
-        lines = [x for x in (self.m / "documents.md").read_text().splitlines() if ".msg |" not in x]
-        (self.m / "documents.md").write_text("\n".join(lines) + "\n")
+        lines = [x for x in (self.m / "agent" / "documents.md").read_text().splitlines() if ".msg |" not in x]
+        (self.m / "agent" / "documents.md").write_text("\n".join(lines) + "\n")
         r = self.lint()
         self.assertEqual(r.returncode, 0, r.stdout)
 

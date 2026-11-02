@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: "Reviews one draft in drafts/, or a work-tool deliverable in work-product/, against the controlling skill, corrections.md, notes.md, roster.confirmed.md, live facts, the documents and knowledge positions, before it goes to the lawyer. Use when no external work tool reviewed the draft. Reports findings; writes nothing."
+description: "Reviews one draft in drafts/, or a work-tool deliverable in human/, against the controlling skill, corrections.md, notes.md, roster.confirmed.md, live facts, the documents and knowledge positions, before it goes to the lawyer. Use when no external work tool reviewed the draft. Reports findings; writes nothing."
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
@@ -13,7 +13,7 @@ You are the reviewer. You check a draft and report findings. You do not rewrite 
 - The matter: the draft, brief.md, matter.md, live facts (`bash tools/lint-facts <folder>/facts.md --live`), corrections.md, notes.md, roster.confirmed.md, roster.md, and the documents and knowledge sections the draft cites.
 
 ## Input
-- `folder` (the matter or a work-product/bundle-<date>/ folder), `draft` (path), optional `focus`.
+- `folder` (the matter or its agent/<REF>_harvey-pack/ folder), `draft` (path), optional `focus`.
 
 ## Checks
 1. Shape: the skill's Output shape, every section present and in order.

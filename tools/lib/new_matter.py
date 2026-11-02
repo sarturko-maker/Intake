@@ -129,11 +129,12 @@ def create(root, args, run):
         common.write_text_atomic(subject_dir / "subject.md", fill(common.read_text(tdir / "subject.md"), values))
     matter.mkdir()
     for d in common.MATTER_DIRS:
-        (matter / d).mkdir(parents=True, exist_ok=True)
+        (common.agent_dir(matter) / d).mkdir(parents=True, exist_ok=True)
+    common.human_dir(matter).mkdir(parents=True, exist_ok=True)
     for n in common.MATTER_FILES:
-        common.write_text_atomic(matter / n, fill(common.read_text(tdir / n), values))
+        common.write_text_atomic(common.mpath(matter, n), fill(common.read_text(tdir / n), values))
     stamp = common.stamp(root)
-    common.append_line(matter / "log.md", common.join_pipe([stamp, "opened matter", "matter.md", run]))
+    common.append_line(common.agent_dir(matter) / "log.md", common.join_pipe([stamp, "opened matter", "matter.md", run]))
     reason = "new subject" if new_subject else "existing subject"
     if follows:
         reason += "; follows " + follows

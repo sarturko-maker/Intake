@@ -50,7 +50,8 @@ A matter lives under its area, sub-area and subject: `areas/commercial/customers
 ## 8. Correcting the agent
 
 - In a matter, write what is true in `corrections.md`. The agent must follow it.
-- Keep your own notes (calls, meetings, Teams, your thinking) as dated lines in the matter's `notes.md`. The agent reads them every run and puts them in the Harvey pack. Drop other documents into `documents/received/` or `documents/ours/`.
+- Each matter folder has three things: `START-HERE.md` (open this: status, next step and links to everything), `human/` (yours) and `agent/` (the agent's). Put anything of yours in `human/`; the next run picks it up and reads it. You may also change files in `agent/`; your change wins.
+- Keep your own notes (calls, meetings, Teams, your thinking) as dated lines in the matter's `human/notes.md`. The agent reads them every run and puts them in the Harvey pack.
 - Every run ends with a short summary per matter (five bold-titled bullets) and links to open the brief, the email to answer, the key document and the Harvey pack. Say "draft a reply to 2026-0042" for a reply to copy into Outlook.
 - Confirm who is who in `roster.confirmed.md`.
 - Move a misfiled email to the right matter and say so.
@@ -58,7 +59,7 @@ A matter lives under its area, sub-area and subject: `areas/commercial/customers
 
 ## 9. Harvey or another work tool
 
-Every open matter has a ready Harvey pack, kept up to date after every run: the matter's `work-product/<reference>_harvey-pack/` folder (the task summary links it). Drop its files into the Harvey work agent (see `harvey/work-agent/`). Save what comes back into the matter's `work-product/` folder, not into the pack. Legora or another tool works the same way.
+Every open matter has a ready Harvey pack, kept up to date after every run: the matter's `agent/<reference>_harvey-pack/` folder (the task summary and START-HERE.md link it). Drop its files into the Harvey work agent (see `harvey/work-agent/`). Save what comes back into the matter's `human/` folder, not into the pack. Legora or another tool works the same way.
 
 ## 10. Budget
 

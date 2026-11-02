@@ -11,13 +11,13 @@ R = run id: the first `bash tools/scan-changes` prints `report: changes/<R>.md`;
 
 ## Where are we
 1. `bash tools/budget-update --mode`.
-2. `bash tools/scan-changes`. Journal `run-start | status | - | mode <mode> | -`. Handle what changed outside inbox/ exactly as the intake skill, section 3 step 2 (deliverables in work-product/, files put in by hand, corrections, knowledge, skills). Paused mode: register new files only; list the rest.
+2. `bash tools/scan-changes`. Journal `run-start | status | - | mode <mode> | -`. Handle what changed outside inbox/ exactly as the intake skill, section 3 step 2 (matter-sync's list: files the lawyer added or changed, edits, corrections, knowledge, skills). Paused mode: register new files only; list the rest.
 3. `bash tools/index-rebuild --run <R> --digest-parts changes/<R>-digest.md`. It applies the lawyer's INDEX.csv edits and journals them. Each `closed-by-lawyer <REF>`: put "Wrap-up for <REF>" first under What you should do next; run the wrap-up (close skill, 'Wrap-up') only when the lawyer asks.
 4. `bash tools/lint-received`. Findings go under Please check, one WORKFLOW-LOG.md line each.
 5. `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note status` once per model used (m: the BUDGET.md price key of that model). Then `bash tools/budget-update --show` for the cost line.
 6. Write digests/<R>.md with the headings of the intake skill, section 4. Arrivals and where filed: "No new mail read in this run. Inbox: <n> files waiting." Copy it to digests/LATEST.md.
 7. `bash tools/scan-changes --run <R> --write-manifest --quiet`, unless a change was left unhandled. Journal `run-end`.
-7b. `bash tools/work-bundle --all`: refresh the Harvey packs of open matters that changed.
+7b. `bash tools/work-bundle --all`, then `bash tools/matter-sync --run <R> --pages-only`: refresh the Harvey packs and START-HERE.md pages. (At the start, `bash tools/matter-sync --run <R>` lists files the lawyer added or changed: offer to read them.)
 8. Reply in the task format (RULES.md 'Index and digest': bold-titled bullets, links, Harvey pack where it exists): the What you should do next list, then up to five questions, one short line each. Inbox has files: add "Say 'process the inbox' to file them."
 
 ## Answers to the digest

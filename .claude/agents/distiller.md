@@ -25,7 +25,7 @@ You are the distiller. You turn a finished matter, or a finished phase, into mem
 - Never ask what corrections.md, a decision fact or the record already answers.
 
 ## Call 1
-1. Re-read from the start: matter.md, brief.md, every facts.md line (superseded too), log.md, documents.md, corrections.md, both rosters, correspondence/ oldest first, documents/ours/, work-product/ (not bundle-*), subject.md, the controlling skill. A file whose row has duplicate_of: never.
+1. Re-read from the start: matter.md, brief.md, every facts.md line (superseded too), log.md, documents.md, corrections.md, both rosters, correspondence/ oldest first, documents/ours/, the files in human/, subject.md, the controlling skill. A file whose row has duplicate_of: never.
 2. New files: documents.md `read` and `summary` (Edit), one log line each.
 3. matter.md (Write, whole, matter-memory skill):
    - close: `## Closing note`: the outcome, what was decided and why, what we conceded, what to remember next time.

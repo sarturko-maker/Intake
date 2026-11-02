@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# matter-migrate: convert matters from the old one-folder layout to agent/ + human/ (one-off, safe to repeat).
+# Usage: bash tools/matter-migrate [--dry-run] [--run RUN]
+#   --dry-run   show what would move; change nothing
+# Moves, never edits: the agent's memory files, correspondence/, documents/, drafts/, history/ go to agent/;
+# notes.md, corrections.md, roster.confirmed.md and deliverables from work-product/ go to human/; old bundles
+# and packs (copies) are dropped and rebuilt by work-bundle. documents.md rows for moved deliverables follow.
+# Exit: 0 ok, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: in each matter folder create agent/ and human/ and move the files as above by hand.
+FALLBACK="in each matter folder create agent/ and human/ and move the files by hand: memory files and correspondence/documents/drafts/history to agent/; notes.md, corrections.md, roster.confirmed.md and work-product files to human/."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/matter_migrate.py" "$@"

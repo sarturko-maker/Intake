@@ -24,7 +24,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - **Subject:** `RE: <original subject without RE:/FW:> [<REF>]`, with the reference always at the end.
    - **Body:** short, in the house tone. Use the controlling skill's 'How we say it' where there is one. Facts must come from the matter or knowledge files; mark anything assumed in [square brackets]. No legal position the lawyer has not taken: offer options in brackets instead.
    - **Attachments to add:** list them by file name, with links (for example a mark-up in drafts/ or documents/ours/).
-5. Save it with Write as `<matter>/drafts/<today>_reply_<topic>_v<N>.md`:
+5. Save it with Write as `<matter>/agent/drafts/<today>_reply_<topic>_v<N>.md`:
    - header lines: `To:`, `Cc:`, `Subject:`, `In reply to:` (a link to the correspondence file), `Status: draft, not sent`;
    - then the body.
    Append a log.md line: `<time> | drafted reply v<N> | drafts/<file> | <R>`.

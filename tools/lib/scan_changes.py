@@ -19,7 +19,7 @@ import common  # noqa: E402
 
 EXCLUDED_TOP = {".git", ".claude", "tools", "demo", "phase-2", ".github", "changes", "digests"}
 EXCLUDED_NAMES = {"MANIFEST.csv", "JOURNAL.md", "INDEX.md", "WORKFLOW-LOG.md", "TOOLING.md",
-                  "BUDGET.md", "HANDOFF.md"}
+                  "BUDGET.md", "HANDOFF.md", "START-HERE.md"}
 JUNK_NAMES = {".ds_store", "thumbs.db", "desktop.ini"}
 JUNK_PATTERNS = ("~$*", "*.tmp", ".~lock*")
 GROUP_PARTS = ("inbox", "knowledge", "house", "seeds", "skills", "areas")
@@ -45,9 +45,9 @@ def walk(root):
                 continue
             if d == "history":
                 continue
-            if os.path.basename(dirpath) == "work-product" and (
-                    d.startswith("bundle-") or d.endswith("_harvey-pack") or d.startswith(".")):
-                continue
+            if d.endswith("_harvey-pack") or (os.path.basename(dirpath) in ("work-product", "agent") and (
+                    d.startswith("bundle-") or d.startswith("."))):
+                continue  # generated packs and bundles are copies
             keep.append(d)
         dirnames[:] = sorted(keep)
         for f in sorted(filenames):

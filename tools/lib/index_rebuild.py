@@ -181,7 +181,7 @@ def journal(root, run, action, item, destination, reason, confidence="-"):
 
 
 def matter_log(root, mdir, run, event):
-    common.append_line(Path(mdir) / "log.md",
+    common.append_line(common.agent_dir(mdir) / "log.md",
                        common.join_pipe([common.stamp(root), event, "INDEX.csv", run]))
 
 
@@ -196,14 +196,16 @@ def collect_matters(root):
     if not areas.is_dir():
         return out
     for mfile in sorted(areas.rglob("matter.md")):
-        d = mfile.parent
+        if mfile.parent.name != common.AGENT:
+            continue  # old one-folder layout: tools/matter-migrate converts it
+        d = mfile.parent.parent
         relparts = d.relative_to(areas).parts
-        if "history" in relparts or "work-product" in relparts:
+        if "history" in relparts or common.AGENT in relparts or common.HUMAN in relparts:
             continue
         nested = False
         cur = d.parent
         while cur != areas and areas in cur.parents:
-            if (cur / "matter.md").is_file():
+            if (cur / common.AGENT / "matter.md").is_file():
                 nested = True
                 break
             cur = cur.parent
@@ -426,7 +428,7 @@ def kept_by_agent(rep, ref, col):
 
 
 def apply_matter_edits(root, ref, edits, mdir, run, today, apply, rep):
-    mfile = mdir / "matter.md"
+    mfile = common.agent_dir(mdir) / "matter.md"
     meta, _ = common.read_frontmatter_file(mfile)
     updates = {}
     log_bits = []
@@ -767,7 +769,7 @@ def ref_link(r, prefix=""):
     folder = (r.get("folder") or "").strip()
     if not folder:
         return r["reference"]
-    target = folder if r.get("kind") == "noise" else folder + "/brief.md"
+    target = folder if r.get("kind") == "noise" else folder + "/" + common.START_HERE
     return "[%s](%s%s)" % (r["reference"], prefix, target.replace(" ", "%20"))
 
 
@@ -858,7 +860,7 @@ def integrity(root, matters, noise_rows, rep):
         relp = common.rel(d, root)
         missing = [k for k in REQUIRED_KEYS if not (meta.get(k) or "").strip()]
         if missing:
-            rep.integrity.append("%s/matter.md: missing %s" % (relp, ", ".join(missing)))
+            rep.integrity.append("%s/agent/matter.md: missing %s" % (relp, ", ".join(missing)))
         ref = (meta.get("reference") or "").strip()
         if ref:
             by_ref.setdefault(ref, []).append(relp)

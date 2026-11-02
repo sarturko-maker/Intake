@@ -137,7 +137,7 @@ class Workspace:
         return common.read_text(self.root / relp)
 
     def meta(self, folder):
-        meta, _ = common.read_frontmatter_file(Path(self.root / folder) / "matter.md")
+        meta, _ = common.read_frontmatter_file(Path(self.root / folder) / "agent" / "matter.md")
         return meta
 
     # ------------------------------------------------------------ matters
@@ -147,7 +147,8 @@ class Workspace:
         subj_dir = self.root / "areas" / area / sub_area / subject if sub_area else self.root / "areas" / area / subject
         mdir = subj_dir / ("%s_%s_%s" % (ref, subject, topic))
         for d in common.MATTER_DIRS:
-            (mdir / d).mkdir(parents=True, exist_ok=True)
+            (mdir / "agent" / d).mkdir(parents=True, exist_ok=True)
+        (mdir / "human").mkdir(parents=True, exist_ok=True)
         title = meta.pop("title", "Test matter %s" % ref)
         opened = meta.pop("opened", "2026-10-20")
         fill = {"{{reference}}": ref, "{{area}}": area, "{{sub_area}}": sub_area,
@@ -158,14 +159,14 @@ class Workspace:
             text = (TEMPLATES / name).read_text(encoding="utf-8")
             for k, v in fill.items():
                 text = text.replace(k, v)
-            (mdir / name).write_text(text, encoding="utf-8")
+            common.mpath(mdir, name).write_text(text, encoding="utf-8")
         if not (subj_dir / "subject.md").exists():
             text = (TEMPLATES / "subject.md").read_text(encoding="utf-8")
             for k, v in fill.items():
                 text = text.replace(k, v)
             (subj_dir / "subject.md").write_text(text, encoding="utf-8")
         if meta:
-            common.update_frontmatter_file(mdir / "matter.md", meta, history=False)
+            common.update_frontmatter_file(mdir / "agent" / "matter.md", meta, history=False)
         return mdir
 
     def rel(self, p):

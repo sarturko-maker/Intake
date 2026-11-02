@@ -40,7 +40,7 @@ class PlaceBase(WorkspaceTest):
         return res
 
     def docs(self, matter=None):
-        return common.read_pipe_records(Path(matter or self.matter) / "documents.md", common.DOCUMENTS_COLUMNS)
+        return common.read_pipe_records(Path(matter or self.matter) / "agent" / "documents.md", common.DOCUMENTS_COLUMNS)
 
     def unpack(self, file):
         res = self.ws.run("unpack-email", "--json", "--no-signals", file)
@@ -60,12 +60,12 @@ class IntoMatterTest(PlaceBase):
         before = sha(f)
         self.place(f, "--to", self.mrel, "--run", "R1", "--reason", "new matter for the MSA", "--confidence", "0.9")
         self.assertFalse(f.exists())
-        dest = self.matter / "correspondence" / info["canonical_name"]
+        dest = self.matter / "agent" / "correspondence" / info["canonical_name"]
         self.assertTrue(dest.is_file())
         self.assertEqual(sha(dest), before)
-        stored = self.matter / "documents" / "received" / "Acme_MSA_v1.docx"
+        stored = self.matter / "agent" / "documents" / "received" / "Acme_MSA_v1.docx"
         self.assertEqual(stored.read_bytes(), b"PK\x03\x04 msa v1")
-        self.assertFalse((self.matter / "documents" / "received" / "image001.png").exists())
+        self.assertFalse((self.matter / "agent" / "documents" / "received" / "image001.png").exists())
         rows = self.docs()
         self.assertEqual([(r["name"], r["folder"], r["origin"], r["read"]) for r in rows], [
             (info["canonical_name"], "correspondence", "received", "pending"),
@@ -78,25 +78,25 @@ class IntoMatterTest(PlaceBase):
         self.assertEqual(rows[0]["hash"], before)
         self.assertEqual(rows[2]["hash"], sha(stored))
         self.assertEqual(rows[2]["hash"], info["attachments"][1]["sha256"])
-        log = common.read_pipe_records(self.matter / "log.md", common.LOG_COLUMNS)
+        log = common.read_pipe_records(self.matter / "agent" / "log.md", common.LOG_COLUMNS)
         self.assertEqual(log[-1]["event"], "filed in email from j.schmidt@acme-automotive.de: "
                                            "Acme Master Supply Agreement - draft for review")
         self.assertEqual(log[-1]["source"], "correspondence/" + info["canonical_name"])
         self.assertEqual(log[-1]["run"], "R1")
         j = common.split_pipe(self.ws.journal_lines()[-1])
-        self.assertEqual(j[1:], ["R1", "filed", "inbox/Acme MSA - draft.eml", self.mrel + "/correspondence/" +
+        self.assertEqual(j[1:], ["R1", "filed", "inbox/Acme MSA - draft.eml", self.mrel + "/agent/correspondence/" +
                                  info["canonical_name"], "new matter for the MSA", "0.9"])
 
     def test_reference_accepted_for_to(self):
         f = make_email(self.inbox("a.eml"))
         self.place(f, "--to", self.ref)
-        self.assertEqual(len(list((self.matter / "correspondence").iterdir())), 1)
+        self.assertEqual(len(list((self.matter / "agent" / "correspondence").iterdir())), 1)
 
     def test_out_email_goes_to_documents_ours(self):
         f = make_email(self.inbox("RE Acme NDA.eml"), sender=ALEX, to=(TOM,), subject="RE: Acme NDA",
                        attachments=[("Acme_NDA_v1_Kestrel.docx", b"PK our markup", DOCX)])
         self.place(f, "--to", self.mrel)
-        self.assertTrue((self.matter / "documents" / "ours" / "Acme_NDA_v1_Kestrel.docx").is_file())
+        self.assertTrue((self.matter / "agent" / "documents" / "ours" / "Acme_NDA_v1_Kestrel.docx").is_file())
         rows = self.docs()
         self.assertEqual([(r["folder"], r["origin"]) for r in rows],
                          [("correspondence", "ours"), ("documents/ours", "ours")])
@@ -112,7 +112,7 @@ class IntoMatterTest(PlaceBase):
         self.place(a, "--to", self.mrel, "--run", "R1")
         res = self.place(b, "--to", self.mrel, "--run", "R1")
         self.assertIn("duplicate: Acme MSA v1 (copy).docx", res.stdout)
-        self.assertEqual(sorted(p.name for p in (self.matter / "documents" / "received").iterdir()),
+        self.assertEqual(sorted(p.name for p in (self.matter / "agent" / "documents" / "received").iterdir()),
                          ["Acme_MSA_v1.docx"])
         rows = [r for r in self.docs() if r["name"].endswith(".docx")]
         self.assertEqual(len(rows), 2)
@@ -128,7 +128,7 @@ class IntoMatterTest(PlaceBase):
         b = make_email(self.inbox("b.eml"), subject="v2", attachments=[("MSA.docx", b"PK two", DOCX)])
         self.place(a, "--to", self.mrel)
         self.place(b, "--to", self.mrel)
-        received = self.matter / "documents" / "received"
+        received = self.matter / "agent" / "documents" / "received"
         self.assertEqual((received / "MSA.docx").read_bytes(), b"PK one")
         self.assertEqual((received / "MSA-2.docx").read_bytes(), b"PK two")
         self.assertEqual([r["name"] for r in self.docs() if r["name"].startswith("MSA")], ["MSA.docx", "MSA-2.docx"])
@@ -142,7 +142,7 @@ class IntoMatterTest(PlaceBase):
         res = self.place(again, "--to", self.mrel, "--run", "R2")
         self.assertIn("duplicate-dropped", res.stdout)
         self.assertFalse(again.exists())
-        self.assertEqual(len(list((self.matter / "correspondence").iterdir())), 1)
+        self.assertEqual(len(list((self.matter / "agent" / "correspondence").iterdir())), 1)
         self.assertEqual(len([r for r in self.docs() if r["folder"] == "correspondence"]), 1)
         self.assertEqual(len([r for r in self.docs() if r["name"] == "NDA.docx"]), 1)
         j = common.split_pipe(self.ws.journal_lines()[-1])
@@ -154,7 +154,7 @@ class IntoMatterTest(PlaceBase):
         msg = self.inbox("Vollmacht PoA.msg")
         msg.write_bytes(b"\xd0\xcf\x11\xe0 original outlook bytes")
         self.place(f, "--to", self.mrel)
-        corr = sorted((self.matter / "correspondence").iterdir())
+        corr = sorted((self.matter / "agent" / "correspondence").iterdir())
         self.assertEqual([p.suffix for p in corr], [".eml", ".msg"])
         self.assertEqual(corr[0].stem, corr[1].stem)
         self.assertEqual(corr[1].read_bytes(), b"\xd0\xcf\x11\xe0 original outlook bytes")
@@ -175,7 +175,7 @@ class IntoMatterTest(PlaceBase):
         self.assertIn("duplicate-dropped", res.stdout)
         self.assertFalse(second.exists())
         self.assertFalse(self.inbox("PoA (2).msg").exists())
-        self.assertEqual(sorted(p.suffix for p in (self.matter / "correspondence").iterdir()), [".eml", ".msg"])
+        self.assertEqual(sorted(p.suffix for p in (self.matter / "agent" / "correspondence").iterdir()), [".eml", ".msg"])
         j = common.split_pipe(self.ws.journal_lines()[-1])
         self.assertEqual(j[1:4], ["R2", "duplicate-dropped", "inbox/PoA (2).msg"])
 
@@ -184,7 +184,7 @@ class IntoMatterTest(PlaceBase):
         b = make_email(self.inbox("b.eml"), body="Second, different text.")
         self.place(a, "--to", self.mrel)
         self.place(b, "--to", self.mrel)
-        names = sorted(p.name for p in (self.matter / "correspondence").iterdir())
+        names = sorted(p.name for p in (self.matter / "agent" / "correspondence").iterdir())
         self.assertEqual(len(names), 2)
         self.assertTrue(names[1].endswith("-2.eml") or names[0].endswith("-2.eml"))
         stem = names[0][:-4] if not names[0].endswith("-2.eml") else names[1][:-4]
@@ -202,7 +202,7 @@ class IntoMatterTest(PlaceBase):
         rows = {r["name"]: r for r in self.docs()}
         self.assertEqual(rows["invite.ics"]["read"], "no: calendar part")
         self.assertEqual(rows["invite.ics"]["folder"], "")
-        stored = self.matter / "documents" / "received" / "invoice-4471.eml"
+        stored = self.matter / "agent" / "documents" / "received" / "invoice-4471.eml"
         self.assertTrue(stored.is_file())
         self.assertEqual(rows["invoice-4471.eml"]["hash"], sha(stored))
         self.assertEqual(rows["invoice-4471.eml"]["hash"], info["attachments"][1]["sha256"])
@@ -212,9 +212,9 @@ class IntoMatterTest(PlaceBase):
                                          sub_area="customers", opened="2026-10-19")
         f = make_email(self.inbox("a.eml"), sender=JULIA, subject="MSA and questionnaire")
         self.place(f, "--to", self.mrel, "--cross-ref", other.relative_to(self.ws.root).as_posix(), "--run", "R3")
-        log = common.read_pipe_records(other / "log.md", common.LOG_COLUMNS)
+        log = common.read_pipe_records(other / "agent" / "log.md", common.LOG_COLUMNS)
         self.assertTrue(log[-1]["event"].startswith("cross-ref: email filed in %s" % self.ref))
-        self.assertTrue(log[-1]["source"].startswith(self.mrel + "/correspondence/"))
+        self.assertTrue(log[-1]["source"].startswith(self.mrel + "/agent/correspondence/"))
         actions = [common.split_pipe(l)[2] for l in self.ws.journal_lines()]
         self.assertEqual(actions[-2:], ["filed", "cross-ref"])
 
@@ -224,7 +224,7 @@ class IntoMatterTest(PlaceBase):
         d = json.loads(res.stdout)
         self.assertEqual([a["action"] for a in d["actions"]], ["filed", "stored"])
         self.assertEqual(d["matter"], self.mrel)
-        self.assertTrue(d["destination"].startswith(self.mrel + "/correspondence/"))
+        self.assertTrue(d["destination"].startswith(self.mrel + "/agent/correspondence/"))
 
     def test_safe_to_call_many_times_in_one_run(self):
         for i in range(5):
@@ -232,9 +232,9 @@ class IntoMatterTest(PlaceBase):
                            attachments=[("doc%d.pdf" % i, b"%%PDF %d" % i, "application/pdf")])
             self.place(f, "--to", self.mrel, "--run", "R1")
         self.assertEqual(len([r for r in self.docs() if r["folder"] == "correspondence"]), 5)
-        self.assertEqual(len(list((self.matter / "documents" / "received").iterdir())), 5)
+        self.assertEqual(len(list((self.matter / "agent" / "documents" / "received").iterdir())), 5)
         self.assertEqual(len(self.ws.journal_lines()), 6)  # new-matter + 5 filed
-        text = (self.matter / "documents.md").read_text(encoding="utf-8")
+        text = (self.matter / "agent" / "documents.md").read_text(encoding="utf-8")
         self.assertTrue(text.endswith("\n"))
 
 
@@ -308,7 +308,7 @@ class NoiseAndCheckTest(PlaceBase):
         text = resolved[0].read_text(encoding="utf-8")
         self.assertIn("## Resolution", text)
         self.assertIn("lawyer: the MSA", text)
-        self.assertIn(self.mrel + "/correspondence/", text)
+        self.assertIn(self.mrel + "/agent/correspondence/", text)
 
     def test_please_check_needs_a_note_and_refuses_double(self):
         f = make_email(self.inbox("q.eml"))
@@ -327,7 +327,7 @@ class NoiseAndCheckTest(PlaceBase):
         self.assertEqual(moved.read_bytes(), b"%PDF-1.4 signed")
         self.assertTrue(self.ws.path("inbox/please-check/Signed NDA.pdf.note.md").is_file())
         self.place(moved, "--to", self.mrel)
-        stored = self.matter / "documents" / "received" / "Signed NDA.pdf"
+        stored = self.matter / "agent" / "documents" / "received" / "Signed NDA.pdf"
         self.assertEqual(stored.read_bytes(), b"%PDF-1.4 signed")
         row = self.docs()[-1]
         self.assertEqual((row["name"], row["folder"], row["hash"]), ("Signed NDA.pdf", "documents/received", sha(stored)))
@@ -337,7 +337,7 @@ class NoiseAndCheckTest(PlaceBase):
 class RegisterAndRefusalTest(PlaceBase):
 
     def test_register_email_put_in_by_hand(self):
-        corr = self.matter / "correspondence"
+        corr = self.matter / "agent" / "correspondence"
         f = make_email(corr / "forwarded by hand.eml", sender=JULIA, subject="Acme MSA v2",
                        attachments=[("Acme_MSA_v2.docx", b"PK v2", DOCX)], message_id="<hand.1@acme-automotive.de>")
         res = self.ws.run("place-email", "--register", f.relative_to(self.ws.root).as_posix(), "--run", "R4")
@@ -348,7 +348,7 @@ class RegisterAndRefusalTest(PlaceBase):
             ("forwarded by hand.eml", "correspondence", "pending"),
             ("Acme_MSA_v2.docx", "documents/received", "pending")])
         self.assertEqual(rows[0]["message_id"], "hand.1@acme-automotive.de")
-        self.assertEqual((self.matter / "documents" / "received" / "Acme_MSA_v2.docx").read_bytes(), b"PK v2")
+        self.assertEqual((self.matter / "agent" / "documents" / "received" / "Acme_MSA_v2.docx").read_bytes(), b"PK v2")
         again = self.ws.run("place-email", "--register", str(f))
         self.assertEqual(again.returncode, 0)
         self.assertIn("already registered", again.stdout)
@@ -356,15 +356,15 @@ class RegisterAndRefusalTest(PlaceBase):
         self.assertEqual(common.split_pipe(self.ws.journal_lines()[-1])[2], "filed")
 
     def test_register_work_product_and_reference(self):
-        wp = self.matter / "work-product" / "2026-10-23_harvey-memo_liability-cap_v1.md"
+        wp = self.matter / "human" / "2026-10-23_harvey-memo_liability-cap_v1.md"
         wp.write_text("memo", encoding="utf-8")
-        ref = self.matter / "documents" / "reference" / "liability-caps.md"
+        ref = self.matter / "agent" / "documents" / "reference" / "liability-caps.md"
         ref.write_text("position", encoding="utf-8")
         for p in (wp, ref):
             self.assertEqual(self.ws.run("place-email", "--register", str(p)).returncode, 0)
         rows = self.docs()
         self.assertEqual([(r["folder"], r["origin"]) for r in rows],
-                         [("work-product", "work-product"), ("documents/reference", "reference")])
+                         [("human", "human"), ("documents/reference", "reference")])
         self.assertEqual(rows[0]["hash"], sha(wp))
 
     def test_register_refusals(self):
@@ -372,10 +372,10 @@ class RegisterAndRefusalTest(PlaceBase):
         loose = self.ws.path("inbox/loose.pdf")
         loose.write_bytes(b"%PDF")
         self.assertEqual(self.ws.run("place-email", "--register", str(loose)).returncode, 2)
-        self.assertEqual(self.ws.run("place-email", "--register", str(self.matter / "matter.md")).returncode, 2)
+        self.assertEqual(self.ws.run("place-email", "--register", str(self.matter / "agent" / "matter.md")).returncode, 2)
 
     def test_refuses_file_outside_inbox(self):
-        f = make_email(self.matter / "documents" / "received" / "x.eml")
+        f = make_email(self.matter / "agent" / "documents" / "received" / "x.eml")
         before = sha(f)
         res = self.place(f, "--to", self.mrel, ok=False)
         self.assertEqual(res.returncode, 2)

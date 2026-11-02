@@ -106,7 +106,7 @@ class Loc:
         self.area = self.sub_area = self.subject = ""
         self.resolved_dir = False
         if kind == "matter":
-            self.folder = path.parent.parent
+            self.folder = path.parent.parent.parent if path.parent.parent.name == "agent" else path.parent.parent
             m = common.MATTER_DIR_RE.match(self.folder.name)
             self.ref = m.group(1) if m else ""
             self.area, self.sub_area, self.subject = common.matter_location(ws, self.folder)
@@ -125,7 +125,7 @@ def iter_emails(ws):
     if areas.is_dir():
         for p in sorted(areas.rglob("*.eml")):
             parts = p.relative_to(ws).parts
-            if p.parent.name != "correspondence" or "work-product" in parts or "history" in parts:
+            if p.parent.name != "correspondence" or "work-product" in parts or "history" in parts or any(x.endswith("_harvey-pack") or x.startswith("bundle-") for x in parts):
                 continue
             yield Loc("matter", p, ws)
     inbox = ws / "inbox"
@@ -167,7 +167,7 @@ def id_time(message_id):
 
 def matter_meta(folder):
     try:
-        meta, _ = common.read_frontmatter_file(Path(folder) / "matter.md")
+        meta, _ = common.read_frontmatter_file(Path(folder) / "agent" / "matter.md")
     except OSError:
         meta = {}
     return meta

@@ -37,15 +37,18 @@ def resolve_matter(root, arg):
     p = Path(arg)
     cands = [p] if p.is_absolute() else [Path.cwd() / p, root / p]
     for c in cands:
-        if (c / "matter.md").is_file():
+        if c.name == common.AGENT and (c / "matter.md").is_file():
+            c = c.parent
+        if common.is_matter_dir(c):
             return c.resolve()
-    common.die("lint-received: not a matter folder (no matter.md): %s" % arg, 2)
+    common.die("lint-received: not a matter folder (no agent/matter.md): %s" % arg, 2)
 
 
 def lint_matter(root, mdir):
     """Return (findings, files_checked)."""
     findings = []
     checked = 0
+    mdir = common.agent_dir(mdir)  # received files and documents.md live in agent/
     docs = mdir / "documents.md"
     rows = common.read_pipe_records(docs, common.DOCUMENTS_COLUMNS)
     expected = {}

@@ -19,12 +19,15 @@
       "Bash(bash tools/work-bundle *)",
       "Bash(bash demo/scripts/check-filing *)",
       "Bash(bash demo/scripts/drop-batch *)",
-      "Bash(bash demo/scripts/setup *)"
+      "Bash(bash demo/scripts/setup *)",
+      "Bash(bash tools/matter-sync *)",
+      "Bash(bash tools/matter-migrate *)"
     ],
     "deny": [
       "Edit(**/corrections.md)",
       "Edit(**/roster.confirmed.md)",
       "Edit(**/notes.md)",
+      "Edit(/areas/**/human/**)",
       "Edit(/house/**)",
       "Bash(git push *)",
       "Bash(git commit *)",

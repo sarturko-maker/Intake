@@ -131,15 +131,15 @@ class Workspace:
 
     def add_roster(self, matter, line, confirmed=False):
         name = "roster.confirmed.md" if confirmed else "roster.md"
-        common.append_line(Path(matter) / name, line)
+        common.append_line(common.mpath(matter, name), line)
 
     def add_document_row(self, matter, name, message_id, sha="0" * 64, folder="correspondence"):
-        common.append_line(Path(matter) / "documents.md", common.join_pipe(
+        common.append_line(common.mpath(matter, "documents.md"), common.join_pipe(
             [name, folder, "received", "someone@example.com", "2026-10-12 09:12", "", message_id, sha,
              "pending", "", ""]))
 
     def set_status(self, matter, status):
-        common.update_frontmatter_file(Path(matter) / "matter.md", {"status": status}, history=False)
+        common.update_frontmatter_file(common.mpath(matter, "matter.md"), {"status": status}, history=False)
 
     def journal_lines(self):
         p = self.root / "JOURNAL.md"
@@ -170,11 +170,12 @@ class NewMatterTest(WorkspaceTest):
                                  "2026-0001_acme-automotive_msa-liability-cap")
         m = self.ws.path(folder)
         for d in common.MATTER_DIRS:
-            self.assertTrue((m / d).is_dir(), d)
+            self.assertTrue((m / "agent" / d).is_dir(), d)
+        self.assertTrue((m / "human").is_dir())
         for f in common.MATTER_FILES:
-            text = (m / f).read_text(encoding="utf-8")
+            text = common.mpath(m, f).read_text(encoding="utf-8")
             self.assertNotIn("{{", text, f)
-        meta, body = common.read_frontmatter_file(m / "matter.md")
+        meta, body = common.read_frontmatter_file(m / "agent" / "matter.md")
         self.assertEqual(meta["reference"], "2026-0001")
         self.assertEqual(meta["area"], "commercial")
         self.assertEqual(meta["sub_area"], "customers")
@@ -184,13 +185,13 @@ class NewMatterTest(WorkspaceTest):
         self.assertEqual(meta["status"], "open")
         self.assertEqual(meta["follows"], "")
         self.assertEqual(body.split("\n")[0], common.FENCE)
-        self.assertIn("# Brief 2026-0001: Acme MSA", (m / "brief.md").read_text(encoding="utf-8"))
+        self.assertIn("# Brief 2026-0001: Acme MSA", (m / "agent" / "brief.md").read_text(encoding="utf-8"))
         smeta, sbody = common.read_frontmatter_file(m.parent / "subject.md")
         self.assertEqual(smeta["name"], "Acme Automotive GmbH")
         self.assertEqual(smeta["subject"], "acme-automotive")
         self.assertEqual(smeta["created"], "2026-10-15")
         self.assertEqual(sbody.split("\n")[0], common.FENCE)
-        log = common.read_pipe_records(m / "log.md", common.LOG_COLUMNS)
+        log = common.read_pipe_records(m / "agent" / "log.md", common.LOG_COLUMNS)
         self.assertEqual([(r["event"], r["run"]) for r in log], [("opened matter", "2026-10-15_090000")])
         journal = self.ws.path("JOURNAL.md").read_text(encoding="utf-8").split("\n")
         self.assertEqual(journal[0], "# time | run | action | item | destination | reason | confidence")
@@ -200,7 +201,7 @@ class NewMatterTest(WorkspaceTest):
 
     def test_no_trailing_spaces_and_empty_sub_area(self):
         ref, m = self.ws.new_matter("corporate", "signing-authority", "poa-germany")
-        text = (m / "matter.md").read_text(encoding="utf-8")
+        text = (m / "agent" / "matter.md").read_text(encoding="utf-8")
         self.assertIn("\nsub_area:\n", text)
         self.assertFalse(any(line != line.rstrip() for line in text.split("\n")))
         self.assertEqual(m.relative_to(self.ws.root).as_posix(),
@@ -213,7 +214,7 @@ class NewMatterTest(WorkspaceTest):
         ref2, m2 = self.ws.new_matter("commercial", "acme-automotive", "msa", sub_area="customers",
                                       follows=ref1)
         self.assertIn("edited by the reader", subject_md.read_text(encoding="utf-8"))
-        self.assertEqual(common.read_frontmatter_file(m2 / "matter.md")[0]["follows"], ref1)
+        self.assertEqual(common.read_frontmatter_file(m2 / "agent" / "matter.md")[0]["follows"], ref1)
         reasons = [common.split_pipe(l)[5] for l in self.ws.journal_lines()]
         self.assertEqual(reasons, ["new subject", "existing subject; follows 2026-0001"])
 
@@ -252,7 +253,7 @@ class NewMatterTest(WorkspaceTest):
         ref, m = self.ws.new_matter("commercial", "rio-bombas", "distribution-brazil")
         self.assertEqual(m.relative_to(self.ws.root).as_posix(),
                          "areas/commercial/rio-bombas/2026-0001_rio-bombas_distribution-brazil")
-        self.assertEqual(common.read_frontmatter_file(m / "matter.md")[0]["sub_area"], "")
+        self.assertEqual(common.read_frontmatter_file(m / "agent" / "matter.md")[0]["sub_area"], "")
 
     def test_sub_area_not_declared_exits_2(self):
         res = self.ws.run("new-matter", "--area", "commercial", "--sub-area", "distributors",
@@ -288,7 +289,7 @@ class NewMatterTest(WorkspaceTest):
 
     def test_long_title_is_shortened(self):
         ref, m = self.ws.new_matter("corporate", "board", "minutes", title="word " * 30)
-        self.assertLessEqual(len(common.read_frontmatter_file(m / "matter.md")[0]["title"]), 80)
+        self.assertLessEqual(len(common.read_frontmatter_file(m / "agent" / "matter.md")[0]["title"]), 80)
 
     def test_usage_error_exits_2(self):
         self.assertEqual(self.ws.run("new-matter").returncode, 2)
@@ -308,7 +309,7 @@ class NewMatterPrefixTest(WorkspaceTest):
         self.assertTrue(m.name.startswith("LM-2026-0001_signing-authority_poa"))
         self.assertEqual(self.ws.run("new-matter", "--next-ref", "--year", "2026").stdout.strip(),
                          "LM-2026-0002")
-        self.assertTrue(re.match(r"^LM-2026-0001$", common.read_frontmatter_file(m / "matter.md")[0]["reference"]))
+        self.assertTrue(re.match(r"^LM-2026-0001$", common.read_frontmatter_file(m / "agent" / "matter.md")[0]["reference"]))
 
 
 if __name__ == "__main__":

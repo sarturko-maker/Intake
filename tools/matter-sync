@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# matter-sync: keep each matter's agent/ and human/ folders in step, with no model cost.
+# Usage: bash tools/matter-sync [REF|MATTER_FOLDER...] [--run RUN] [--pages-only] [--json]
+#   (no matter)    every matter under areas/
+#   --run RUN      run id for log and journal lines (default: now, house time)
+#   --pages-only   only rewrite each matter's START-HERE.md (use at the end of a run)
+# Does, per matter:
+#   - registers files nobody recorded yet: anything in human/ (except notes.md, corrections.md,
+#     roster.confirmed.md, which readers read directly) and anything put by hand into agent/correspondence/
+#     or agent/documents/ (through place-email --register);
+#   - a changed file in human/: its documents.md row goes back to read: pending;
+#   - finds the lawyer's edits since the last run (human/ memory files, and agent/matter.md, brief.md,
+#     facts.md, roster.md), by comparing with MANIFEST.csv; run it at the start of a run, before agents write;
+#   - writes <matter>/START-HERE.md: status, next step and links to everything in both folders;
+#   - lists what readers must read: stdout and changes/<run>-matters.md.
+# Exit: 0 ok, 1 a file could not be registered, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: list human/ and agent/documents/ by hand, register each new file with place-email --register, and open the matter folder instead of START-HERE.md.
+FALLBACK="list each matter's human/ and agent/documents/ files by hand, register new ones with place-email --register, and skip START-HERE.md."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/matter_sync.py" "$@"

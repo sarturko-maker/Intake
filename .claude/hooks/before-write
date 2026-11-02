@@ -186,13 +186,13 @@ base_lc="$(lower "${abs##*/}")"
 
 # ---- end of shared block -----------------------------------------------------------------------
 
-# Human-only: corrections.md, roster.confirmed.md, notes.md, <project>/house/. Checked on the path as given
+# Human-only: corrections.md, roster.confirmed.md, notes.md, <project>/house/, any matter's human/ folder. Checked on the path as given
 # and on the path with symlinks resolved.
 is_human_only() {
   local r
   case "$(lower "${1##*/}")" in corrections.md | roster.confirmed.md | notes.md) return 0 ;; esac
   if r="$(rel_to "$1" "$2")"; then
-    case "$(lower "$r")" in house | house/*) return 0 ;; esac
+    case "$(lower "$r")" in house | house/* | areas/*/human/*) return 0 ;; esac
   fi
   return 1
 }

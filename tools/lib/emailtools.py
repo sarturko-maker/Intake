@@ -637,7 +637,7 @@ def parse_email(path, ctx, body_chars=BODY_CHARS):
 
 def _matter_meta(d):
     try:
-        meta, _ = common.read_frontmatter_file(d / "matter.md")
+        meta, _ = common.read_frontmatter_file(common.agent_dir(d) / "matter.md")
     except OSError:
         meta = {}
     return meta
@@ -660,8 +660,10 @@ def message_id_index(root):
     if not areas.is_dir():
         return idx
     for doc in sorted(areas.rglob("documents.md")):
-        d = doc.parent
-        if _in_skipped_dir(root, d) or not (d / "matter.md").exists():
+        if doc.parent.name != common.AGENT:
+            continue
+        d = doc.parent.parent  # the matter folder
+        if _in_skipped_dir(root, d) or not common.is_matter_dir(d):
             continue
         for rec in common.read_pipe_records(doc, common.DOCUMENTS_COLUMNS):
             mid = strip_brackets(rec.get("message_id", ""))
@@ -676,7 +678,7 @@ def roster_people(matter_dir):
     """[(normalised name, {aliases})] from roster.confirmed.md and roster.md."""
     people = []
     for fname in ("roster.confirmed.md", "roster.md"):
-        for rec in common.read_pipe_records(Path(matter_dir) / fname, common.ROSTER_COLUMNS):
+        for rec in common.read_pipe_records(common.mpath(matter_dir, fname), common.ROSTER_COLUMNS):
             aliases = set()
             for a in rec.get("aliases", "").split(";"):
                 a = a.strip().strip("<>").lower()

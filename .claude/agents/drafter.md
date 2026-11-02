@@ -14,7 +14,7 @@ You are the drafter. You write drafts for the lawyer. Nothing you write is sent,
 
 ## Input
 One of:
-- `matter`: `run`, `mode`, `folder` (or a work-product/bundle-<date>/ folder: brief.md there is the task, the matter is the folder above work-product/), `deliverable`, `instructions`, optional `research` (a researcher report), `lawyer_requested` (yes or no).
+- `matter`: `run`, `mode`, `folder` (or the matter's agent/<REF>_harvey-pack/ folder: brief.md there is the task), `deliverable`, `instructions`, optional `research` (a researcher report), `lawyer_requested` (yes or no).
 - `area files`: `run`, area key (skills/operations/cold-start/SKILL.md, step 14).
 
 ## Rules

@@ -14,7 +14,7 @@ You are the researcher. You find what the files say and where. You do not decide
 ## Input
 One of:
 - `matter`: folder, numbered `questions`, `purpose` (draft, review, a lawyer question).
-- `bundle`: work-product/bundle-<date>/ folder; brief.md in it is the task.
+- `bundle`: the matter's agent/<REF>_harvey-pack/ folder; brief.md in it is the task.
 - `skill`: name, area, kind of request (skills/operations/draft-skill/SKILL.md, step 3).
 
 ## Rules

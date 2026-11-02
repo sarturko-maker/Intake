@@ -158,11 +158,19 @@ def stored_hashes(records):
     return out
 
 
+def row_path(agent, folder, name):
+    """A documents.md row's file: folders are relative to agent/, except human/... (the lawyer's folder)."""
+    folder = folder or ""
+    if folder == common.HUMAN or folder.startswith(common.HUMAN + "/"):
+        return Path(agent).parent / folder / name
+    return Path(agent) / folder / name
+
+
 def stored_copy(matter, records, sha):
     """Path of a file in this matter that holds exactly these bytes (per documents.md), or None."""
     for r in records:
         if r.get("hash") == sha and r.get("folder"):
-            hit = identical_on_disk([Path(matter) / r["folder"] / r["name"]], sha)
+            hit = identical_on_disk([row_path(matter, r["folder"], r["name"])], sha)
             if hit:
                 return hit
     return None
@@ -234,11 +242,15 @@ def resolve_matter(root, value, what="--to"):
     else:
         d = resolve_input(root, value)
     d = Path(d)
-    if not (d / "matter.md").is_file():
-        raise Refusal("%s: not a matter folder (no matter.md): %s" % (what, value))
+    if d.name == common.AGENT and (d / "matter.md").is_file():
+        d = d.parent
+    if not common.is_matter_dir(d):
+        if common.is_legacy_matter_dir(d):
+            raise Refusal("%s: %s is in the old one-folder layout; run bash tools/matter-migrate first" % (what, value))
+        raise Refusal("%s: not a matter folder (no agent/matter.md): %s" % (what, value))
     if not inside(d, Path(root) / "areas"):
         raise Refusal("%s: matter folders live under areas/: %s" % (what, value))
-    return d.resolve()
+    return common.agent_dir(d.resolve())
 
 
 def place_matter(state, src, p, matter, args):
@@ -289,7 +301,7 @@ def place_matter(state, src, p, matter, args):
         resolve_note(state, src, state.rel(dest), reason)
     if args.cross_ref:
         cross_ref(state, args.cross_ref, matter, dest, p, reason, conf)
-    state.result.update({"destination": state.rel(dest), "matter": state.rel(matter)})
+    state.result.update({"destination": state.rel(dest), "matter": state.rel(matter.parent)})
 
 
 def drop_duplicate(state, src, sibling, same, matter, records):
@@ -350,12 +362,12 @@ def msg_twin(sibling, candidates, matter=None, records=()):
 
 def cross_ref(state, target_value, primary, filed_path, p, reason, conf):
     other = resolve_matter(state.root, target_value, "--cross-ref")
-    pref = et._matter_ref(primary) or state.rel(primary)
+    pref = et._matter_ref(primary.parent if primary.name == common.AGENT else primary) or state.rel(primary)
     subject = p.subject or "(no subject)"
     common.append_line(other / "log.md", common.join_pipe(
         [state.ctx.stamp(), "cross-ref: email filed in %s also concerns this matter: %s" % (pref, subject),
          state.rel(filed_path), state.run]))
-    state.journal("cross-ref", state.rel(filed_path), state.rel(other), reason, conf)
+    state.journal("cross-ref", state.rel(filed_path), state.rel(other.parent), reason, conf)
     state.say("cross-ref", state.rel(filed_path), state.rel(other / "log.md"))
 
 # ---------------------------------------------------------------- noise
@@ -542,23 +554,19 @@ def place_file_matter(state, src, matter, args):
          "documents/received/" + dest.name, state.run]))
     state.journal("filed", item, state.rel(dest), args.reason or "", args.confidence or "")
     resolve_note(state, src, state.rel(dest), args.reason or "")
-    state.result.update({"file": item, "destination": state.rel(dest), "matter": state.rel(matter)})
+    state.result.update({"file": item, "destination": state.rel(dest), "matter": state.rel(matter.parent)})
 
 # ---------------------------------------------------------------- register
 
 
-FOLDER_ORIGIN = (("work-product", "work-product"), ("documents/ours", "ours"),
+FOLDER_ORIGIN = (("human", "human"), ("work-product", "work-product"), ("documents/ours", "ours"),
                  ("documents/reference", "reference"), ("drafts", "ours"))
 
 
 def matter_of(root, path):
-    for d in Path(path).resolve().parents:
-        if (d / "matter.md").is_file() and common.MATTER_DIR_RE.match(d.name):
-            if inside(d, Path(root) / "areas"):
-                return d
-        if d == Path(root).resolve():
-            break
-    return None
+    """The matter's agent/ folder for a path inside the matter (agent/ or human/), or None."""
+    d = common.matter_of_path(root, path)
+    return common.agent_dir(d) if d is not None else None
 
 
 def register(state, value):
@@ -568,13 +576,19 @@ def register(state, value):
     matter = matter_of(state.root, path)
     if matter is None:
         raise Refusal("--register takes a file inside a matter folder (areas/.../<reference>_...): %s" % value)
-    rel_in = Path(path).resolve().relative_to(matter).as_posix()
+    root_rel = Path(path).resolve().relative_to(matter.parent).as_posix()
+    if root_rel.startswith(common.HUMAN + "/"):
+        rel_in = root_rel                      # human/...: kept relative to the matter folder
+    elif root_rel.startswith(common.AGENT + "/"):
+        rel_in = root_rel[len(common.AGENT) + 1:]
+    else:
+        raise Refusal("--register takes a file in the matter's agent/ or human/ folder: %s" % value)
     folder = rel_in.rsplit("/", 1)[0] if "/" in rel_in else ""
     name = Path(path).name
     parts = rel_in.split("/")[:-1]
-    if not folder or "history" in parts:
+    if not folder or "history" in parts or (folder == common.HUMAN and name in common.HUMAN_ONLY_NAMES):
         raise Refusal("--register takes a received or added file, not a memory file or history copy: %s" % value)
-    if len(parts) >= 2 and parts[0] == "work-product" and parts[1].startswith("bundle-"):
+    if any(x.startswith("bundle-") or x.endswith("_harvey-pack") for x in parts):
         raise Refusal("--register: files in a work bundle are copies; register the original instead: %s" % value)
     docs = documents_path(matter)
     records = common.read_pipe_records(docs, common.DOCUMENTS_COLUMNS)
@@ -624,8 +638,8 @@ def register(state, value):
     for line in rows:
         common.append_line(docs, line)
     common.append_line(matter / "log.md", common.join_pipe([state.ctx.stamp(), event, rel_in, state.run]))
-    state.journal("filed", state.rel(path), state.rel(matter), "registered in place (put there by hand)", "")
-    state.result.update({"destination": state.rel(path), "matter": state.rel(matter), "registered": True})
+    state.journal("filed", state.rel(path), state.rel(matter.parent), "registered in place (put there by hand)", "")
+    state.result.update({"destination": state.rel(path), "matter": state.rel(matter.parent), "registered": True})
 
 # ---------------------------------------------------------------- main
 

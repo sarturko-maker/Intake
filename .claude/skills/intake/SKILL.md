@@ -12,8 +12,9 @@ No subagents in this harness: do each subagent step yourself, in order, one matt
 - Thresholds: RULES.md 'Intake' (confidence 0.75, ceiling 60 threads, candidate window 60 days).
 
 ## 1. Start
+0. If matter-sync reports matters in the old layout, run `bash tools/matter-migrate` once first (it moves files into agent/ and human/; nothing is edited).
 1. `bash tools/budget-update --mode`: full, lean, minimal or paused. Apply it all run (section 6).
-2. `bash tools/scan-changes`. Read changes/<R>.md; never walk the tree. Journal `run-start | inbox: <n> files | - | mode <mode> | -`.
+2. `bash tools/scan-changes`. Read changes/<R>.md; never walk the tree. Then `bash tools/matter-sync --run <R>`: it registers new and changed files in each matter's human/ and agent/, finds the lawyer's edits, and writes changes/<R>-matters.md (what each matter needs read). Journal `run-start | inbox: <n> files | - | mode <mode> | -`.
 3. Inbox top level: `find inbox -maxdepth 1 -type f ! -name .gitkeep` (skip OS junk).
 4. Each .msg: `bash tools/msg2eml "<file.msg>"` (names have spaces: quote them); journal `converted | <file.msg> | <file.eml> | msg2eml | -`. Exit 3, or a file that is neither .eml nor .msg: leave it in inbox/, journal `carried-over`, ask about it under Please check (for a .msg: save it as .eml from new or web Outlook, or use tools/msg2eml.ps1 on Windows with Outlook desktop).
 5. Order the .eml files by Date, oldest first: `bash tools/unpack-email --json --no-signals --body-chars 200 inbox/*.eml`.
@@ -40,7 +41,7 @@ Paused mode: no filer. File yourself by rules 1, 3 (internal or roster-address o
 ## 3. Read (readers, in parallel)
 1. One reader per matter touched, dispatched at once; matters under one subject run one after another (they share subject.md). Pass R, mode, folder, the new files, reopen yes/no, filing flags, and why (new mail, work product, consistency pass). It follows skills/operations/intake-reading and matter-memory and reports: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, a summary of at most five bullets, questions for the lawyer, knowledge proposals, please-check items, unread files, workflow-log lines, and `chars read: N, chars written: M`.
 2. From changes/<R>.md, outside inbox/:
-   - New file with no documents.md row in a matter's correspondence/, documents/ or work-product/ (not bundle-*): `bash tools/place-email --register <path> --run <R>`, then a reader for that matter (row read and summarised, log line, refreshed matter.md and brief.md).
+   - Each matter in changes/<R>-matters.md (files to read, files changed by the lawyer, the lawyer's edits): a reader for that matter. It reads the listed files, sets their read column, and keeps the lawyer's edits (an edit to agent/ files wins over the agent's earlier text).
    - corrections.md, notes.md or roster.confirmed.md new or modified: reader consistency pass on that matter.
    - An email the lawyer moved between matters: register it in the new matter, drop its row from the old documents.md, log both, WORKFLOW-LOG.md `corrected`, readers for both.
    - house/, knowledge/ or seeds/ file new, modified, moved or deleted (not knowledge/INDEX.md): indexer for those files only (index skill).
@@ -56,8 +57,8 @@ Paused mode: no filer. File yourself by rules 1, 3 (internal or roster-address o
 6. Journal `run-end | filed <n>, new <n>, noise <n>, please-check <n>, carried over <n> | digests/<R>.md | est USD <x> | -`.
 
 ## 5. Reply
-1. Harvey packs: `bash tools/work-bundle --all` (a script, no model cost). It refreshes <matter>/work-product/<REF>_harvey-pack/ for every open matter whose files changed, so every task can link its pack.
-2. The task format (RULES.md 'Index and digest'): for each matter that needs the lawyer, in What-you-should-do-next order, a `### [REF](<folder>/brief.md) Title` heading, at most five bullets with bold inline titles, and a Links line (email to answer, key document, Harvey pack, draft if any). Other matters one line each. Where the next step is a reply, end the task with: say "draft a reply to <REF>".
+1. Harvey packs and pages: `bash tools/work-bundle --all`, then `bash tools/matter-sync --run <R> --pages-only` (scripts, no model cost; START-HERE.md now links the new pack and drafts). It refreshes <matter>/agent/<REF>_harvey-pack/ for every open matter whose files changed, so every task can link its pack.
+2. The task format (RULES.md 'Index and digest'): for each matter that needs the lawyer, in What-you-should-do-next order, a `### [REF](<folder>/START-HERE.md) Title` heading, at most five bullets with bold inline titles, and a Links line (email to answer, key document, Harvey pack, draft if any). Other matters one line each. Where the next step is a reply, end the task with: say "draft a reply to <REF>".
 3. Then up to five questions, one short line each; knowledge proposals go through the knowledge confirm flow (close skill, step 8). End with "Details: [digest](digests/LATEST.md) · [index](INDEX.md)".
 
 ## 6. Modes (RULES.md 'Budget')
