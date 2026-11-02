@@ -33,6 +33,14 @@ _Which companies, boards and teams does the legal team advise? Who is the client
 
 _One line per company: full legal name, country, what it does, and who its directors or managing directors are._
 
+## The legal team
+
+_One line per person: name, role, which areas or entities they cover, email address. Say who owns the shared intake mailbox and who it routes work to._
+
+## Routing to other teams
+
+_Which teams own what, so that requests can be sent on: for example, finance for invoices and payments, procurement for supplier set-up, HR for people matters, IT security for questionnaires. One line each: team, what they own, how to reach them._
+
 ## Signing authority and approval limits
 
 _Where are they written down? Name the document or the folder, for example a delegation of authority policy saved in knowledge/policies/. Who approves what, and above which amounts?_
