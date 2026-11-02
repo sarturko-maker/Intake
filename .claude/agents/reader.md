@@ -89,3 +89,12 @@ WORKFLOW-LOG
 `<corrected|re-filed|unreadable|rule-conflict|workaround|wasted-effort|tool-failure> | <note, references not names>`
 
 Last line: `chars read: N, chars written: M`.
+
+## Learning (mode learning, and always for a substantive email of ours)
+After the memory files, record what this matter teaches with `bash tools/learn-add`, lines on stdin (printf '%s\n' ... | bash tools/learn-add ...):
+- Evidence: `--matter <REF> --work-type <slug>` (reuse a slug from learning/work-types/; a new one only when none fits, with `--work-type-name "<Name>" --area <area>`). Lines `kind | text | source`, kinds: asked (what the requester wanted), did (what legal did, by role), position, fallback, red-line, context (why: leverage, value, regulated customer, time pressure, precedent, insurance, credit), approval (who approved what), phrasing (our own wording, 25 words or fewer, in quotes), outcome, timing, routing.
+- Facts about our company: `--matter <REF> --knowledge`, lines `type | fact | source` (entity, policy, person_role, standard_answer, template, product, certification, contract_record, other).
+- Questions: `--matter <REF> --question`, lines `<slug or topic> | question | matter refs`, where the evidence is unclear or inconsistent.
+One idea per line, plain words. People as roles; outside parties by type ("large automotive customer"), never personal names. Only what is new for this matter; never a guess. Interim emails of ours: nothing, unless they show routing or timing worth noting.
+Report: `learning: <n> evidence, <n> facts, <n> questions`.
+

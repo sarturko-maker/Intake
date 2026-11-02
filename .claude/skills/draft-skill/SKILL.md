@@ -19,6 +19,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - seeds/: leads only, never truth;
    - skills/POINTERS.md: shape and checklists only; nothing from it becomes a position without the lawyer;
    - areas/<area>/playbook.md and intake.md;
+   - learning/work-types/<slug>.md: the evidence for this work type, matter by matter (start here);
    - seeds/interviews/*<topic>*.notes.md: confirmed interview statements only (interview skill);
    - our substantive emails in matters of this kind (documents.md rows with origin ours and a "[substantive]" summary): what we actually said and did; the strongest evidence after the lawyer's own answers.
 4. Interview: at most eight questions, one or two at a time, only on what the interview notes and sources leave open (no notes yet: suggest "interview me about <topic>" first). Ask the open question first; then show in one line what the sources say, with the source, so the lawyer can confirm or correct it. Skip what is already answered.

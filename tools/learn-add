@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# learn-add: append learning lines to the learning register (no model cost; safe for readers in parallel).
+# Usage: bash tools/learn-add --matter REF --work-type SLUG [--work-type-name "NDA review"] [--area A] [--origin O] < lines
+#        bash tools/learn-add --matter REF --knowledge < lines      (each line: type | fact | source)
+#        bash tools/learn-add --matter REF --question < lines       (each line: about | question | evidence)
+#   evidence line on stdin: kind | text | source [| origin]
+#     kinds: asked, did, position, fallback, red-line, context, approval, phrasing, outcome, timing, routing, answer, note
+#     origin: observed (default), stated, seed, interview, lawyer
+#   knowledge types: policy, entity, person_role, standard_answer, template, product, certification, contract_record, other
+#   --matter takes a reference, or a tag for evidence with no matter (seed, chat, interview).
+# Writes learning/work-types/<slug>.md (created from a template when new), learning/knowledge-candidates.md,
+# learning/questions.md. Ids are <matter>-<n>. Exit: 0 ok, 1 some lines refused (printed), 2 usage, 3 no Python.
+# Fallback without Python: append the lines by hand in the formats above, with the next free id.
+FALLBACK="append the lines by hand to learning/work-types/<slug>.md, learning/knowledge-candidates.md or learning/questions.md in the formats shown, with the next free id."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/learning.py" add "$@"

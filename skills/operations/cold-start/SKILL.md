@@ -36,6 +36,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 16. `bash tools/scan-changes --run <R> --write-manifest` again, so the next run sees only new changes.
 
 ## 6. Inbox
+16b. `bash tools/learn-index` (creates learning/). Files in seeds/ (Harvey output): offer "learn" to take them in.
 17. inbox/ has files: run the intake skill. Otherwise run the status skill (the first digest, with 'Needs an owner or date').
 
 ## 7. Report

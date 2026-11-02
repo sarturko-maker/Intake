@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import common  # noqa: E402
 
-EXCLUDED_TOP = {".git", ".claude", "tools", "demo", "phase-2", ".github", "changes", "digests"}
+EXCLUDED_TOP = {".git", ".claude", "tools", "demo", "phase-2", ".github", "changes", "digests", "learning"}
 EXCLUDED_NAMES = {"MANIFEST.csv", "JOURNAL.md", "INDEX.md", "WORKFLOW-LOG.md", "TOOLING.md",
                   "BUDGET.md", "HANDOFF.md", "START-HERE.md"}
 JUNK_NAMES = {".ds_store", "thumbs.db", "desktop.ini"}

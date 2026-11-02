@@ -35,6 +35,15 @@ Say "cold start". It asks once before it installs anything. From then on, "proce
 
 Then teach it how you work, one type of work at a time: say "interview me about NDAs" and dictate your answers. About 15 minutes each. It asks open questions first, reads back every number and name, then shows where your answers differ from what the emails show and asks you to settle each point. Memory is fallible, so your answers are kept as dated statements; nothing becomes a skill until you approve the read-back and then the draft ("draft a skill for NDA review").
 
+## 5b. This phase is for learning
+
+For now, the system's main job is to learn how you work, so that it can write skills and record company facts. Day-to-day help (briefs, replies, Harvey packs) is there when you ask for it.
+
+- Keep dropping both incoming emails and your sent items. Each one adds evidence: what was asked, what you did, the positions you took and why, how you phrased it.
+- Open `learning/index.md` to see what it has learned so far, type of work by type of work, and what's next.
+- Say "learn" every few days. It shows the company facts it noticed (you say yes or no), asks a few questions, and takes in any Harvey output you saved in `seeds/`.
+- When a type of work has three or more matters, it suggests an interview ("interview me about NDAs"), and then a draft skill ("draft a skill for NDA review") for you to approve.
+
 ## 6. Where to look
 
 - `digests/LATEST.md`: what came in, what was proposed, up to five questions, and "what you should do next".

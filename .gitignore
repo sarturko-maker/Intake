@@ -18,6 +18,9 @@
 /seeds/**
 !/seeds/**/
 !/seeds/**/.gitkeep
+/learning/**
+!/learning/**/
+!/learning/**/.gitkeep
 
 /digests/*
 !/digests/.gitkeep

@@ -21,7 +21,9 @@
       "Bash(bash demo/scripts/drop-batch *)",
       "Bash(bash demo/scripts/setup *)",
       "Bash(bash tools/matter-sync *)",
-      "Bash(bash tools/matter-migrate *)"
+      "Bash(bash tools/matter-migrate *)",
+      "Bash(bash tools/learn-add *)",
+      "Bash(bash tools/learn-index *)"
     ],
     "deny": [
       "Edit(**/corrections.md)",

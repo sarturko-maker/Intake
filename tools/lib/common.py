@@ -346,6 +346,8 @@ def house_config(root):
         "timezone": meta.get("timezone", "").strip() or "UTC",
         "reference_prefix": meta.get("reference_prefix", "").strip(),
         "lawyer_name": meta.get("lawyer_name", "").strip(),
+        # learning (this phase: learn ways of working and knowledge) or operating (day-to-day work)
+        "mode": (meta.get("mode", "") or "learning").strip().lower(),
     }
 
 

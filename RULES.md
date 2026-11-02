@@ -44,7 +44,7 @@ Procedure: skills/operations/<skill>/SKILL.md. Read it, follow it.
 | /reply REF | "draft a reply to 2026-0042" | reply |
 | /draft-skill NAME | "draft a skill for NDA review", "approve" | draft-skill |
 | /index | "re-index knowledge" | index |
-| /learn (phase 2) | "learn", "monthly review" | learn: not active, logs the request |
+| /learn | "learn", "what have you learned" | learn |
 
 ## Layout
 
@@ -61,6 +61,7 @@ areas/<area>/playbook.md intake.md proposals/
       agent/          matter.md brief.md facts.md roster.md log.md documents.md correspondence/
                       documents/received/ documents/ours/ documents/reference/ drafts/ history/ <REF>_harvey-pack/
       human/          notes.md corrections.md roster.confirmed.md, and any file the lawyer adds
+learning/index.md (generated) work-types/<slug>.md knowledge-candidates.md questions.md seeds-imported.md
 inbox/ noise/NOISE.csv noise/confirmed/ please-check/ please-check/resolved/
 demo/ tools/ phase-2/ .claude/ (settings.json agents/ hooks/ skills/ = generated mirror)
 ```
@@ -154,7 +155,7 @@ Writing rules:
 - Pasted digest line `confirm nothing needed: NOISE-0001, NOISE-0002`: type `closed` in those rows.
 - Locked INDEX.csv (Excel): INDEX.new.csv is written; ask to close Excel, rerun.
 - INDEX.md: open by area, oldest first; noise; closed in 30 days; the four measures (lawyer minutes per matter, share accepted unchanged, outcome agreement, hours to ready).
-- Digest digests/<run>.md, copied to digests/LATEST.md, plain English, `##` headings in order: Cost line and mode; Arrivals and where filed; New matters and subjects; Proposed sub-areas; Nothing needed (confirm); Please check; Reopened; Questions for you (up to five); Quiet for ten days or more; Needs an owner or date; Measures; What you should do next (numbered: due soonest, waiting on you by age, confirmations, please-check, stale). `--digest-parts` writes five of them.
+- Digest digests/<run>.md, copied to digests/LATEST.md, plain English, `##` headings in order: Cost line and mode; What we learned (learning mode); Arrivals and where filed; New matters and subjects; Proposed sub-areas; Nothing needed (confirm); Please check; Reopened; Questions for you (up to five); Quiet for ten days or more; Needs an owner or date; Measures; What you should do next (numbered: due soonest, waiting on you by age, confirmations, please-check, stale). `--digest-parts` writes five of them.
 - /status: scan, apply edits, index, digest; no new mail.
 - Task format (chat reply and digest), for each matter that needs the lawyer, in What-you-should-do-next order:
   Plain words a 15-year-old would follow; assume the lawyer has read nothing about the matter.
@@ -192,7 +193,10 @@ Writing rules:
 
 - On /close REF, `closed` typed in INDEX.csv (wrap-up-pending), /checkpoint REF (status unchanged).
 - Re-read the matter from the start; closing or checkpoint note in matter.md; update subject.md; at most three why questions in chat; answers as `decision` facts (`source=lawyer in chat YYYY-MM-DD`); knowledge confirm flow; remove wrap-up-pending.
-- Closed is a status; new mail reopens it. Phase 2, not active: proposals, tools/leak-check, /learn.
+- Closed is a status; new mail reopens it. Phase 2, not active: proposals to approved skills, tools/leak-check, the monthly review.
+- Mode (house/brief.md `mode:`, default `learning`): this phase is mainly for learning. Every reader also records what the matter teaches in learning/ through `bash tools/learn-add`: evidence about the type of work (what was asked, what we did, positions, fallbacks, red lines, context, approvals, our phrasing, outcome, timing, routing), facts about the company (candidates, written to knowledge/ only after a yes), and questions. One idea per line; people as roles; outside parties by type, with the matter reference; never a guess. `bash tools/learn-index` rebuilds learning/index.md and the next learning steps: at 3 matters with a position a work type is ready for an interview, after the interview ready to draft (draft-skill).
+- In learning mode the digest and reply put "What we learned" and the next learning steps first; replies and Harvey packs stay available on request. `mode: operating` puts the day-to-day work first.
+- /learn: confirm facts, answer questions, take in seeds (Harvey output), choose the next interview or skill.
 
 ## Budget
 
@@ -237,6 +241,8 @@ Received file changed (scan): `bash tools/lint-received MATTER_FOLDER`; list it 
 | work-bundle | Harvey pack per matter; `--all` refreshes changed ones | copy the list |
 | matter-sync | register new and changed files in human/ and agent/, find the lawyer's edits, write START-HERE.md, list what to read | open the folders by hand |
 | matter-migrate | old one-folder matters to agent/ + human/ (one-off) | move the files by hand |
+| learn-add | append learning lines: evidence, facts, questions | append by hand |
+| learn-index | rebuild learning/index.md and the next learning steps | count by hand |
 
 ## Harness notes
 

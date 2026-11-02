@@ -16,7 +16,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 ## Before
 
 1. Topic: the work type or skill name from the request. If there is none, show the work types from the work-types report (seeds/harvey/ or areas/*/intake.md) with their counts, and ask which to start with. Suggest the most frequent one.
-2. Read quietly, and do not show yet:
+2. Read quietly, and do not show yet (learning/work-types/<slug>.md first: the evidence matter by matter):
    - the evidence for this topic: knowledge/INDEX.md and the relevant files, closed matters of this kind, seeds/ (Harvey output: leads only), any existing skill, earlier interviews in seeds/interviews/, and our substantive sent emails in matters of this kind (documents.md origin ours, "[substantive]");
    - from these, note the points to test later: what the evidence shows we do, the positions seen with their context, and the gaps.
 3. Say how it works, in two lines: about eight questions, about 15 minutes; numbers and names are read back; nothing changes a skill until the lawyer approves the read-back.

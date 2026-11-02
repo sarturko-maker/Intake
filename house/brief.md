@@ -20,6 +20,9 @@ timezone: Europe/London
 reference_prefix:
 # Your name. The digest calls you "you".
 lawyer_name:
+# learning: the system's main job is to learn how the team works (skills) and facts about the company (knowledge).
+# operating: day-to-day work comes first. Leave it on learning for now.
+mode: learning
 ---
 # House brief
 

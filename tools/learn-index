@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# learn-index: rebuild learning/index.md, the page of what the system has learned (no model cost).
+# Usage: bash tools/learn-index [--quiet]
+# Reads learning/work-types/*.md, knowledge-candidates.md, questions.md, skills/*/<slug>/SKILL.md and
+# seeds/interviews/*.notes.md. Shows per work type: matters, evidence, positions, seeds, interview, skill,
+# and where it stands (collecting evidence, ready for an interview at 3 matters with a position, ready to
+# draft after the interview, draft waiting for approval, approved). Lists facts waiting for a yes, open
+# questions, and numbered next learning steps (also printed).
+# Exit: 0 ok, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: count the matters per work-type file by hand and write the next steps in the digest.
+FALLBACK="count matters and positions per learning/work-types file by hand and list the next learning steps in the digest."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/learning.py" index "$@"

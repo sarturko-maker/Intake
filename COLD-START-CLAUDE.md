@@ -68,6 +68,8 @@ Read `RULES.md`, `TOOLING.md`, `BUDGET.md`, `HANDOFF.md` if present, the latest 
 | `/draft-skill NAME` | "draft a skill for NDA review" | interview and draft |
 | `/index` | "re-index knowledge" | knowledge index |
 | `/budget` | "how much have we spent", "budget actual 37.20" | ledger and mode; records the actual bill |
-| `/learn` (phase 2) | "learn", "monthly review" | not active yet; logs the request |
+| `/learn` | "learn", "what have you learned" | confirm facts, answer questions, take in seeds, choose the next interview or skill |
+| `/interview TOPIC` | "interview me about NDAs" | dictated interview about a way of working |
+| `/reply REF` | "draft a reply to 2026-0042" | draft a reply to send yourself |
 
 If a helper fails on this machine, use its fallback, say so in the digest, add a line to `WORKFLOW-LOG.md`.
