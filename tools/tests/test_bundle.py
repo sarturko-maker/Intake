@@ -64,6 +64,46 @@ class WorkBundleTest(unittest.TestCase):
     def bdir(self, name="bundle-2026-11-01"):
         return self.m / "work-product" / name
 
+    def test_pack_is_stable_and_replaced(self):
+        import time
+        r = self.bundle("2026-0002")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        pack = self.m / "work-product" / "2026-0002_harvey-pack"
+        self.assertTrue((pack / "brief.md").is_file())
+        self.assertTrue((pack / ".stamp").is_file())
+        self.assertIn("Files: 13", r.stdout)
+        # a file the lawyer saved inside the pack is moved out, never lost
+        time.sleep(1.1)
+        (pack / "my-memo.md").write_text("mine\n")
+        r = self.bundle("2026-0002")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse((pack / "my-memo.md").exists())
+        self.assertTrue((self.m / "work-product" / "my-memo.md").is_file())
+        self.assertIn("moved", r.stdout)
+        self.assertEqual(len([p for p in (self.m / "work-product").iterdir() if p.name.endswith("_harvey-pack")]), 1)
+
+    def test_all_refreshes_only_changed_open_matters(self):
+        import time
+        r = self.bundle("--all")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("3 refreshed, 0 unchanged", r.stdout)
+        r = self.bundle("--all")
+        self.assertIn("0 refreshed, 3 unchanged", r.stdout)
+        time.sleep(1.1)
+        self.put("notes.md", b"- 2026-11-02: call with sales\n")
+        r = self.bundle("--all")
+        self.assertIn("1 refreshed, 2 unchanged", r.stdout)
+        self.assertTrue((self.m / "work-product" / "2026-0002_harvey-pack" / "notes.md").read_text().startswith("- 2026-11-02"))
+        r = self.bundle("--all", "--force")
+        self.assertIn("3 refreshed, 0 unchanged", r.stdout)
+
+    def test_all_skips_closed_matters(self):
+        mf = self.m / "matter.md"
+        mf.write_text(mf.read_text().replace("status: open", "status: closed"))
+        r = self.bundle("--all")
+        self.assertIn("2 refreshed", r.stdout)
+        self.assertFalse((self.m / "work-product" / "2026-0002_harvey-pack").exists())
+
     def test_contains_exactly_the_section_12_list(self):
         r = self.bundle("2026-0002", "--date", "2026-11-01")
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

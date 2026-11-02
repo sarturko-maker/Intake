@@ -56,7 +56,7 @@ Paused mode: no filer. File yourself by rules 1, 3 (internal or roster-address o
 6. Journal `run-end | filed <n>, new <n>, noise <n>, please-check <n>, carried over <n> | digests/<R>.md | est USD <x> | -`.
 
 ## 5. Reply
-1. Bundles: for each matter proposed ready_for_lawyer that got new material this run, `bash tools/work-bundle <REF>` (skip noise, please-check, sensitive).
+1. Harvey packs: `bash tools/work-bundle --all` (a script, no model cost). It refreshes <matter>/work-product/<REF>_harvey-pack/ for every open matter whose files changed, so every task can link its pack.
 2. The task format (RULES.md 'Index and digest'): for each matter that needs the lawyer, in What-you-should-do-next order, a `### [REF](<folder>/brief.md) Title` heading, at most five bullets with bold inline titles, and a Links line (email to answer, key document, Harvey pack, draft if any). Other matters one line each. Where the next step is a reply, end the task with: say "draft a reply to <REF>".
 3. Then up to five questions, one short line each; knowledge proposals go through the knowledge confirm flow (close skill, step 8). End with "Details: [digest](digests/LATEST.md) · [index](INDEX.md)".
 

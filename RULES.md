@@ -148,7 +148,8 @@ Writing rules:
 - Digest digests/<run>.md, copied to digests/LATEST.md, plain English, `##` headings in order: Cost line and mode; Arrivals and where filed; New matters and subjects; Proposed sub-areas; Nothing needed (confirm); Please check; Reopened; Questions for you (up to five); Quiet for ten days or more; Needs an owner or date; Measures; What you should do next (numbered: due soonest, waiting on you by age, confirmations, please-check, stale). `--digest-parts` writes five of them.
 - /status: scan, apply edits, index, digest; no new mail.
 - Task format (chat reply and digest), for each matter that needs the lawyer, in What-you-should-do-next order:
-  `### [REF](<folder>/brief.md) Title`, then at most five bullets with a bold inline title (`- **What they want:** ...`, `**Where it stands:**`, `**What we did:**`, `**Open point:**`, `**Next step:**`), then one `Links:` line: email to answer, key document, Harvey pack (work-product/bundle-<date>/), draft reply. Other matters: one line each with their link.
+  Plain words a 15-year-old would follow; assume the lawyer has read nothing about the matter.
+  `### [REF](<folder>/brief.md) Title`, then at most five bullets with a bold inline title (`- **What they want:** ...`, `**Where it stands:**`, `**What we did:**`, `**Open point:**`, `**Next step:**`), then one `Links:` line: email to answer, key document, Harvey pack (work-product/<REF>_harvey-pack/), draft reply. Other matters: one line each with their link.
   Links are Markdown links, workspace-relative in chat, `../`-prefixed in digests/; folder names have no spaces. Offer "draft a reply to REF" where the next step is a reply.
 
 ## Knowledge
@@ -175,7 +176,7 @@ Writing rules:
 - Harvey by default; Legora or another tool works the same way. You never upload.
 - /bundle REF: `bash tools/work-bundle REF [--skill NAME]` writes work-product/bundle-<date>/: brief, matter, facts-live, subject, both rosters, corrections, notes, correspondence/, documents/received/, documents/ours/, skill.md, intake.md. Never other subjects, history/ or the knowledge base.
 - The lawyer uploads it (Harvey: a Vault, 50 files per upload, 500 MB per file), pastes brief.md as the task, saves deliverables into work-product/.
-- Intake makes or refreshes the bundle for each matter proposed ready_for_lawyer with new material, so the task links it.
+- Harvey pack: every open matter has one, `<matter>/work-product/<REF>_harvey-pack/`, rebuilt by `bash tools/work-bundle --all` at the end of every intake and status run when the matter changed (script, no model cost). Never save into a pack: files found there are moved to work-product/. A dated snapshot: `bash tools/work-bundle REF --date D`.
 - No work tool: the reader and helpers work from the same files.
 
 ## Wrap-up and learning

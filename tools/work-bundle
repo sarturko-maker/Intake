@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # work-bundle: write a matter's work bundle for the work tool (Harvey by default; Legora or another tool works the same way).
-# Usage: bash tools/work-bundle <REF|MATTER_FOLDER> [--date YYYY-MM-DD] [--skill NAME]
+# Usage: bash tools/work-bundle <REF|MATTER_FOLDER> [--skill NAME] [--date YYYY-MM-DD] [--quiet]
+#        bash tools/work-bundle --all [--force]
 #   REF|MATTER_FOLDER  the matter: reference (2026-0042) or folder path
-#   --date D           bundle date (default: today, house time); a second bundle that day gets -2, -3
+#   (default)          refresh the matter's Harvey pack: <matter>/work-product/<REF>_harvey-pack/, replaced in full
+#   --date D           write a dated snapshot instead: <matter>/work-product/bundle-<date>/ (-2, -3 for a second that day)
 #   --skill NAME       controlling skill to include (default: controlling_skill in matter.md)
-# Writes <matter>/work-product/bundle-<date>/ with exactly: brief.md, matter.md, facts-live.md (live facts view),
+#   --all              refresh the pack of every open matter whose files changed since its pack was built
+#   --force            with --all: rebuild every open matter's pack
+#   --quiet            one line of output
+# Files a person saved inside a pack are moved to work-product/ before the pack is replaced, never lost.
+# The pack (or snapshot) holds exactly: brief.md, matter.md, facts-live.md (live facts view),
 #   subject.md, roster.md, roster.confirmed.md, corrections.md, notes.md, correspondence/, documents/received/,
 #   documents/ours/, skill.md (the controlling skill's SKILL.md), intake.md (the area's).
 # Never other subjects, history/ or the knowledge base. A missing piece is left out with a warning.
@@ -19,15 +25,21 @@ set -u
 
 usage() {
   [ -n "${1:-}" ] && echo "work-bundle: $1" >&2
-  echo "Usage: bash tools/work-bundle <REF|MATTER_FOLDER> [--date YYYY-MM-DD] [--skill NAME]" >&2
+  echo "Usage: bash tools/work-bundle <REF|MATTER_FOLDER> [--skill NAME] [--date YYYY-MM-DD] [--quiet] | --all [--force]" >&2
   exit 2
 }
 
 TARGET=""
 DATE=""
 SKILL=""
+ALL=0
+FORCE=0
+QUIET=0
 while [ $# -gt 0 ]; do
   case "$1" in
+    --all) ALL=1; shift ;;
+    --force) FORCE=1; shift ;;
+    --quiet) QUIET=1; shift ;;
     --date) [ $# -ge 2 ] || usage "--date needs YYYY-MM-DD"; DATE="$2"; shift 2 ;;
     --date=*) DATE="${1#--date=}"; shift ;;
     --skill) [ $# -ge 2 ] || usage "--skill needs a skill name"; SKILL="$2"; shift 2 ;;
@@ -36,10 +48,38 @@ while [ $# -gt 0 ]; do
     *) [ -z "$TARGET" ] || usage "one matter at a time"; TARGET="$1"; shift ;;
   esac
 done
-[ -n "$TARGET" ] || usage "name the matter"
-
 ROOT="${INTAKE_ROOT:-$here/..}"
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P)" || usage "workspace not found"
+
+# ---------------------------------------------------------------- --all: refresh changed packs
+if [ "$ALL" = 1 ]; then
+  [ -z "$TARGET" ] || usage "--all takes no matter"
+  refreshed=0; skipped=0; failed=0
+  if [ -d "$ROOT/areas" ]; then
+    while IFS= read -r mf; do
+      [ -n "$mf" ] || continue
+      d="$(dirname "$mf")"
+      case "$d" in */history/*|*/work-product/*) continue ;; esac
+      st="$(awk '{ sub(/\r$/, "") } NR == 1 && $0 != "---" { exit } NR > 1 && /^---/ { exit } /^status:/ { sub(/^status:[ \t]*/, ""); print; exit }' "$mf")"
+      [ "$st" = "closed" ] && continue
+      ref="${d##*/}"; ref="${ref%%_*}"
+      stamp="$d/work-product/${ref}_harvey-pack/.stamp"
+      if [ "$FORCE" = 0 ] && [ -f "$stamp" ]; then
+        area_key="$(awk '{ sub(/\r$/, "") } /^area:/ { sub(/^area:[ \t]*/, ""); print; exit }' "$mf")"
+        newer="$(find "$d" -path "$d/work-product" -prune -o -path "$d/history" -prune -o -path "$d/drafts" -prune \
+                   -o \( -type f -o -type d \) -newer "$stamp" -print 2>/dev/null | head -n 1)"
+        [ -z "$newer" ] && [ -f "$(dirname "$d")/subject.md" ] && [ "$(dirname "$d")/subject.md" -nt "$stamp" ] && newer=subject
+        [ -z "$newer" ] && [ -n "$area_key" ] && [ -f "$ROOT/areas/$area_key/intake.md" ] && [ "$ROOT/areas/$area_key/intake.md" -nt "$stamp" ] && newer=intake
+        if [ -z "$newer" ]; then skipped=$((skipped + 1)); continue; fi
+      fi
+      if bash "${BASH_SOURCE[0]}" "$d" --quiet; then refreshed=$((refreshed + 1)); else failed=$((failed + 1)); fi
+    done <<< "$(find "$ROOT/areas" -name matter.md -type f 2>/dev/null | sort)"
+  fi
+  echo "Harvey packs: $refreshed refreshed, $skipped unchanged, $failed failed."
+  [ "$failed" = 0 ] || exit 1
+  exit 0
+fi
+[ -n "$TARGET" ] || usage "name the matter"
 
 # Value of a frontmatter key ("key: value" between the first two --- lines), quotes removed.
 fm_get() {
@@ -91,7 +131,9 @@ if [ -z "$AREA" ]; then
 fi
 
 # ---------------------------------------------------------------- date and skill
+SNAPSHOT=0
 if [ -n "$DATE" ]; then
+  SNAPSHOT=1
   case "$DATE" in
     [0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]) ;;
     *) usage "--date needs YYYY-MM-DD, got '$DATE'" ;;
@@ -147,11 +189,27 @@ facts_live_awk() {
 }
 
 # ---------------------------------------------------------------- write the bundle
-B="$M/work-product/bundle-$DATE"
-n=2
-while [ -e "$B" ]; do B="$M/work-product/bundle-$DATE-$n"; n=$((n + 1)); done
+if [ "$SNAPSHOT" = 1 ]; then
+  B="$M/work-product/bundle-$DATE"
+  n=2
+  while [ -e "$B" ]; do B="$M/work-product/bundle-$DATE-$n"; n=$((n + 1)); done
+  FINAL="$B"
+else
+  FINAL="$M/work-product/${REF}_harvey-pack"
+  B="$M/work-product/.${REF}_harvey-pack.tmp$$"
+  rm -rf "$B"
+  # Anything a person saved inside the old pack (newer than its stamp) is moved to work-product/ first.
+  if [ -d "$FINAL" ] && [ -f "$FINAL/.stamp" ]; then
+    while IFS= read -r f; do
+      [ -n "$f" ] || continue
+      dest="$M/work-product/${f##*/}"
+      k=2; while [ -e "$dest" ]; do dest="$M/work-product/${f##*/}-$k"; k=$((k + 1)); done
+      mv "$f" "$dest" && warn "moved ${f#$M/} out of the pack to ${dest#$M/}: save deliverables in work-product/, not in the pack"
+    done <<< "$(find "$FINAL" -type f ! -name .stamp -newer "$FINAL/.stamp" 2>/dev/null)"
+  fi
+fi
 mkdir -p "$B" || { echo "work-bundle: cannot create $B" >&2; exit 1; }
-B_REL="${B#$ROOT/}"
+B_REL="${FINAL#$ROOT/}"
 
 copy_file() {  # source, name in bundle, what
   if [ -f "$1" ]; then cp -p "$1" "$B/$2"; else warn "no $3 at ${1#$ROOT/}: left out"; fi
@@ -214,21 +272,33 @@ else
   warn "no intake.md for area '${AREA:-unknown}' (areas/${AREA:-?}/intake.md): left out"
 fi
 
+# ---------------------------------------------------------------- finish the pack
+if [ "$SNAPSHOT" = 0 ]; then
+  rm -rf "$FINAL" && mv "$B" "$FINAL" || { echo "work-bundle: cannot replace $B_REL (open in another program?)" >&2; rm -rf "$B"; exit 1; }
+  B="$FINAL"
+  : > "$B/.stamp"
+fi
+
 # ---------------------------------------------------------------- report
-COUNT="$(find "$B" -type f | wc -l | tr -d ' ')"
+COUNT="$(find "$B" -type f ! -name .stamp | wc -l | tr -d ' ')"
 BIG=""
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   size="$(wc -c < "$f" | tr -d ' ')"
   if [ "${size:-0}" -gt 500000000 ]; then BIG="$BIG${BIG:+, }${f#$B/}"; fi
-done <<< "$(find "$B" -type f)"
+done <<< "$(find "$B" -type f ! -name .stamp)"
 
+if [ "$QUIET" = 1 ]; then
+  echo "Harvey pack refreshed: $B_REL ($COUNT files)"
+  [ -n "$WARNINGS" ] && printf '%s\n' "$WARNINGS" | grep -v "left out" >&2
+  exit 0
+fi
 echo "Bundle written: $B_REL"
 echo "Files: $COUNT"
 echo "Upload notes (Harvey; Legora or another tool works the same way):"
 echo "- Upload the bundle folder to a Vault for this matter: at most 50 files per upload, 500 MB per file."
 echo "- Paste brief.md as the task."
-echo "- Put the deliverables back into $M_REL/work-product/, not into the bundle folder."
+echo "- Put the deliverables back into $M_REL/work-product/, not into the bundle folder (a pack is replaced whenever the matter changes)."
 if [ "$COUNT" -gt 50 ]; then
   warn "$COUNT files: more than 50, so upload in $(( (COUNT + 49) / 50 )) batches of at most 50"
 fi

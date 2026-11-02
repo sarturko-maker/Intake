@@ -45,7 +45,8 @@ def walk(root):
                 continue
             if d == "history":
                 continue
-            if d.startswith("bundle-") and os.path.basename(dirpath) == "work-product":
+            if os.path.basename(dirpath) == "work-product" and (
+                    d.startswith("bundle-") or d.endswith("_harvey-pack") or d.startswith(".")):
                 continue
             keep.append(d)
         dirnames[:] = sorted(keep)

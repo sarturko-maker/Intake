@@ -58,7 +58,7 @@ A matter lives under its area, sub-area and subject: `areas/commercial/customers
 
 ## 9. Harvey or another work tool
 
-"bundle 2026-0042 for Harvey". Upload the bundle folder to a Vault and paste `brief.md` as the task. Put what comes back into the matter's `work-product/` folder. Legora or another tool works the same way.
+Every open matter has a ready Harvey pack, kept up to date after every run: the matter's `work-product/<reference>_harvey-pack/` folder (the task summary links it). Drop its files into the Harvey work agent (see `harvey/work-agent/`). Save what comes back into the matter's `work-product/` folder, not into the pack. Legora or another tool works the same way.
 
 ## 10. Budget
 

@@ -17,6 +17,7 @@ R = run id: the first `bash tools/scan-changes` prints `report: changes/<R>.md`;
 5. `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note status` once per model used (m: the BUDGET.md price key of that model). Then `bash tools/budget-update --show` for the cost line.
 6. Write digests/<R>.md with the headings of the intake skill, section 4. Arrivals and where filed: "No new mail read in this run. Inbox: <n> files waiting." Copy it to digests/LATEST.md.
 7. `bash tools/scan-changes --run <R> --write-manifest --quiet`, unless a change was left unhandled. Journal `run-end`.
+7b. `bash tools/work-bundle --all`: refresh the Harvey packs of open matters that changed.
 8. Reply in the task format (RULES.md 'Index and digest': bold-titled bullets, links, Harvey pack where it exists): the What you should do next list, then up to five questions, one short line each. Inbox has files: add "Say 'process the inbox' to file them."
 
 ## Answers to the digest
