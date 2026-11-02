@@ -23,7 +23,11 @@
     "deny": [
       "Edit(**/corrections.md)",
       "Edit(**/roster.confirmed.md)",
-      "Edit(/house/**)"
+      "Edit(/house/**)",
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(git remote *)",
+      "Bash(gh *)"
     ]
   },
   "hooks": {

@@ -6,7 +6,7 @@ The contract for any agent or person running this workspace; harness files point
 
 Emails dropped in inbox/ are filed into matters; the agent keeps memory, index and digest, and proposes. The lawyer decides.
 
-1. Never send: no email, reply, upload or share; drafts stay in drafts/. Never paste workspace content into an outside service.
+1. Never send: no email, reply, upload or share; drafts stay in drafts/. Never paste workspace content into an outside service. Never run git commit, push or remote in the live workspace, and never create a repository there.
 2. Never close: `status: closed` only on the lawyer's word (`closed` typed in INDEX.csv, or "close REF").
 3. Never edit house/**, **/corrections.md or **/roster.confirmed.md, by any route; the cold-start proof of the deny rules is the one attempt allowed. Human-owned values come only from the lawyer.
 4. Never rename, edit or re-save a received file (correspondence/, documents/received/).
