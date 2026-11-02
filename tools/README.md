@@ -53,7 +53,7 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 - Compares the tree with MANIFEST.csv by size and mtime; hashes candidates only. Kinds: new, modified (hash differs), touched (mtime only), deleted, moved (a deleted path's hash at a new path). No manifest: everything is new.
 - Skips `.git/ .claude/ tools/ demo/ phase-2/ .github/ changes/ digests/`, every `history/`, `**/work-product/bundle-*/`, MANIFEST.csv, JOURNAL.md, INDEX.md, WORKFLOW-LOG.md, TOOLING.md, BUDGET.md, HANDOFF.md, OS junk (`.DS_Store Thumbs.db desktop.ini ~$* *.tmp .~lock*`). INDEX.csv is scanned (the lawyer edits it).
 - Report `changes/<RUN>.md`: counts in the header; sections by matter folder, else first path part (inbox, knowledge, house, seeds, skills, areas), else root; lines `- new: <path> (<size>)`, `- moved: <old> -> <new>`.
-- `--write-manifest`: rewrite MANIFEST.csv (`path,size,mtime,sha256,first_seen,last_seen,last_processed`, mtime integer seconds): first_seen kept, last_seen = RUN, last_processed = RUN for every file not directly in `inbox/`.
+- `--write-manifest`: rewrite MANIFEST.csv (`path,size,mtime,sha256,first_seen,last_seen,last_processed`, mtime integer seconds): first_seen kept, last_seen = RUN, last_processed = RUN for every file not directly in `inbox/`. Also empties `changes/agent-writes.csv` (the after-write hook's record of the agent's own writes; the manifest now holds them).
 - `--quiet`: only the report path. `--json`: counts and changes.
 - Reads: the tree, MANIFEST.csv. Writes: `changes/<RUN>.md`; MANIFEST.csv with `--write-manifest`.
 - Exit: 0, 2 usage, 3 Python missing.
@@ -120,6 +120,7 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 `bash tools/history-copy FILE...` (pure bash)
 
 - Copies each existing file to `<dir>/history/<stem>.<YYYY-MM-DD_HHMMSS>.md` (`-2`, `-3` on a clash; same naming as `common.history_copy`). Prints each copy's path. A missing file prints `no file: <path>` and exits 0.
+- Windows (Git Bash, MSYS, Cygwin): `C:\x\y` paths work as well as `/c/x/y`; the copy's path is printed in the style given. `INTAKE_WINPATHS=1` makes any shell treat backslashes this way (tests).
 - Writes: `history/` copies. Exit: 0, 1 a copy failed, 2 usage.
 - Fallback: copy by hand to `history/<stem>.<YYYY-MM-DD_HHMMSS>.md`.
 

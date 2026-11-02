@@ -255,14 +255,14 @@ copy_file "$SUBJ_DIR/subject.md" subject.md "subject.md"
 copy_file "$M/agent/roster.md" roster.md "roster.md"
 copy_file "$M/human/roster.confirmed.md" roster.confirmed.md "roster.confirmed.md"
 copy_file "$M/human/corrections.md" corrections.md "corrections.md"
-copy_file "$M/human/notes.md" notes.md "notes.md"
+copy_file "$M/agent/notes.md" notes.md "notes.md"
 copy_dir "$M/agent/correspondence" correspondence
 copy_dir "$M/agent/documents/received" documents/received
 copy_dir "$M/agent/documents/ours" documents/ours
 # the lawyer's other files (the three above are already at the top)
-if [ -d "$M/human" ] && [ -n "$(find "$M/human" -type f ! -name notes.md ! -name corrections.md ! -name roster.confirmed.md ! -name .gitkeep 2>/dev/null | head -n 1)" ]; then
+if [ -d "$M/human" ] && [ -n "$(find "$M/human" -type f ! -name corrections.md ! -name roster.confirmed.md ! -name .gitkeep 2>/dev/null | head -n 1)" ]; then
   copy_dir "$M/human" human
-  rm -f "$B/human/notes.md" "$B/human/corrections.md" "$B/human/roster.confirmed.md"
+  rm -f "$B/human/corrections.md" "$B/human/roster.confirmed.md"
 fi
 
 if [ -n "$SKILL_FILE" ]; then

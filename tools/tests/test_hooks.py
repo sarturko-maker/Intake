@@ -8,6 +8,7 @@ the matter-memory templates. No agent or harness process is started.
 Run from the workspace root: python3 -m unittest discover -s tools/tests -p 'test_*.py'
 """
 
+import hashlib
 import json
 import os
 import re
@@ -342,6 +343,69 @@ class BeforeWriteHistoryTest(HookCase):
         p = self.matter / "facts.md"
         self.assertEqual(self.before(p)[0], 0)
         self.assertEqual(len(self.history(p)), 1)
+
+
+class NotesAndAgentWritesTest(HookCase):
+    """A matter's agent/notes.md holds the lawyer's words: the agent may only add lines at the end.
+    Writes that stand to agent/ memory files are recorded in changes/agent-writes.csv."""
+
+    def setUp(self):
+        super().setUp()
+        self.notes = self.matter / "agent" / "notes.md"
+        self.write(self.notes, "# Notes\n\nIntro.\n\n- 2026-11-01: (you said) first\n")
+        self.ledger = self.ws / "changes" / "agent-writes.csv"
+
+    def ledger_rows(self):
+        if not self.ledger.is_file():
+            return []
+        return [line for line in self.read(self.ledger).splitlines()[1:] if line]
+
+    def test_adding_a_line_stands_and_is_recorded(self):
+        new = self.read(self.notes) + "- 2026-11-02: (you said) second\n"
+        self.assertEqual(self.write_cycle(self.notes, new), (0, "", ""))
+        self.assertEqual(self.read(self.notes), new)
+        self.assertEqual(len(self.history(self.notes)), 1)
+        rows = self.ledger_rows()
+        self.assertEqual(len(rows), 1)
+        self.assertIn(self.rel(self.notes), rows[0])
+        self.assertIn(hashlib.sha256(new.encode("utf-8")).hexdigest(), rows[0])
+
+    def test_changing_an_earlier_line_is_restored(self):
+        old = self.read(self.notes)
+        rc, out, err = self.write_cycle(self.notes, old.replace("first", "changed") + "- 2026-11-02: x\n")
+        self.assertEqual(rc, 2)
+        self.assertIn("you may only add lines at the end", err)
+        self.assertEqual(self.read(self.notes), old)
+        self.assertEqual(self.ledger_rows(), [])
+
+    def test_line_endings_and_trailing_blanks_do_not_count_as_changes(self):
+        self.write(self.notes, "# Notes\r\n\r\n- 2026-11-01: first\r\n\r\n\r\n")
+        rc, _, err = self.write_cycle(self.notes, "# Notes\n\n- 2026-11-01: first\n- 2026-11-02: second\n")
+        self.assertEqual(rc, 0, err)
+
+    def test_notes_elsewhere_are_not_checked(self):
+        p = self.ws / "knowledge" / "notes.md"
+        self.write(p, "a\n")
+        self.assertEqual(self.write_cycle(p, "b\n"), (0, "", ""))
+        self.assertEqual(self.history(p), [])
+        self.assertEqual(self.ledger_rows(), [])
+
+    def test_only_agent_memory_files_are_recorded(self):
+        draft = self.matter / "agent" / "drafts" / "reply.md"
+        self.write(draft, "draft\n")
+        self.assertEqual(self.write_cycle(draft, "draft 2\n"), (0, "", ""))
+        self.assertEqual(self.ledger_rows(), [])
+        brief = self.matter / "agent" / "brief.md"
+        self.write(brief, "# Brief\n")
+        self.assertEqual(self.write_cycle(brief, "# Brief\n\nNew.\n"), (0, "", ""))
+        self.assertEqual(len(self.ledger_rows()), 1)
+
+    def test_a_rejected_write_is_not_recorded(self):
+        page = self.matter / "agent" / "matter.md"
+        self.write(page, "# Matter\n")
+        rc, _, _ = self.write_cycle(page, "x" * 17000)
+        self.assertEqual(rc, 2)
+        self.assertEqual(self.ledger_rows(), [])
 
 
 class MalformedInputTest(HookCase):
@@ -723,9 +787,9 @@ class SettingsTest(unittest.TestCase):
 
     def test_deny_rules(self):
         deny = self.data["permissions"]["deny"]
-        for rule in ("Edit(**/corrections.md)", "Edit(**/roster.confirmed.md)", "Edit(**/notes.md)",
-                     "Edit(/areas/**/human/**)"):
+        for rule in ("Edit(**/corrections.md)", "Edit(**/roster.confirmed.md)", "Edit(/areas/**/human/**)"):
             self.assertIn(rule, deny)
+        self.assertNotIn("Edit(**/notes.md)", deny, "the agent writes the lawyer's words into agent/notes.md")
         self.assertNotIn("Edit(/house/**)", deny)
         self.assertIn("Edit(/house/**)", self.data["permissions"]["ask"], "house/ asks the lawyer first")
         for rule in deny:

@@ -224,6 +224,10 @@ def main(argv=None):
     if args.write_manifest:
         common.write_csv(mpath, MANIFEST_COLUMNS,
                          manifest_rows(run, current, hashes, unreadable, manifest, entries), bom=False)
+        # The manifest now holds what the agent wrote this run: empty the after-write hook's record.
+        ledger = root / "changes" / "agent-writes.csv"
+        if ledger.is_file():
+            ledger.unlink()
     c = counts_of(entries)
     rel_report = common.rel(report, root)
     if args.json:

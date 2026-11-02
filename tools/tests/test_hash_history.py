@@ -150,7 +150,22 @@ class HistoryCopyTest(TempDirTest):
         self.assertEqual(res.returncode, 0)
         lines = res.stdout.splitlines()
         self.assertEqual(lines[0], "no file: %s" % (self.tmp / "m" / "missing.md"))
-        self.assertTrue(lines[1].endswith("history/facts.%s.md" % FIXED_STAMP))
+        self.assertTrue(lines[1].replace("\\", "/").endswith("history/facts.%s.md" % FIXED_STAMP))
+
+    def test_windows_style_path(self):
+        """C:\\...\\matter.md as Python on Windows passes it: the copy lands beside the file and its
+        path comes back in the same style. INTAKE_WINPATHS=1 lets a non-Windows shell act the same."""
+        f = self.make(self.tmp / "m", "matter.md", "page text")
+        given = str(f).replace("/", "\\")
+        env = dict(self.fake_date_env(), INTAKE_WINPATHS="1")
+        res = run("history-copy", given, env=env)
+        self.assertEqual(res.returncode, 0, res.stderr)
+        dest = self.tmp / "m" / "history" / ("matter.%s.md" % FIXED_STAMP)
+        self.assertEqual(res.stdout, "%s\n" % str(dest).replace("/", "\\"))
+        self.assertEqual(dest.read_text(encoding="utf-8"), "page text")
+        self.assertFalse((ROOT / "history").exists())
+        missing = str(self.tmp / "m" / "missing.md").replace("/", "\\")
+        self.assertEqual(run("history-copy", missing, env=env).stdout, "no file: %s\n" % missing)
 
     def test_usage_exit_2(self):
         self.assertEqual(run("history-copy").returncode, 2)

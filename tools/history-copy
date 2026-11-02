@@ -4,6 +4,8 @@
 # Each existing FILE goes to <dir>/history/<stem>.<YYYY-MM-DD_HHMMSS><ext> (local time; ext .md when the
 #   name has none), with -2, -3 on a clash: the same naming as common.history_copy. Prints each copy's path.
 # A missing file prints "no file: <path>" and is not an error.
+# Windows (Git Bash, MSYS, Cygwin): C:\x\y paths work too; the copy's path is printed in the same
+#   style as the one given. INTAKE_WINPATHS=1 makes any shell treat backslashes this way (tests).
 # Exit: 0 ok (missing files included), 1 a copy failed, 2 usage error.
 # Fallback without bash: copy the file by hand to history/<stem>.<YYYY-MM-DD_HHMMSS>.md beside it.
 FALLBACK="copy the file by hand to history/<stem>.<YYYY-MM-DD_HHMMSS>.md beside it."
@@ -14,10 +16,19 @@ if [ $# -eq 0 ]; then
   exit 2
 fi
 
+winshell=no
+[ "${INTAKE_WINPATHS:-}" = 1 ] && winshell=yes
+case "$(uname -s 2>/dev/null)" in MINGW* | MSYS* | CYGWIN*) winshell=yes ;; esac
+
 status=0
-for f in "$@"; do
+for given in "$@"; do
+  f="$given"
+  backslash=no
+  if [ "$winshell" = yes ]; then
+    case "$given" in *\\*) backslash=yes; f="${given//\\//}" ;; esac
+  fi
   if [ ! -f "$f" ]; then
-    echo "no file: $f"
+    echo "no file: $given"
     continue
   fi
   case "$f" in
@@ -52,9 +63,9 @@ for f in "$@"; do
     n=$((n + 1))
   done
   if cp -p "$f" "$dest"; then
-    echo "$dest"
+    if [ "$backslash" = yes ]; then echo "${dest//\//\\}"; else echo "$dest"; fi
   else
-    echo "copy failed: $f" >&2
+    echo "copy failed: $given" >&2
     status=1
   fi
 done

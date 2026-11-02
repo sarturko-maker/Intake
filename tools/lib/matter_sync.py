@@ -2,12 +2,13 @@
 
 For every matter (or those named):
   1. registers files nobody has recorded yet: anything in human/ (the lawyer's folder, except
-     notes.md, corrections.md and roster.confirmed.md, which are read directly) and anything put by
+     corrections.md and roster.confirmed.md, which are read directly) and anything put by
      hand into agent/correspondence/ or agent/documents/;
   2. a file in human/ whose content changed: its documents.md row is set back to read: pending;
-  3. finds the lawyer's edits since the last run: human/notes.md, corrections.md, roster.confirmed.md,
-     and the agent's own memory files (matter.md, brief.md, facts.md, roster.md) when the lawyer
-     edited them, by comparing with MANIFEST.csv (the state at the end of the last run);
+  3. finds the lawyer's edits since the last run: human/corrections.md, roster.confirmed.md,
+     and the agent's files (matter.md, brief.md, facts.md, roster.md, notes.md) when the lawyer
+     edited them, by comparing with MANIFEST.csv (the state at the end of the last run); content
+     the agent wrote itself (changes/agent-writes.csv, kept by the after-write hook) does not count;
   4. writes <matter>/START-HERE.md: status, next step and links to everything in both folders;
   5. reports, per matter, what a reader must read (documents.md rows with read: pending, and the
      edits found), to stdout and to changes/<run>-matters.md.
@@ -25,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common  # noqa: E402
 
 JUNK = {".ds_store", "thumbs.db", "desktop.ini", ".gitkeep"}
-AGENT_MEMORY = ("matter.md", "brief.md", "facts.md", "roster.md")
+AGENT_MEMORY = ("matter.md", "brief.md", "facts.md", "roster.md", "notes.md")
 REGISTER_DIRS = ("correspondence", "documents")  # under agent/
 
 
@@ -105,8 +106,19 @@ def reset_changed(matter, rows, path, folder, name, sha, stamp_text, run):
     return False
 
 
-def lawyer_edits(root, matter, manifest):
-    """Memory files the lawyer changed since the last run (per MANIFEST.csv)."""
+def agent_writes(root):
+    """sha256 values the agent itself wrote, per lower-case path: changes/agent-writes.csv, kept by the
+    after-write hook and emptied when scan-changes writes the manifest."""
+    out = {}
+    for r in common.read_csv(Path(root) / "changes" / "agent-writes.csv"):
+        out.setdefault(r.get("path", "").strip().lower(), set()).add(r.get("sha256", "").strip())
+    return out
+
+
+def lawyer_edits(root, matter, manifest, written=None):
+    """Memory files the lawyer changed since the last run (per MANIFEST.csv). A file whose content the
+    agent wrote itself (written: agent_writes) is not the lawyer's edit."""
+    written = written or {}
     out = []
     files = [common.human_dir(matter) / n for n in common.HUMAN_ONLY_NAMES] + \
             [common.agent_dir(matter) / n for n in AGENT_MEMORY]
@@ -120,8 +132,10 @@ def lawyer_edits(root, matter, manifest):
                     common.read_text(f).strip() != common.read_text(tmpl).strip():
                 out.append(f.relative_to(matter).as_posix())
             continue
-        if manifest[relp] and common.sha256_file(f) != manifest[relp]:
-            out.append(f.relative_to(matter).as_posix())
+        if manifest[relp]:
+            sha = common.sha256_file(f)
+            if sha != manifest[relp] and sha not in written.get(relp.lower(), ()):
+                out.append(f.relative_to(matter).as_posix())
     return out
 
 
@@ -143,7 +157,7 @@ def start_here(root, matter, meta, rows, pending, edits, stamp_text):
     pack = "agent/%s_harvey-pack/" % ref
     if (matter / pack).is_dir():
         quick.append("[Harvey pack](%s)" % link(pack))
-    quick += ["[Log](agent/log.md)", "[Your notes](human/notes.md)"]
+    quick += ["[Log](agent/log.md)", "[Notes](agent/notes.md)"]
     L += ["## Open first", "", " · ".join(quick), ""]
     if pending or edits:
         L += ["## New or changed since the last run", ""]
@@ -192,7 +206,7 @@ def start_here(root, matter, meta, rows, pending, edits, stamp_text):
     return "\n".join(L)
 
 
-def sync_matter(root, matter, run, manifest, stamp_text, do_register=True):
+def sync_matter(root, matter, run, manifest, stamp_text, do_register=True, written=None):
     rep = {"matter": common.rel(matter, root), "registered": [], "changed": [], "pending": [],
            "edits": [], "errors": []}
     rows = doc_rows(matter)
@@ -216,7 +230,7 @@ def sync_matter(root, matter, run, manifest, stamp_text, do_register=True):
     rep["pending"] = [(r["folder"] if r["folder"].startswith(common.HUMAN) else "agent/" + r["folder"])
                       + "/" + r["name"] for r in pending]
     # The lawyer's edits are only knowable before the agent writes: at the start of a run.
-    rep["edits"] = lawyer_edits(root, matter, manifest) if do_register else []
+    rep["edits"] = lawyer_edits(root, matter, manifest, written) if do_register else []
     meta, _ = common.read_frontmatter_file(common.agent_dir(matter) / "matter.md")
     page = start_here(root, matter, meta, rows, pending, rep["edits"], stamp_text)
     target = matter / common.START_HERE
@@ -253,7 +267,9 @@ def main(argv=None):
     legacy = list(common.iter_legacy_matter_dirs(root))
     mdirs = [resolve(root, m) for m in a.matters] if a.matters else list(common.iter_matter_dirs(root))
     manifest = manifest_hashes(root)
-    reports = [sync_matter(root, m, run, manifest, stamp_text, do_register=not a.pages_only) for m in mdirs]
+    written = agent_writes(root)
+    reports = [sync_matter(root, m, run, manifest, stamp_text, do_register=not a.pages_only, written=written)
+               for m in mdirs]
     lines = []
     for r in reports:
         bits = []

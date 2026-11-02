@@ -3,10 +3,11 @@
 # Usage: the harness runs  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/before-write"  with the hook
 #   JSON on stdin. It reads tool_input.file_path, resolved against CLAUDE_PROJECT_DIR (else the
 #   current directory). Windows paths (backslashes, drive letters) are accepted.
-#   - corrections.md, roster.confirmed.md or notes.md at any depth, or anything in a matter's human/ folder:
+#   - corrections.md or roster.confirmed.md at any depth, or anything in a matter's human/ folder:
 #     refuses the write (exit 2, reason on stderr). Second layer under the deny rules.
-#   - matter.md, facts.md or subject.md that exists: copies it first to
+#   - matter.md, facts.md or subject.md that exists, or a matter's agent/notes.md: copies it first to
 #     history/<stem>.<YYYY-MM-DD_HHMMSS>.md (-2 on a clash), with tools/history-copy when present.
+#     (after-write checks notes.md against that copy: the agent may only add lines at the end.)
 #   - Anything else: exit 0, silent.
 # Exit: 0 go ahead; 2 refused. Unreadable input or a failed copy never blocks: warning, exit 0.
 # Needs bash 3.2+ and coreutils. JSON is read with python3/python/py, else jq, else sed.
@@ -186,12 +187,12 @@ base_lc="$(lower "${abs##*/}")"
 
 # ---- end of shared block -----------------------------------------------------------------------
 
-# Human-only: corrections.md, roster.confirmed.md, notes.md, any matter's human/ folder. (house/ is not refused here:
+# Human-only: corrections.md, roster.confirmed.md, any matter's human/ folder. (house/ is not refused here:
 # the 'ask' rule in settings.json makes Claude Code ask the lawyer before each change.) Checked on the path as given
 # and on the path with symlinks resolved.
 is_human_only() {
   local r
-  case "$(lower "${1##*/}")" in corrections.md | roster.confirmed.md | notes.md) return 0 ;; esac
+  case "$(lower "${1##*/}")" in corrections.md | roster.confirmed.md) return 0 ;; esac
   if r="$(rel_to "$1" "$2")"; then
     case "$(lower "$r")" in areas/*/human/*) return 0 ;; esac
   fi
@@ -232,8 +233,13 @@ copy_to_history() {
   printf '%s' "$dest"
 }
 
+copy=no
 case "$base_lc" in
-  matter.md | facts.md | subject.md)
+  matter.md | facts.md | subject.md) copy=yes ;;
+  notes.md) case "$(lower "$rel")" in areas/*/agent/notes.md) copy=yes ;; esac ;;
+esac
+case "$copy" in
+  yes)
     [ -f "$abs" ] || exit 0
     copied=no
     if [ -f "$proj/tools/history-copy" ]; then

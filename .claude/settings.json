@@ -29,7 +29,6 @@
     "deny": [
       "Edit(**/corrections.md)",
       "Edit(**/roster.confirmed.md)",
-      "Edit(**/notes.md)",
       "Edit(/areas/**/human/**)",
       "Bash(git push *)",
       "Bash(git commit *)",

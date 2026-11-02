@@ -54,7 +54,7 @@ Write or Edit only, never shell redirection, `tee`, `sed -i`, `cp` or `mv` on a 
 6. subject.md: Write, whole, only when the party's picture or this matter's line under Matters changed. Pointers name the matter: `(2026-0042 matter.md)`.
 7. log.md: Edit, append: `YYYY-MM-DD HH:MM | <event> | <source file or -> | <run>`.
 8. Knowledge the brief or a draft relies on: `cp` it into documents/reference/ (never change it), then `bash tools/place-email --register <path> --run RUN`.
-Never write in the matter's human/ folder (corrections.md, notes.md, roster.confirmed.md and the lawyer's files), house/, JOURNAL.md or WORKFLOW-LOG.md. Your files are in agent/; paths in them are relative to agent/.
+Never write in the matter's human/ folder (corrections.md, roster.confirmed.md and the lawyer's files), agent/notes.md (the lawyer's words, written by the orchestrator), house/, JOURNAL.md or WORKFLOW-LOG.md. Your files are in agent/; paths in them are relative to agent/.
 
 ## Frontmatter (matter.md)
 - Set: title (never when `title_locked: yes`), label, status, proposed_outcome, waiting_on, next_step, due, requester, counterparty, arrived, ready_at, last_activity, controlling_skill, flags (keep flags you did not set).
@@ -78,7 +78,7 @@ MATTER
 SUMMARY
 at most five bullets: `- <title, at most 40 characters>: <one sentence, at most 300 characters>`
 QUESTIONS FOR THE LAWYER
-at most two, one per line (the digest takes five in all)
+at most two, one per line, each answerable in a few words, and only where the answer changes the next step or settles a point the files do not show (the reply asks three in all)
 PLEASE-CHECK
 `<file> | <why>`: noise filed into a matter, possible impersonation, a file that seems misfiled
 KNOWLEDGE PROPOSALS

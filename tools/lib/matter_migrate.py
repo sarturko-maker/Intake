@@ -1,15 +1,19 @@
 """matter-migrate: convert matters from the old one-folder layout to agent/ + human/.
 
 Old: <matter>/matter.md, brief.md, ..., corrections.md, correspondence/, documents/, work-product/ ...
-New: <matter>/agent/  matter.md brief.md facts.md roster.md log.md documents.md
+New: <matter>/agent/  matter.md brief.md facts.md roster.md notes.md log.md documents.md
                       correspondence/ documents/ drafts/ history/ (and the Harvey pack)
-     <matter>/human/  notes.md corrections.md roster.confirmed.md, and the lawyer's own files
+     <matter>/human/  corrections.md roster.confirmed.md, and the lawyer's own files
 Files are moved, never edited: received files keep their names and bytes. Deliverables that were in
 work-product/ move to human/, and their documents.md rows follow. Old bundles and packs are dropped
-(they are copies; the next work-bundle run rebuilds the pack). Idempotent.
+(they are copies; the next work-bundle run rebuilds the pack).
+Matters already in the new layout are tidied: human/notes.md moves to agent/notes.md (the agent now
+writes there what the lawyer says in chat), and a missing memory file is added from the templates.
+Never overwrites. Idempotent.
 """
 
 import argparse
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -93,16 +97,62 @@ def main(argv=None):
     root = common.find_root()
     run = a.run or common.run_id(root)
     legacy = list(common.iter_legacy_matter_dirs(root))
-    if not legacy:
-        print("matter-migrate: nothing to do; every matter already has agent/ and human/.")
-        return 0
     for m in legacy:
         moves, dropped = migrate(root, m, run, a.dry_run)
         print("%s %s: %d moved, %d old bundles dropped" % ("would migrate" if a.dry_run else "migrated",
                                                            common.rel(m, root), len(moves), len(dropped)))
+    tidied = 0 if a.dry_run else tidy(root, run)
+    if not legacy and not tidied:
+        print("matter-migrate: nothing to do; every matter has agent/, human/ and its files.")
+        return 0
+    if tidied:
+        print("tidied %d matters: notes.md now in agent/, missing memory files added from the templates" % tidied)
     if not a.dry_run:
         print("Next: bash tools/matter-sync (writes START-HERE.md), then bash tools/work-bundle --all.")
     return 0
+
+
+def has_notes(path):
+    """True when a notes file holds anything beyond the template: a line outside HTML comments that is
+    not a heading, and not the template's opening paragraph."""
+    text = re.sub(r"<!--.*?-->", "", common.read_text(path), flags=re.S)
+    for line in text.splitlines():
+        t = line.strip()
+        if t and not t.startswith("#") and not t.startswith("Your notes on this matter"):
+            return True
+    return False
+
+
+def tidy(root, run):
+    """Matters already in agent/ + human/: notes.md belongs in agent/ (the agent writes what the lawyer
+    says); add any missing memory file from the templates. Never overwrites. Returns matters changed."""
+    tdir = Path(root) / TEMPLATES
+    changed = 0
+    for m in common.iter_matter_dirs(root):
+        did = []
+        old_notes, new_notes = common.human_dir(m) / "notes.md", common.agent_dir(m) / "notes.md"
+        if old_notes.is_file():
+            if new_notes.is_file() and not has_notes(new_notes):
+                kept = common.history_copy(new_notes)        # the blank file is kept in history/, not lost
+                new_notes.unlink()
+                did.append("blank agent/notes.md kept as %s" % kept.relative_to(m).as_posix())
+            if not new_notes.exists():
+                shutil.move(str(old_notes), str(new_notes))
+                did.append("moved human/notes.md to agent/notes.md")
+            else:
+                print("%s: human/notes.md and agent/notes.md both hold notes; both left as they are. "
+                      "Copy your lines from human/notes.md into agent/notes.md." % common.rel(m, root))
+        for n in common.MATTER_FILES:
+            target = common.mpath(m, n)
+            if not target.exists() and (tdir / n).is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(str(tdir / n), str(target))
+                did.append("added %s" % target.relative_to(m).as_posix())
+        if did:
+            changed += 1
+            common.append_line(common.agent_dir(m) / "log.md", common.join_pipe(
+                [common.stamp(root), "; ".join(did), "-", run]))
+    return changed
 
 
 if __name__ == "__main__":

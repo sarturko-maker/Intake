@@ -8,7 +8,12 @@
 #   - facts.md: bash tools/lint-facts FILE --previous <newest history copy>. On errors: restores
 #     the copy (or moves the file aside), lint output on stderr, exit 2. Errors the previous
 #     version already had do not block: the write stands, with a warning.
+#   - A matter's agent/notes.md (the lawyer's words): the agent may only add lines at the end. Any
+#     change to an earlier line: restores the newest history copy, reason on stderr, exit 2.
 #   - Anything else: exit 0, silent.
+#   Every write that stands to a matter's agent/ matter.md, brief.md, facts.md, roster.md or notes.md
+#   is recorded in changes/agent-writes.csv (path, sha256), so matter-sync does not report the agent's
+#   own writes as the lawyer's edits. scan-changes --write-manifest empties it.
 # Exit: 0 fine; 2 rejected and restored (the harness shows stderr to the agent).
 # Never blocks on its own failure: unreadable input, or tools/lint-facts or Python missing, gives
 #   a warning (stderr, plus additionalContext JSON on stdout for the agent) and exit 0.
@@ -379,8 +384,72 @@ check_facts() {
   exit 2
 }
 
+# notes.md holds the lawyer's words. Text without carriage returns, a leading BOM or trailing blanks.
+plain_text() {
+  local t
+  t="$(tr -d '\r' < "$1" 2>/dev/null)"
+  t="${t#$'\xef\xbb\xbf'}"
+  printf '%s' "${t%"${t##*[![:space:]]}"}"
+}
+
+check_notes() {
+  local prev old new
+  [ -f "$abs" ] || exit 0
+  prev="$(latest_history "$abs")"
+  [ -n "$prev" ] || exit 0
+  old="$(plain_text "$prev")"
+  new="$(plain_text "$abs")"
+  [ "${new:0:${#old}}" = "$old" ] && exit 0
+  {
+    printf "Rejected: %s holds the lawyer's notes; you may only add lines at the end.\n" "$rel"
+    if cp "$prev" "$abs" 2>/dev/null; then
+      printf 'The previous version is restored. Add the note as a new dated line at the end; to correct an earlier note, add a line that says what changed.\n'
+    else
+      printf 'Restoring the previous version failed: copy %s back over it.\n' "$(shown "$prev")"
+    fi
+  } >&2
+  exit 2
+}
+
+file_sha() {
+  local out=""
+  if [ -f "$proj/tools/hash-files" ]; then
+    out="$(bash "$proj/tools/hash-files" "$1" 2>/dev/null)"
+  elif command -v sha256sum >/dev/null 2>&1; then
+    out="$(sha256sum < "$1" 2>/dev/null)"
+  fi
+  out="${out%% *}"
+  [ ${#out} -eq 64 ] || return 1
+  case "$out" in *[!0-9a-f]*) return 1 ;; esac
+  printf '%s' "$out"
+}
+
+# The agent's own write stands: note its hash, so matter-sync does not call it the lawyer's edit.
+record_write() {
+  local h ledger="$proj/changes/agent-writes.csv"
+  case "$(lower "$rel")" in
+    areas/*/agent/matter.md | areas/*/agent/brief.md | areas/*/agent/facts.md | \
+      areas/*/agent/roster.md | areas/*/agent/notes.md) ;;
+    *) return 0 ;;
+  esac
+  [ -f "$abs" ] || return 0
+  h="$(file_sha "$abs")" || return 0
+  mkdir -p "$proj/changes" 2>/dev/null || return 0
+  [ -f "$ledger" ] || printf 'path,sha256\n' > "$ledger" 2>/dev/null || return 0
+  printf '"%s",%s\n' "${rel//\"/\"\"}" "$h" >> "$ledger" 2>/dev/null
+  return 0
+}
+
+on_exit() {
+  local rc=$?
+  [ "$rc" -eq 0 ] && record_write
+  exit "$rc"
+}
+trap on_exit EXIT
+
 case "$base_lc" in
   matter.md | subject.md) check_cap ;;
   facts.md) check_facts ;;
+  notes.md) case "$(lower "$rel")" in areas/*/agent/notes.md) check_notes ;; esac ;;
 esac
 exit 0

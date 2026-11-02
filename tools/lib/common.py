@@ -37,9 +37,10 @@ NOISE_RE = re.compile(r"^NOISE-([0-9]{4,})$")
 AGENT = "agent"
 HUMAN = "human"
 START_HERE = "START-HERE.md"
-AGENT_FILES = ("matter.md", "brief.md", "facts.md", "roster.md", "log.md", "documents.md")
-HUMAN_ONLY_NAMES = ("corrections.md", "roster.confirmed.md", "notes.md")
-MATTER_FILES = AGENT_FILES[:4] + HUMAN_ONLY_NAMES[1:2] + HUMAN_ONLY_NAMES[:1] + HUMAN_ONLY_NAMES[2:] + AGENT_FILES[4:]
+AGENT_FILES = ("matter.md", "brief.md", "facts.md", "roster.md", "notes.md", "log.md", "documents.md")
+# notes.md lives in agent/: the agent writes there what the lawyer says in chat; the lawyer may edit it too.
+HUMAN_ONLY_NAMES = ("corrections.md", "roster.confirmed.md")
+MATTER_FILES = AGENT_FILES[:4] + HUMAN_ONLY_NAMES + AGENT_FILES[4:]
 MATTER_DIRS = ("correspondence", "documents/received", "documents/ours",
                "documents/reference", "drafts", "history")  # under agent/
 CAPPED_NAMES = ("matter.md", "subject.md")

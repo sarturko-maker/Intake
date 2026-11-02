@@ -52,5 +52,5 @@ Warning signs: a lookalike domain, a display name that does not fit the address,
 - Draft only when the controlling skill asks for a draft and the mode is full: into drafts/, named `YYYY-MM-DD_<type>_<topic>_v<N>.<ext>`, a reply subject ending `[<REF>]`. A draft is never sent.
 
 ## Report to the orchestrator
-Per matter: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, summary, at most two questions for the lawyer, company facts worth keeping in knowledge/ (one sentence each, with source), please-check items, unread files with reasons, workflow-log lines (the orchestrator writes them). Last line: `chars read: N, chars written: M`.
+Per matter: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, summary, at most two questions for the lawyer (each answerable in a few words, only where the answer changes the next step or settles a point the files do not show), company facts worth keeping in knowledge/ (one sentence each, with source), please-check items, unread files with reasons, workflow-log lines (the orchestrator writes them). Last line: `chars read: N, chars written: M`.
 No subagents (you are the orchestrator): fold the report into the digest and end your reply with what the lawyer should do next.

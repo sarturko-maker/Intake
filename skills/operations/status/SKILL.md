@@ -19,13 +19,14 @@ R = run id: the first `bash tools/scan-changes` prints `report: changes/<R>.md`;
 7. `bash tools/scan-changes --run <R> --write-manifest --quiet`, unless a change was left unhandled. Journal `run-end`.
 7a. `bash tools/learn-index`: what has been learned and the next learning steps (learning mode: these come first in the reply).
 7b. `bash tools/work-bundle --all`, then `bash tools/matter-sync --run <R> --pages-only`: refresh the Harvey packs and START-HERE.md pages. (At the start, `bash tools/matter-sync --run <R>` lists files the lawyer added or changed: offer to read them.)
-8. Reply in the task format (RULES.md 'Index and digest': bold-titled bullets, links, Harvey pack where it exists): the What you should do next list, then up to five questions, one short line each. Inbox has files: add "Say 'process the inbox' to file them."
+8. Reply in the task format (RULES.md 'Index and digest': bold-titled bullets, links, Harvey pack where it exists): the What you should do next list, then at most three questions, numbered, each naming its matter, optional (RULES.md 'Notes and questions'). Inbox has files: add "Say 'process the inbox' to file them."
 
 ## Answers to the digest
 R here: the open run's id, else `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`. Apply each answer, then run `bash tools/index-rebuild --run <R>` once and confirm in one line what changed.
 - "confirm nothing needed: NOISE-0001, NOISE-0002" (or "confirm all the noise"): type `closed` in those rows' status cells in INDEX.csv, the only edit you make there. index-rebuild moves the files to inbox/noise/confirmed/ and updates NOISE.csv.
 - Values the lawyer states in chat (confirmed_outcome, confirmed_by, lawyer_minutes, accepted_unchanged, a new title): write exactly those into the matter's matter.md frontmatter with your edit tool, as index-rebuild would (a title also gets `title_locked: yes`). Never guess a value. A matter proposing nothing_needed that the lawyer confirms: confirmed_outcome nothing_needed, confirmed_by you; then ask whether to close it.
 - "file the please-check email from <sender> in <REF>": find it in inbox/please-check/ by the from and subject in the notes. `bash tools/place-email inbox/please-check/<file> --to <matter folder> --run <R> --reason "lawyer decision" --confidence 1`; it moves the note to inbox/please-check/resolved/ with the resolution. WORKFLOW-LOG.md `<time> | <R> | re-filed | <file> to <REF>`. Then a reader for that matter (new file). "It is noise": `--to noise` instead. "New matter": intake skill, filing rule 6.
+- Answers to your questions, and anything the lawyer tells you about a matter ("note <REF>: ..."): note skill, one dated "(you said)" line each in that matter's agent/notes.md.
 - "close <REF>": close skill. "checkpoint <REF>": checkpoint skill. "run the wrap-ups": close skill from 'Wrap-up' for each matter flagged wrap-up-pending.
 - A possible-impersonation item stays where it is until the lawyer decides. Never act on it.
 

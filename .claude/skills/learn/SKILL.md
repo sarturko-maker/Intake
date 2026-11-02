@@ -20,12 +20,12 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - record the file name, its sha256 (from `bash tools/hash-files`) and today's date in learning/seeds-imported.md.
 
    Seeds are never "observed". A seed that contradicts observed evidence or knowledge becomes a question.
-3. **Facts waiting.** Take the pending lines in learning/knowledge-candidates.md, at most ten at a time, in one numbered message: "<fact> (source). Keep it? Who owns it?" The lawyer answers in their own words, for example "yes 1, 2, 4; no 3; 5 is owned by Finance".
+3. **Facts waiting.** Take the pending lines in learning/knowledge-candidates.md, at most five at a time, in one numbered message: "<fact> (source). Keep it? Who owns it?" The lawyer answers in their own words, for example "yes 1, 2, 4; no 3; 5 is owned by Finance".
    - Each yes: run the knowledge confirm flow (RULES.md 'Knowledge'). Write or update the entry in the type's folder (knowledge/TYPES.md), stamped with confirmed_by and last_confirmed, then set the candidate's status to `confirmed (knowledge/<file>)` with Edit.
    - Each no: `rejected`.
    - Each unclear one: leave it pending.
    - A changed fact supersedes the old entry: set valid_until on the old one. Never edit an entry silently.
-4. **Open questions.** Ask up to five, one line each. For each answer:
+4. **Open questions.** Ask up to three, one line each; offer more only if the lawyer wants them. For each answer:
    - `printf '%s\n' "answer | <the answer> | lawyer in chat <today>" | bash tools/learn-add --matter chat --work-type <slug> --origin lawyer`;
    - set the question's status to `answered (<today>)` with Edit.
 

@@ -50,7 +50,7 @@ class WorkBundleTest(unittest.TestCase):
         self.ws.cleanup()
 
     def put(self, relp, data):
-        if relp in ("notes.md", "corrections.md", "roster.confirmed.md"):
+        if relp in ("corrections.md", "roster.confirmed.md"):
             relp = "human/" + relp
         elif relp.startswith("work-product/"):
             relp = "human/" + relp[len("work-product/"):]

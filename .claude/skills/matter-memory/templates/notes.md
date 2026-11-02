@@ -1,7 +1,7 @@
 # Notes
 
-Your own notes on this matter: calls, meetings, Teams chats, your thinking. Only you edit this file. The agent reads it on every run and includes it in the work bundle. Write dated lines, newest at the bottom.
+Your notes on this matter: calls, meetings, Teams chats, your thinking. You do not have to write here. Tell the agent in chat ("note 2026-0042: ...") or answer its questions, and it adds a dated line marked "(you said)". You can also write here yourself. The agent reads this file on every run and puts it in the Harvey pack. It only adds lines at the end, never changes yours, and never adds anything you did not say.
 
 <!-- Example:
-- 2026-11-02: Call with sales. Deal value about GBP 2m; they need signature by Friday. Customer will not move on governing law.
+- 2026-11-02: (you said) Call with sales. Deal value about GBP 2m; they need signature by Friday. The customer will not move on governing law.
 -->

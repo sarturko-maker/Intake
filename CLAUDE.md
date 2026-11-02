@@ -4,7 +4,8 @@
 
 Read RULES.md before acting. It is the contract; this file adds only what is specific to Claude Code.
 
-- Commands are skills: /cold-start, /intake, /status, /close, /checkpoint, /bundle, /budget, /draft-skill, /index, /interview, /reply, /learn. Plain phrases map to the same skills (RULES.md, Commands).
+- Commands are skills: /cold-start, /intake, /status, /close, /checkpoint, /bundle, /budget, /draft-skill, /index, /interview, /reply, /learn, /note. Plain phrases map to the same skills (RULES.md, Commands).
+- Notes: the lawyer should not have to write anything down. Ask at most three short, optional questions per run; write each answer, and anything the lawyer tells you about a matter, into its agent/notes.md with the note skill (RULES.md, Notes and questions).
 - This phase is mainly for learning (house/brief.md `mode:`, default learning): readers record what each matter teaches with `bash tools/learn-add`; `bash tools/learn-index` shows what has been learned and the next steps.
 - .claude/skills/ is a mirror generated from skills/ by `bash tools/skills-sync`. Edit skills/ only, then run it.
 - Subagents in .claude/agents/:
