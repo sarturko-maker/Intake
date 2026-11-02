@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # unpack-email: headers, new body text, attachments and filing signals of .eml files.
-# Usage: bash tools/unpack-email [--json] [--body-chars N] [--extract DIR] [--no-signals] FILE...
+# Usage: bash tools/unpack-email [--json] [--body-chars N] [--extract DIR] [--no-signals] [--with-quoted] FILE...
 #   --json          JSON array, one object per file (default Markdown).
 #   --body-chars N  body limit in characters, default 4000; a longer body ends "[... N more characters]".
 #   --extract DIR   write document, image and email attachments to DIR/<canonical stem>/.
 #   --no-signals    skip thread_matches, tag_matches and already_filed.
+#   --with-quoted   also give the quoted history (our sent emails often carry the request below the reply).
+# Also reports quoted_first_date (date of the earliest quoted message, best effort) and, for our own
+# emails, reply_kind_hint: substantive (advice, position, decision, mark-up), interim (acknowledge,
+# chase, ask, route, schedule) or unknown. Hints only: the filer decides.
 # Fields: file, canonical_name (YYYY-MM-DD_HHMM_<in|out>_<from-slug>_<subject-slug>.eml, house time),
 #   direction (out = From in legal_addresses or intake_mailbox), internal, personal_address, date,
 #   from, to, cc, subject, message_id, in_reply_to, references, tags, noise_hints, notes, sha256,

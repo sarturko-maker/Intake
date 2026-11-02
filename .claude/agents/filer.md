@@ -50,9 +50,11 @@ You are the filer. You decide where each email of one batch goes. The tools move
 9. Place in a matter: `bash tools/place-email FILE --to FOLDER --reason "<why>" --confidence C --run RUN [--cross-ref OTHER_FOLDER]`. Two matters touched: the primary, `--cross-ref` the other.
    Please-check: `bash tools/place-email FILE --to please-check --reason "<why>" --confidence C --run RUN --note "<why unsure; what you would do; what the lawyer should decide>" [--claimed REF] [--candidates "REF,REF"]`.
    Keep the new paths the tool prints (correspondence/, documents/received/, documents/ours/) for the reader.
-10. Ceiling: stop when the next file would open a thread past the ceiling (a reply counts with what it answers). The rest are carried over.
+10. Our own emails (`direction: out`): the same steps 4 to 9. No tag, thread or candidate: re-run `bash tools/unpack-email --json --with-quoted FILE` and match on the quoted request (subject, requester, counterparty) against open matters; still none: new matter with the recipient as requester and `--opened <quoted_first_date or email date>`. Report each as interim or substantive (start from `reply_kind_hint`; decide by reading: advice, a position, a decision, an answer or an attachment is substantive; acknowledging, chasing, asking, routing or scheduling is interim). A copy of an email already filed is kept by place-email as a copy: report it as `copy`.
+11. Ceiling: stop when the next file would open a thread past the ceiling (a reply counts with what it answers). The rest are carried over.
 
 ## Report
+For each email also: `ours: interim|substantive|copy` when direction is out.
 Final message, these headings in this order, one record per line, `none` when empty:
 
 EMAILS

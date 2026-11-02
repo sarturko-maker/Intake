@@ -133,6 +133,21 @@ class IntoMatterTest(PlaceBase):
         self.assertEqual((received / "MSA-2.docx").read_bytes(), b"PK two")
         self.assertEqual([r["name"] for r in self.docs() if r["name"].startswith("MSA")], ["MSA.docx", "MSA-2.docx"])
 
+    def test_same_email_from_another_mailbox_is_kept_as_a_copy(self):
+        a = make_email(self.inbox("RE NDA.eml"), sender=ALEX, to=(TOM,), subject="RE: NDA",
+                       message_id="<sent-1@kestrel-eng.co.uk>", body="Fine to sign.")
+        self.place(a, "--to", self.mrel, "--run", "R1")
+        b = make_email(self.inbox("RE NDA (sent items).eml"), sender=ALEX, to=(TOM,), subject="RE: NDA",
+                       message_id="<sent-1@kestrel-eng.co.uk>", body="Fine to sign.\n\n-- \nAlex",
+                       headers={"X-Mailer": "Outlook"})
+        res = self.place(b, "--to", self.mrel, "--run", "R1")
+        self.assertEqual(res.returncode, 0, res.stderr)
+        rows = [r for r in self.docs() if r["folder"] == "correspondence"]
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(rows[1]["read"].startswith("no: copy of "))
+        self.assertEqual(rows[1]["duplicate_of"], rows[0]["name"])
+        self.assertIn("second copy", (self.matter / "agent" / "log.md").read_text())
+
     def test_identical_email_dropped_twice(self):
         f = make_email(self.inbox("Acme NDA.eml"), attachments=[("NDA.docx", b"PK nda", DOCX)])
         data = f.read_bytes()

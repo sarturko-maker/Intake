@@ -20,7 +20,7 @@ No subagents in this harness: do each subagent step yourself, in order, one matt
 5. Order the .eml files by Date, oldest first: `bash tools/unpack-email --json --no-signals --body-chars 200 inbox/*.eml`.
 
 ## 2. File (filer)
-Small batch (5 emails or fewer): no filer; file them yourself by the rules below (it saves a subagent start). Readers only for matters with new inbound content; a matter touched only by our own sent reply gets a log line and its status and next step updated by you.
+Small batch (5 emails or fewer): no filer; file them yourself by the rules below (it saves a subagent start). Readers only for matters with new inbound content or a substantive email of ours; a matter touched only by interim emails of ours (or copies) gets a log line and its waiting_on, next_step and last_activity updated by you (Edit on agent/matter.md).
 Otherwise dispatch ONE filer with R, mode, thresholds and the ordered list. It applies the rules below and reports, per email: action, destination, reference, reason, confidence, flags; then matters touched (folder, new or existing, new files, reopen yes/no, filing flags), reopen proposals, proposed sub-areas, new subjects, please-check items, carried over, workflow-log lines. Journal from it: `reopen-proposed` per proposal, `carried-over` per file left. Check: inbox/ top level holds only carried-over files.
 
 Filing rules:
@@ -39,7 +39,7 @@ Filing rules:
 Paused mode: no filer. File yourself by rules 1, 3 (internal or roster-address only) and 4; a closed-matter hit also gets status open, flag reopened and a log line; everything else → please-check `--note "paused: budget cap reached"`.
 
 ## 3. Read (readers, in parallel)
-1. One reader per matter touched, dispatched at once; matters under one subject run one after another (they share subject.md). Pass R, mode, folder, the new files, reopen yes/no, filing flags, and why (new mail, work product, consistency pass). It follows skills/operations/intake-reading and matter-memory and reports: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, a summary of at most five bullets, questions for the lawyer, knowledge proposals, please-check items, unread files, workflow-log lines, and `chars read: N, chars written: M`.
+1. One reader per matter touched by inbound mail, a substantive email of ours, or matter-sync's list (interim emails of ours and copies: update the matter yourself, as in the small batch rule), dispatched at once; matters under one subject run one after another (they share subject.md). Pass R, mode, folder, the new files, reopen yes/no, filing flags, and why (new mail, work product, consistency pass). It follows skills/operations/intake-reading and matter-memory and reports: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, a summary of at most five bullets, questions for the lawyer, knowledge proposals, please-check items, unread files, workflow-log lines, and `chars read: N, chars written: M`.
 2. From changes/<R>.md, outside inbox/:
    - Each matter in changes/<R>-matters.md (files to read, files changed by the lawyer, the lawyer's edits): a reader for that matter. It reads the listed files, sets their read column, and keeps the lawyer's edits (an edit to agent/ files wins over the agent's earlier text).
    - corrections.md, notes.md or roster.confirmed.md new or modified: reader consistency pass on that matter.

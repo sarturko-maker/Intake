@@ -100,6 +100,11 @@ Thresholds: filing confidence 0.75; run ceiling 60 threads; candidate window 60 
 6. Reader, one run per matter touched. Read: area playbook.md, intake.md, subject.md, corrections.md, notes.md, roster.confirmed.md, roster.md, matter.md, live facts (`bash tools/lint-facts FACTS --live`), documents.md, new emails, attachments the thread turns on. Write the memory files (subject.md if the party changed) and frontmatter. Drafts only if the controlling skill asks, mode full.
 7. Assemble: `bash tools/index-rebuild --run RUN --digest-parts changes/RUN-digest.md`; `bash tools/budget-update --run RUN --model KEY --in-chars N --out-chars M`; digest; `bash tools/scan-changes --run RUN --write-manifest`; journal `run-end`.
 
+Our sent emails (direction out, often from the lawyer's Sent Items) file by the same ladder: tag, thread, candidates. With no match they may start a matter: the request is in the quoted text (`unpack-email --with-quoted`), the requester is the recipient, `--opened` the quoted_first_date. A second copy of an email already filed (intake mailbox and Sent Items) is kept by place-email as `no: copy of ...` and never read again. Each of our emails is one of:
+- interim (acknowledge, chase, ask for information or documents, route or delegate, schedule, admin): no reader run; the orchestrator updates waiting_on, next_step and last_activity and adds a log line. Never a position.
+- substantive (advice, a position, a decision or approval, an answer, a mark-up sent): a reader run; `decision` facts with what we said and why; "Positions and why" in matter.md; prime evidence for skills.
+unpack-email's reply_kind_hint suggests which; the filer decides and reports it.
+
 Outcomes: `nothing_needed`; `ready_for_lawyer` (brief: what to decide); `needs_info_from_requester` (brief: the questions); `out_of_area` (next_step: the team); `in_progress`; `needs_lawyer` (sensitive only). In doubt: ready_for_lawyer.
 
 Special cases:

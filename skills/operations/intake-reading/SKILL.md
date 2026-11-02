@@ -15,7 +15,8 @@ No subagents: the orchestrator applies these rules itself, one matter at a time.
 4. The attachments the thread turns on (below). One read per thread. Never re-read a file whose row has duplicate_of.
 
 ## What is it
-Decide first: request for work, question, deadline notice, document to sign, FYI, or noise. Who asks, for what, by when. A reply continues the matter: read it as a reply. Noise filed into a matter: report it as a please-check item.
+Our own email (sent by the legal team): interim (acknowledge, chase, ask, route, schedule) updates status and next step only; substantive (advice, position, decision, approval, answer, mark-up) is what we actually did: record it as decision facts with the reasons and context, fold it into "Positions and why", and summarise its documents.md row starting "[substantive]" (interim: "[interim]"). Its quoted text may hold the original request: read it when the matter started from our email.
+Otherwise decide first: request for work, question, deadline notice, document to sign, FYI, or noise. Who asks, for what, by when. A reply continues the matter: read it as a reply. Noise filed into a matter: report it as a please-check item.
 
 ## Attachments
 - Mark-up (.docx with tracked changes): `pandoc --track-changes=all <file> -t plain`. Read the insertions, deletions and comments with their authors; place each author with the rosters.

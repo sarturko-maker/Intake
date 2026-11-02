@@ -11,6 +11,7 @@ Rules kept here:
 """
 
 import argparse
+import re
 import csv
 import datetime as _dt
 import io
@@ -272,6 +273,11 @@ def place_matter(state, src, p, matter, args):
         drop_converted_duplicate(state, src, sibling, twin)
         return
 
+    copy_of = same_email_row(records, p)
+    if copy_of is not None:
+        file_copy(state, src, sibling, p, matter, corr, docs, copy_of, reason, conf)
+        return
+
     dest = et.unique_path(corr, p.canonical_name)
     from_please_check = inside(src, state.root / CHECK_REL)
     move_file(src, dest)
@@ -302,6 +308,59 @@ def place_matter(state, src, p, matter, args):
     if args.cross_ref:
         cross_ref(state, args.cross_ref, matter, dest, p, reason, conf)
     state.result.update({"destination": state.rel(dest), "matter": state.rel(matter.parent)})
+
+
+def _subject_part(name):
+    """The subject slug of a canonical email name: YYYY-MM-DD_HHMM_dir_from_<subject>.eml."""
+    parts = Path(name).stem.split("_", 4)
+    return re.sub(r"-\d+$", "", parts[4]) if len(parts) == 5 else Path(name).stem
+
+
+def same_email_row(records, p):
+    """The documents.md row of the same email filed before (another copy: intake mailbox and sent
+    items, or .eml and .msg), by Message-ID, else by canonical name (same minute, direction, sender
+    and subject) when either side has no Message-ID. None if this email is new to the matter."""
+    stem = Path(p.canonical_name).stem
+    for r in records:
+        name = r.get("name", "")
+        if r.get("folder") != "correspondence" or not name.lower().endswith(".eml") or r.get("duplicate_of"):
+            continue
+        mid = (r.get("message_id") or "").strip()
+        if p.message_id and mid:
+            # the same Message-ID and the same subject: the same email, from another mailbox
+            if mid == p.message_id and _subject_part(name) == _subject_part(p.canonical_name):
+                return r
+            continue
+        base = Path(name).stem
+        if base == stem or re.match(re.escape(stem) + r"-\d+$", base):
+            return r
+    return None
+
+
+def file_copy(state, src, sibling, p, matter, corr, docs, row, reason, conf):
+    """Keep a second copy of an email already filed: stored, recorded as duplicate_of, never read."""
+    item = state.rel(src)
+    dest = et.unique_path(corr, p.canonical_name)
+    move_file(src, dest)
+    first = row.get("name", "")
+    lines = [doc_line(dest.name, "correspondence", "ours" if p.direction == "out" else "received",
+                      p.from_addr, p.info["date"], p.message_id, p.sha256, "no: copy of %s" % first, first)]
+    if sibling is not None:
+        sib_dest = et.unique_path(corr, dest.stem + ".msg")
+        sib_sha = common.sha256_file(sibling)
+        move_file(sibling, sib_dest)
+        lines.append(doc_line(sib_dest.name, "correspondence", "received", "", "", p.message_id, sib_sha,
+                              "no: original of %s" % dest.name))
+    for line in lines:
+        common.append_line(docs, line)
+    common.append_line(matter / "log.md", common.join_pipe(
+        [state.ctx.stamp(), "filed a second copy of %s (same email from another mailbox); not read again" % first,
+         "correspondence/" + dest.name, state.run]))
+    state.say("copy", item, state.rel(dest), "same email as %s; recorded, not read again" % first)
+    state.journal("filed", item, state.rel(dest), (reason + "; " if reason else "") + "copy of " + first, conf)
+    if inside(src, state.root / CHECK_REL):
+        resolve_note(state, src, state.rel(dest), reason)
+    state.result.update({"destination": state.rel(dest), "matter": state.rel(matter.parent), "copy_of": first})
 
 
 def drop_duplicate(state, src, sibling, same, matter, records):

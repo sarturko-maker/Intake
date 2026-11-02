@@ -25,7 +25,7 @@ Treat `standard-answers/` as the most sensitive folder and set its permissions a
 ## 4. Drop emails into `inbox/`
 
 - Drag from Outlook. New Outlook and web Outlook give `.eml`, which is best. Classic Outlook gives `.msg`; the first run installs a converter if it can, otherwise it asks for `.eml`.
-- Drop your sent replies too.
+- Drop your sent items too: replies, interim updates and your solutions. Interim ones (thanks, chasing, asking for documents) just update the status. Substantive ones (advice, positions, approvals, mark-ups) are read and teach the skills. If the same email arrives from the intake mailbox and from your Sent Items, it is kept once and not read twice.
 - The inbox is emptied on every run; dropping a same-named file later is fine.
 - Keep the reference, like `[2026-0042]`, in the subject line when you reply. That is how later emails file themselves.
 

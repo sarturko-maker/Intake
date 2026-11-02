@@ -294,6 +294,76 @@ def strip_quoted(text):
     new = "\n".join(line.rstrip() for line in kept)
     return new, max(0, len(text.strip()) - len(new))
 
+def split_quoted(text):
+    """(new_text, quoted_text): like strip_quoted, but returns the quoted history itself."""
+    text = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+    lines = text.split("\n")
+    for i in range(len(lines)):
+        if _history_starts(lines, i):
+            return strip_quoted("\n".join(lines[:i]))[0], "\n".join(lines[i:]).strip()
+    quoted = "\n".join(l for l in lines if l.lstrip().startswith(">"))
+    return strip_quoted(text)[0], quoted.strip()
+
+
+_QDATE_LINE = re.compile(r"^\s*>?\s*(?:\*\*)?(?:Sent|Date|Gesendet|Datum)(?:\*\*)?\s*:\s*(.+?)\s*$", re.I | re.M)
+_QON_LINE = re.compile(r"^\s*>?\s*(?:On|Am)\s+(.+?)(?:,\s*[^,]*)?\s+(?:wrote|schrieb)", re.I | re.M)
+_QFORMATS = ("%A, %d %B %Y %H:%M", "%A, %B %d, %Y %I:%M %p", "%d %B %Y %H:%M", "%d %B %Y at %H:%M",
+             "%a, %d %b %Y at %H:%M", "%a, %d %b %Y %H:%M", "%d/%m/%Y %H:%M", "%d.%m.%Y %H:%M",
+             "%Y-%m-%d %H:%M", "%A, %d %B %Y", "%d %B %Y", "%d/%m/%Y", "%d.%m.%Y")
+
+
+def quoted_first_date(quoted):
+    """Best-effort date (YYYY-MM-DD) of the earliest message quoted below an email, or ''."""
+    found = []
+    for m in list(_QDATE_LINE.finditer(quoted or "")) + list(_QON_LINE.finditer(quoted or "")):
+        raw = m.group(1).strip().rstrip(".").replace(" um ", " ")
+        when = None
+        try:
+            when = _eutils.parsedate_to_datetime(raw)
+        except Exception:
+            when = None
+        if when is None:
+            for fmt in _QFORMATS:
+                try:
+                    when = _dt.datetime.strptime(raw, fmt)
+                    break
+                except ValueError:
+                    continue
+        if when is not None:
+            found.append(when.date().isoformat())
+    return min(found) if found else ""
+
+
+_INTERIM = re.compile(
+    r"\b(thanks|thank you|many thanks|noted|received|will (?:review|revert|come back|look|get back|check|respond)"
+    r"|looking into|on it|chasing|any update|following up|gentle reminder|reminder"
+    r"|please (?:send|provide|share|confirm|let me know)|could you (?:send|provide|share|confirm|let me know)"
+    r"|can you (?:send|provide|share|confirm|let me know)|copying|cc'?ing|adding|looping in|forwarding|see below"
+    r"|let'?s (?:discuss|talk|catch up|have a call)|call|meeting|diary|calendar|danke|vielen dank|ich melde mich)\b",
+    re.I)
+_SUBSTANTIVE = re.compile(
+    r"\b(approve[ds]?|agreed?|we (?:can|cannot|can't|could|would|will not|won't) (?:accept|agree|sign)|not acceptable"
+    r"|acceptable|our position|we (?:recommend|suggest|propose|advise)|i (?:recommend|suggest|propose|advise|would)"
+    r"|recommend|advi[cs]e|fine to sign|ok(?:ay)? to sign|go ahead|please sign|sign and return|redline|mark-?up"
+    r"|tracked changes|fallback|liability|indemnit|governing law|termination|warrant|confidential|non-?compete"
+    r"|signatory|power of attorney|notari[sz])", re.I)
+
+
+def reply_kind_hint(p):
+    """For our own (out) emails: 'substantive', 'interim' or 'unknown'. A hint; the filer decides."""
+    if p.direction != "out":
+        return ""
+    body = (p.new_body or "").strip()
+    if any(a.kind == "document" for a in p.attachments):
+        return "substantive"
+    if _SUBSTANTIVE.search(body):
+        return "substantive"
+    if len(body) < 400 and _INTERIM.search(body):
+        return "interim"
+    if len(body) < 150:
+        return "interim"
+    return "unknown"
+
 # ---------------------------------------------------------------- names
 
 
@@ -485,6 +555,7 @@ class ParsedEmail:
         self.info = {}
         self.attachments = []
         self.new_body = ""
+        self.quoted_body = ""
         self.full_body = ""
         self.date = None
         self.sha256 = ""
@@ -525,7 +596,7 @@ def is_msg_file(path):
     return str(path).lower().endswith(".msg")
 
 
-def parse_email(path, ctx, body_chars=BODY_CHARS):
+def parse_email(path, ctx, body_chars=BODY_CHARS, with_quoted=False):
     """Parse one .eml file. Raises OSError when it cannot be read."""
     path = Path(path)
     raw = path.read_bytes()
@@ -572,6 +643,7 @@ def parse_email(path, ctx, body_chars=BODY_CHARS):
         text = _body_text(html_part)
     p.full_body = text.strip("\n")
     p.new_body, quoted = strip_quoted(p.full_body)
+    p.quoted_body = split_quoted(p.full_body)[1] if quoted else ""
 
     skip = {id(x) for x in (plain, html_part) if x is not None}
     linesep = "\r\n" if b"\r\n" in raw else "\n"
@@ -628,8 +700,15 @@ def parse_email(path, ctx, body_chars=BODY_CHARS):
         "attachments": [a.public() for a in p.attachments],
         "body_chars_total": total,
         "quoted_chars": quoted,
+        "quoted_first_date": quoted_first_date(p.quoted_body),
+        "reply_kind_hint": reply_kind_hint(p),
         "body": body,
     }
+    if with_quoted:
+        q = p.quoted_body
+        if body_chars is not None and len(q) > body_chars:
+            q = q[:max(0, body_chars)].rstrip() + "\n[... %d more characters]" % (len(q) - max(0, body_chars))
+        p.info["quoted"] = q
     return p
 
 # ---------------------------------------------------------------- signals

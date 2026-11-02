@@ -80,9 +80,17 @@ def render_markdown(info):
             add("  - %s (%s, status %s) has this Message-ID" % (t["folder"], t["reference"], t["status"] or "?"))
     add("- body_chars_total: %d (quoted history stripped: %d characters)"
         % (info["body_chars_total"], info["quoted_chars"]))
+    if info.get("quoted_first_date"):
+        add("- quoted_first_date: %s" % info["quoted_first_date"])
+    if info.get("reply_kind_hint"):
+        add("- reply_kind_hint: %s" % info["reply_kind_hint"])
     add("")
     add("### Body")
     add(info["body"] if info["body"] else "(empty)")
+    if "quoted" in info:
+        add("")
+        add("### Quoted history")
+        add(info["quoted"] if info["quoted"] else "(none)")
     return "\n".join(out).rstrip() + "\n"
 
 
@@ -109,6 +117,8 @@ def main(argv=None):
                     help="body limit in characters (default %d)" % et.BODY_CHARS)
     ap.add_argument("--extract", metavar="DIR", help="write attachments to DIR/<canonical stem>/")
     ap.add_argument("--no-signals", action="store_true", help="skip thread and tag matching")
+    ap.add_argument("--with-quoted", action="store_true",
+                    help="also give the quoted history (for our sent emails that start a matter)")
     ap.add_argument("files", nargs="*", metavar="FILE")
     args = ap.parse_args(argv)
     if not args.files:
@@ -139,7 +149,7 @@ def main(argv=None):
             failed = True
             continue
         try:
-            p = et.parse_email(path, ctx, body_chars=args.body_chars)
+            p = et.parse_email(path, ctx, body_chars=args.body_chars, with_quoted=args.with_quoted)
         except OSError as exc:
             sys.stderr.write("cannot read %s: %s\n" % (name, exc))
             failed = True

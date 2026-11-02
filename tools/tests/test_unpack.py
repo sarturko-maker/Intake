@@ -277,6 +277,28 @@ class QuotedHistoryTest(UnpackBase):
                          "Bitte prüfen.")
 
 
+class SentItemsTest(UnpackBase):
+    def test_reply_kind_hint_and_quoted_history(self):
+        quoted = ("\n\nFrom: Tom Hale <tom.hale@kestrel-eng.co.uk>\nSent: 12 October 2026 09:12\n"
+                  "To: Alex Morgan\nSubject: NDA\n\nCan you review the attached NDA before Friday?\n")
+        interim = make_email(self.inbox("i.eml"), sender=ALEX, to=(TOM,), subject="RE: NDA",
+                             message_id="<s-1@kestrel-eng.co.uk>", body="Thanks Tom, will review today." + quoted)
+        subst = make_email(self.inbox("s.eml"), sender=ALEX, to=(TOM,), subject="RE: NDA",
+                           message_id="<s-2@kestrel-eng.co.uk>",
+                           body="Tom, we cannot accept the non-compete in clause 9. Delete it; the rest is fine to sign."
+                           + quoted)
+        a = self.one(interim, extra=["--with-quoted"])
+        self.assertEqual(a["direction"], "out")
+        self.assertEqual(a["reply_kind_hint"], "interim")
+        self.assertEqual(a["quoted_first_date"], "2026-10-12")
+        self.assertIn("Can you review the attached NDA", a["quoted"])
+        self.assertNotIn("Can you review", a["body"])
+        self.assertEqual(self.one(subst)["reply_kind_hint"], "substantive")
+        self.assertNotIn("quoted", self.one(subst))
+        inbound = make_email(self.inbox("in.eml"), message_id="<s-3@kestrel-eng.co.uk>")
+        self.assertEqual(self.one(inbound)["reply_kind_hint"], "")
+
+
 class NoiseHintsTest(UnpackBase):
 
     def hints(self, **kw):
