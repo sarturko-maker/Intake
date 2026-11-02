@@ -449,15 +449,24 @@ def mpath(matter, name):
     return (human_dir(matter) if name in HUMAN_ONLY_NAMES else agent_dir(matter)) / name
 
 
+def inside_a_matter(d):
+    """True when folder d lies inside a matter's agent/ or human/ folder: a Harvey pack
+    (<REF>_harvey-pack, which holds a copy of matter.md), a dated snapshot, a folder of the lawyer's.
+    Such a folder is never a matter itself, whatever its name."""
+    return any(p.name in (AGENT, HUMAN) and MATTER_DIR_RE.match(p.parent.name) for p in Path(d).parents)
+
+
 def is_matter_dir(d):
     d = Path(d)
-    return bool(MATTER_DIR_RE.match(d.name)) and (d / AGENT / "matter.md").is_file()
+    return bool(MATTER_DIR_RE.match(d.name)) and (d / AGENT / "matter.md").is_file() and not inside_a_matter(d)
 
 
 def is_legacy_matter_dir(d):
-    """A matter in the old one-folder layout (matter.md at the top); tools/matter-migrate converts it."""
+    """A matter in the old one-folder layout (matter.md at the top); tools/matter-migrate converts it.
+    A Harvey pack also has matter.md at the top, but it sits inside a matter's agent/ folder: never legacy."""
     d = Path(d)
-    return bool(MATTER_DIR_RE.match(d.name)) and (d / "matter.md").is_file() and not (d / AGENT).is_dir()
+    return (bool(MATTER_DIR_RE.match(d.name)) and (d / "matter.md").is_file() and not (d / AGENT).is_dir()
+            and not inside_a_matter(d))
 
 
 def matter_of_path(root, path):
@@ -491,12 +500,16 @@ def iter_matter_dirs(root):
 
 
 def iter_legacy_matter_dirs(root):
+    """Matters in the old one-folder layout. Skips anything inside a matter's agent/ or human/ folder:
+    a Harvey pack (agent/<REF>_harvey-pack/) holds a copy of matter.md but is never a matter."""
     areas = Path(root) / "areas"
     if not areas.is_dir():
         return
     for mfile in sorted(areas.rglob("matter.md")):
         d = mfile.parent
-        if is_legacy_matter_dir(d) and "history" not in d.relative_to(areas).parts:
+        if inside_a_matter(d) or "history" in d.relative_to(areas).parts:
+            continue
+        if is_legacy_matter_dir(d):
             yield d
 
 

@@ -251,7 +251,7 @@ Received file changed (scan): `bash tools/lint-received MATTER_FOLDER`; list it 
 | skills-sync | mirror skills/ | copy folders |
 | work-bundle | Harvey pack per matter; `--all` refreshes changed ones | copy the list |
 | matter-sync | register new and changed files in human/ and agent/, find the lawyer's edits, write START-HERE.md, list what to read | open the folders by hand |
-| matter-migrate | old one-folder matters to agent/ + human/ (one-off) | move the files by hand |
+| matter-migrate | old one-folder matters to agent/ + human/; notes into agent/; repairs Harvey packs split by an earlier version | move the files by hand |
 | learn-add | append learning lines: evidence, facts, questions | append by hand |
 | learn-index | rebuild learning/index.md and the next learning steps | count by hand |
 

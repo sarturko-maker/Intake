@@ -136,6 +136,68 @@ class MatterMigrateTest(WorkspaceTest):
         self.assertEqual((rows[0]["folder"], rows[0]["origin"]), ("human", "human"))
         self.assertIn("nothing to do", self.ws.run("matter-migrate").stdout)
 
+    def make_pack(self, m, ref):
+        """A Harvey pack as work-bundle leaves it: copies at the top, including matter.md, and a .stamp."""
+        pack = m / "agent" / ("%s_harvey-pack" % ref)
+        (pack / "correspondence").mkdir(parents=True)
+        for name in ("matter.md", "brief.md", "notes.md", "corrections.md", "subject.md"):
+            (pack / name).write_text("copy of %s\n" % name, encoding="utf-8")
+        (pack / "correspondence" / "a.eml").write_bytes(b"From: x\n\nbody\n")
+        (pack / ".stamp").write_text("")
+        old = time.time() - 3600
+        for f in pack.rglob("*"):
+            os.utime(str(f), (old, old))
+        os.utime(str(pack / ".stamp"), (old + 60, old + 60))
+        return pack
+
+    def test_a_harvey_pack_is_never_taken_for_an_old_matter(self):
+        ref, m = self.ws.new_matter("commercial", "acme-automotive", "nda", sub_area="customers")
+        pack = self.make_pack(m, ref)
+        self.assertFalse(common.is_legacy_matter_dir(pack))
+        self.assertFalse(common.is_matter_dir(pack))
+        self.assertEqual(list(common.iter_legacy_matter_dirs(self.ws.root)), [])
+        self.assertNotIn("old layout", self.ws.run("matter-sync", "--run", "R1").stdout)
+        self.assertIn("nothing to do", self.ws.run("matter-migrate", "--run", "R1").stdout)
+        self.assertTrue((pack / "matter.md").is_file())
+        self.assertFalse((pack / "agent").exists())
+
+    def test_a_split_pack_is_repaired(self):
+        """What the earlier mistake left: the pack split into agent/ and human/, and work-bundle then moving
+        the split's log.md into the matter's human/ folder, where matter-sync registered it."""
+        ref, m = self.ws.new_matter("commercial", "acme-automotive", "nda", sub_area="customers")
+        pack = self.make_pack(m, ref)
+        (pack / "agent").mkdir()
+        (pack / "matter.md").rename(pack / "agent" / "matter.md")
+        (pack / "human").mkdir()
+        (pack / "corrections.md").rename(pack / "human" / "corrections.md")
+        (pack / "agent" / "log.md").write_text("2026-11-02 10:00 | moved to the agent/ and human/ layout | - | R0\n")
+        (pack / "my-memo.md").write_text("saved in the pack by the lawyer\n")   # newer than the stamp
+        (m / "human" / "log.md").write_text("2026-11-02 10:00 | moved to the agent/ and human/ layout | - | R0\n")
+        (m / "human" / "call.md").write_text("the lawyer's own file\n")
+        self.ws.run("matter-sync", "--run", "R0")
+        names = [x["name"] for x in common.read_pipe_records(m / "agent" / "documents.md", common.DOCUMENTS_COLUMNS)]
+        self.assertIn("log.md", names)
+        self.assertIn("would have removed", self.ws.run("matter-migrate", "--dry-run").stdout)
+        self.assertTrue(pack.exists())
+        r = self.ws.run("matter-migrate", "--run", "R1")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("repaired 1 matters", r.stdout)
+        self.assertFalse(pack.exists())
+        self.assertEqual((m / "human" / "my-memo.md").read_text(), "saved in the pack by the lawyer\n")
+        self.assertFalse((m / "human" / "log.md").exists())
+        self.assertTrue(list((m / "agent" / "history").glob("log.split-pack.R1.md")))
+        self.assertTrue((m / "human" / "call.md").is_file())
+        names = [x["name"] for x in common.read_pipe_records(m / "agent" / "documents.md", common.DOCUMENTS_COLUMNS)]
+        self.assertNotIn("log.md", names)
+        self.assertIn("call.md", names)
+        self.assertIn("repaired: removed the split Harvey pack", (m / "agent" / "log.md").read_text())
+        self.assertIn("nothing to do", self.ws.run("matter-migrate", "--run", "R2").stdout)
+        # the next work-bundle run rebuilds the pack, whole
+        r = self.ws.run("work-bundle", "--all")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue((pack / "matter.md").is_file())
+        self.assertFalse((pack / "agent").exists())
+
     def test_notes_move_to_agent_and_missing_files_are_added(self):
         ref, m = self.ws.new_matter("commercial", "acme-automotive", "nda", sub_area="customers")
         # the layout before notes moved: notes.md in human/, with the lawyer's lines
