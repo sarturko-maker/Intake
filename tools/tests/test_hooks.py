@@ -36,7 +36,7 @@ POSIX = os.name != "nt"
 
 TOOL_NAMES = ["scan-changes", "unpack-email", "place-email", "new-matter", "msg2eml", "hash-files",
               "history-copy", "lint-facts", "lint-received", "index-rebuild", "budget-update",
-              "skills-sync", "work-bundle", "tooling-setup"]
+              "skills-sync", "work-bundle", "tooling-setup", "matter-sync", "matter-migrate", "learn-add", "learn-index"]
 DEMO_SCRIPTS = ["setup", "drop-batch", "check-filing"]
 AGENT_MODELS = {"filer": "sonnet", "reader": "sonnet", "indexer": "sonnet", "researcher": "sonnet",
                 "drafter": "sonnet", "reviewer": "sonnet", "distiller": "opus"}
