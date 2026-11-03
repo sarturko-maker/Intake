@@ -101,7 +101,7 @@ Thresholds: filing confidence 0.75; run ceiling 60 threads; candidate window 60 
    g. Closed matter, same work: reopen (status open, closed emptied, flag `reopened`, journal `reopen-proposed`); new work: new matter, `--follows`.
 5. Place: `bash tools/place-email FILE --to MATTER_FOLDER --reason R --confidence C --run RUN [--cross-ref OTHER_FOLDER]`. Only place-email moves emails. Past 60 threads the rest wait (`carried-over`).
 6. Reader, one run per matter touched. Read: area playbook.md, intake.md, subject.md, corrections.md, notes.md, roster.confirmed.md, roster.md, matter.md, live facts (`bash tools/lint-facts FACTS --live`), documents.md, new emails, attachments the thread turns on. Write the memory files (subject.md if the party changed) and frontmatter. Drafts only if the controlling skill asks, mode full.
-7. Assemble: `bash tools/index-rebuild --run RUN --digest-parts changes/RUN-digest.md`; `bash tools/budget-update --run RUN --model KEY --in-chars N --out-chars M`; digest; `bash tools/scan-changes --run RUN --write-manifest`; journal `run-end`.
+7. Assemble: `bash tools/index-rebuild --run RUN --digest-parts changes/RUN-digest.md`; `bash tools/budget-update --measure --run RUN` (elsewhere the estimate); digest; `bash tools/scan-changes --run RUN --write-manifest`; journal `run-end`.
 
 Our sent emails (direction out, often from the lawyer's Sent Items) file by the same ladder: tag, thread, candidates. With no match they may start a matter: the request is in the quoted text (`unpack-email --with-quoted`), the requester is the recipient, `--opened` the quoted_first_date. A second copy of an email already filed (intake mailbox and Sent Items) is kept by place-email as `no: copy of ...` and never read again. Each of our emails is one of:
 - interim (acknowledge, chase, ask for information or documents, route or delegate, schedule, admin): no reader run; the orchestrator updates waiting_on, next_step and last_activity and adds a log line. Never a position.
@@ -210,8 +210,8 @@ The lawyer should not have to write things down: you ask, the lawyer answers in 
 
 ## Budget
 
-- BUDGET.md is written only by tools/budget-update: `--init`; `--run RUN --model KEY --in-chars N --out-chars M` per model used (KEY: its prices_usd_per_mtok key); `--actual USD` on "budget actual 37.20"; `--show`; `--mode`.
-- Estimate: characters read and written / 4, at list prices, times overhead_factor (1.25 until the first bill).
+- BUDGET.md is written only by tools/budget-update: `--measure --run RUN` (Claude Code); `--run RUN --model KEY --in-chars N --out-chars M` per model used elsewhere (KEY: its prices_usd_per_mtok key); `--actual USD` on "budget actual 37.20"; `--show`; `--mode`.
+- Measured (Claude Code): `--measure` reads the real token use since the last measurement from Claude Code's own logs on this computer (every model and subagent; fresh input, cache writes, cache reads, output) and prices it at list prices; only the numbers are read, nothing leaves the machine. The first measurement counts from the start of the month and replaces that month's estimates. Elsewhere, an estimate: characters read and written / 4, at list prices, times overhead_factor (1.25 until the first bill); it misses most of an agent's real use, which is re-reading the conversation at every step.
 - Modes by percent of cap: full below 70. lean from 70: deep-read only mark-ups and referenced pages; no drafts. minimal from 90: filing and brief.md, memory from email text; digest says "filed, not fully read". paused at 100: tools only (noise, tag with internal or roster-address sender, thread); the rest to please-check; no reading.
 - Spend order: filing, brief and index, memory, attachments, drafts, learning. One read per thread; never re-read hashed duplicates; stable instructions first; carry over, never overrun.
 - Spend less: every run notes, briefly, where the same result could have cost less. Readers report at most two such points; the orchestrator adds its own and writes each as a `wasted-effort` line in WORKFLOW-LOG.md. The digest's cost line says how many and roughly what share of the run. "optimise" reviews them (budget skill): grouped by cause, the biggest savings first, each with the change that would get them. A legal skill changes after the lawyer's yes; the workspace's own files are never edited here (hard rule 13): the change goes into a note for the maintainer, with no names or client details.
@@ -249,7 +249,7 @@ Received file changed (scan): `bash tools/lint-received MATTER_FOLDER`; list its
 | lint-facts | check facts; live, as-of | by eye |
 | lint-received | re-hash received files; `--accept FILE` after the lawyer's yes | hash-files |
 | index-rebuild | INDEX.csv, INDEX.md, digest parts | rows by hand |
-| budget-update | ledger, mode | edit BUDGET.md |
+| budget-update | ledger, mode; `--measure` the real use from Claude Code's logs | edit BUDGET.md |
 | skills-sync | mirror skills/ | copy folders |
 | work-bundle | Harvey pack per matter; `--all` refreshes changed ones | copy the list |
 | matter-sync | register new and changed files in human/ and agent/, find the lawyer's edits, write START-HERE.md, list what to read | open the folders by hand |

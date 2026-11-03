@@ -37,7 +37,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 6. Show the draft: the path and each section in brief. Ask: "Approve, or tell me what to change?" Apply changes. A line resting on a seed alone is confirmed by the lawyer or removed before approval.
 7. On "approve": `status: approved`, `version: 1`, `last_reviewed: <today>`, `supporting_matters: <REF, REF>`, description without the DRAFT prefix. Add the skill to 'Which skill controls which document' in areas/<area>/playbook.md. `bash tools/skills-sync`, then `bash tools/skills-sync --check` (exit 0).
 8. Answers that are company facts not yet in knowledge/ (a position, an approval limit): offer the knowledge confirm flow (close skill, step 8).
-9. `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "draft-skill <name>"` once per model used (m: the BUDGET.md price key of that model).
+9. `bash tools/budget-update --measure --run <R> --note "draft-skill <name>"` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "draft-skill <name>"`, once per model used (m: its BUDGET.md price key).
 10. Tell the lawyer: the skill is approved; from the next run readers set `controlling_skill: <name>` on matching matters and work in its output shape; to change it, say "redraft <name>".
 
 ## Approving an area file

@@ -64,6 +64,6 @@ Record the lawyer's choice, and keep the difference visible:
 - Interview statements are dated. When later matters contradict one, the reader or the wrap-up raises it as a question. It is not silently replaced.
 - If more than one lawyer is interviewed on the same topic, keep their statements apart and show any disagreement. Never average them.
 - Tell the lawyer what is next: "draft a skill for <topic>" builds the draft from the interview, the evidence and the seeds; or "interview me about <next topic>".
-- `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "interview <topic>"`, where m is the BUDGET.md price key of the model.
+- `bash tools/budget-update --measure --run <R> --note "interview <topic>"` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "interview <topic>"`, once per model used.
 
 No subagents are needed: the orchestrator runs the interview itself.

@@ -33,7 +33,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 
 ## 5. Area files
 14. Per area without them, one drafter per area in parallel: areas/<key>/playbook.md and areas/<key>/intake.md from skills/operations/cold-start/templates/playbook.md and intake.md, `status: draft`. Fill only from the area's block in house/areas.md, house/brief.md and the knowledge files knowledge/INDEX.md points to, each point with its source. Where nothing is known, keep the prompt and write "Not known yet." Never invent a position.
-15. `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "cold start"` once per model used (m: the BUDGET.md price key of that model).
+15. `bash tools/budget-update --measure --run <R> --note "cold start"` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "cold start"`, once per model used (m: its BUDGET.md price key).
 16. `bash tools/scan-changes --run <R> --write-manifest` again, so the next run sees only new changes.
 
 ## 6. Inbox

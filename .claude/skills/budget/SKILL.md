@@ -14,7 +14,7 @@ Rules: RULES.md 'Budget'. No subagents needed: do it yourself.
    - lean: attachments read only as mark-ups and the pages that matter; no drafts.
    - minimal: emails are filed and briefs written; memory comes from the email text alone; the digest says "filed, not fully read".
    - paused: emails are filed only by reference tag or thread; everything else goes to please-check; nothing is read.
-3. Say how the estimate works: characters read and written, divided by four, at the list prices in BUDGET.md, times the overhead factor. It is an estimate; the actual bill corrects it.
+3. Say how the figure is made. In Claude Code, lines marked "measured" come from Claude Code's own logs on this computer: every model and subagent, priced at list prices; most of the cost is re-reading and caching the conversation at each step, not the documents. On a subscription plan this is what the same use would cost on the API. Elsewhere it is an estimate: characters read and written, divided by four, at the list prices, times the overhead factor; the actual bill corrects it. Asked for the latest figure: `bash tools/budget-update --measure` first.
 4. "budget actual 37.20": `bash tools/budget-update --actual 37.20`. Add `--date YYYY-MM-DD` when the lawyer gives the bill's date. Show the new overhead factor and mode.
 5. The lawyer wants another cap or new prices: they edit `cap_usd:` or `prices_usd_per_mtok:` in BUDGET.md themselves. You write BUDGET.md only through the tool. Afterwards run `bash tools/budget-update --show`.
 6. End with what to do next: once a month, type the actual bill ("budget actual <amount>"); if the mode is lean or lower, say what waits until next month or a higher cap.

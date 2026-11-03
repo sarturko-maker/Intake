@@ -179,8 +179,11 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 
 `bash tools/budget-update --init [--month YYYY-MM]`
 `bash tools/budget-update --run RUN --model opus|sonnet|haiku --in-chars N --out-chars M [--note T]`
+`bash tools/budget-update --measure [--run RUN] [--note T] [--transcripts DIR]`
 `bash tools/budget-update --actual USD [--date YYYY-MM-DD] [--month YYYY-MM]`
 `bash tools/budget-update --show` | `--mode`
+
+- `--measure` (Claude Code): reads the real token use since `measured_until` from Claude Code's own session and subagent logs on this computer (`$CLAUDE_CONFIG_DIR` or `~/.claude`, `projects/<workspace path, non-alphanumerics as ->/`), each response once, and prices it: fresh input and output at list prices, cache writes at 1.25x (5-minute) or 2x (1-hour) the input price, cache reads at their own price (prices line `family=in/out/cache read`), fast mode at 2x. One ledger line per model, note `measured: ...`. The first measurement counts from the start of the month and sets that month's estimated lines to 0 (kept, marked). Only numbers are read; nothing leaves the machine. No logs found: exit 1.
 
 - `--init`: create BUDGET.md if absent (cap 100, overhead_factor 1.25, thresholds `lean=70 minimal=90 paused=100`, prices `opus=4/20 sonnet=2/10 haiku=0.10/0.50` USD per million tokens as of 2026-10-06, with a note to check them).
 - `--run`: one ledger line per model per run, `run | date | model | in_chars | out_chars | est_usd | note`; est_usd = `(in_chars/4 * price_in + out_chars/4 * price_out) / 1e6 * overhead_factor`, prices and factor from BUDGET.md; the model must have a price there. Recomputes estimated_spend_usd, percent_of_cap, mode; prints `mode changed: X -> Y` when it moves. Creates BUDGET.md if absent.

@@ -3,11 +3,15 @@
 Run through the wrapper (spec D10):
   bash tools/budget-update --init [--month YYYY-MM]
   bash tools/budget-update --run RUN --model opus|sonnet|haiku --in-chars N --out-chars M [--note T]
+  bash tools/budget-update --measure [--run RUN] [--note T] [--transcripts DIR]
   bash tools/budget-update --actual USD [--date YYYY-MM-DD] [--month YYYY-MM]
   bash tools/budget-update --show
   bash tools/budget-update --mode
   --today YYYY-MM-DD stands in for today (tests, catching up).
 Estimate per ledger line: (in_chars/4 * price_in + out_chars/4 * price_out) / 1e6 * overhead_factor.
+--measure (Claude Code): the real token use since measured_until, read from Claude Code's own logs on this
+computer (usage_measure.py) and priced exactly: one ledger line per model, note "measured: ...". The first
+--measure counts from the start of the month and replaces that month's estimated lines (kept, at 0).
 On any write, a BUDGET.md month that is not the current month moves its ledger to
 digests/budget-<month>.md and the estimate starts again at 0.
 Exit 0 ok, 1 check failed, 2 usage error.
@@ -26,19 +30,19 @@ import common  # noqa: E402
 DEFAULT_CAP = "100"
 DEFAULT_OVERHEAD = 1.25
 DEFAULT_THRESHOLDS = "lean=70 minimal=90 paused=100"
-DEFAULT_PRICES = "opus=4/20 sonnet=2/10 haiku=0.10/0.50"
+DEFAULT_PRICES = "opus=4/20/0.20 sonnet=2/10/0.20 haiku=0.10/0.50/0.01 fable=10/50/0.25"
 PRICES_AS_OF = "2026-10-06"
 LEDGER_COLUMNS = ["run", "date", "model", "in_chars", "out_chars", "est_usd", "note"]
 LEDGER_HEADER = " | ".join(LEDGER_COLUMNS)
 KEYS = ["cap_usd", "month", "estimated_spend_usd", "percent_of_cap", "mode", "overhead_factor",
-        "last_actual_usd", "last_actual_date", "thresholds", "prices_usd_per_mtok"]
+        "last_actual_usd", "last_actual_date", "thresholds", "prices_usd_per_mtok", "measured_until"]
 MODES = ("full", "lean", "minimal", "paused")
 KEY_RE = re.compile(r"^([a-z_]+):[ \t]*(.*?)\s*$")
 MONTH_RE = re.compile(r"^[0-9]{4}-(0[1-9]|1[0-2])$")
 
 HEADER = ["# Budget",
           'Kept by the agent. Once a month, type the actual bill: say "budget actual 37.20".',
-          "Prices are list prices in USD per million tokens (input/output) as of %s. "
+          "Prices are list prices in USD per million tokens (input/output/cache read) as of %s. "
           "Check them and edit the prices line if they change." % PRICES_AS_OF,
           ""]
 
@@ -63,11 +67,14 @@ def parse_pairs(text):
 
 
 def parse_prices(text, warn):
+    """{family: (input, output[, cache read])} in USD per million tokens."""
     prices = {}
     for k, v in parse_pairs(text).items():
         try:
-            pin, _, pout = v.partition("/")
-            prices[k] = (float(pin), float(pout))
+            parts = [float(x) for x in v.split("/")]
+            if len(parts) not in (2, 3):
+                raise ValueError(v)
+            prices[k] = tuple(parts)
         except ValueError:
             warn("could not read the price for %s ('%s'); left out" % (k, v))
     if not prices:
@@ -343,7 +350,7 @@ def do_run(ctx, run, model, in_chars, out_chars, note):
     roll_if_needed(ctx, b, out)
     s = settings(ctx, b)
     before = mode_for(percent(b.estimate(), s["cap"]), s["thresholds"])
-    pin, pout = s["prices"][model]
+    pin, pout = s["prices"][model][:2]
     est = (in_chars / 4.0 * pin + out_chars / 4.0 * pout) / 1e6 * s["factor"]
     b.ledger.append([run, ctx.today.isoformat(), model, str(in_chars), str(out_chars), "%.4f" % est, note or "-"])
     total, pct, mode = refresh(ctx, b)
@@ -351,6 +358,92 @@ def do_run(ctx, run, model, in_chars, out_chars, note):
     out.append("ledger: %s %s in %d out %d chars = USD %.4f; %s: USD %s of %s (%d%%), mode %s"
                % (run, model, in_chars, out_chars, est, ctx.month, money(total), num_text(s["cap"]),
                   int(math.floor(pct)), mode))
+    if mode != before:
+        out.append("mode changed: %s -> %s (RULES.md, Budget)" % (before, mode))
+    return out
+
+
+def is_measured(fields):
+    return len(fields) > 6 and fields[6].startswith("measured")
+
+
+def split_estimate(b):
+    """(estimated USD, measured USD) of a budget's ledger."""
+    est = sum(to_float(f[5], 0.0) for f in b.ledger if not is_measured(f))
+    meas = sum(to_float(f[5], 0.0) for f in b.ledger if is_measured(f))
+    return est, meas
+
+
+def month_start_utc(ctx):
+    y, m = int(ctx.month[:4]), int(ctx.month[5:7])
+    start = _dt.datetime(y, m, 1)
+    tz = common.house_tz(ctx.root)
+    start = start.replace(tzinfo=tz) if tz else start.replace(tzinfo=_dt.timezone.utc)
+    return start.astimezone(_dt.timezone.utc)
+
+
+def tokens_text(n):
+    return "{:,}".format(n)
+
+
+def do_measure(ctx, run, note, transcripts):
+    import usage_measure as um
+    out = []
+    dirs = um.transcript_dirs(ctx.root, transcripts)
+    if not dirs:
+        raise CheckFailed("no Claude Code logs found for this workspace (looked in %s for %s). Outside Claude Code, "
+                          "record the estimate with --run RUN --model KEY --in-chars N --out-chars M."
+                          % (um.config_dir() / "projects", um.slug(ctx.root)))
+    existed = ctx.path.exists()
+    b = Budget(common.read_text(ctx.path) if existed else new_budget_text(ctx.month))
+    check_not_backwards(ctx, b)
+    if not existed:
+        out.append("created BUDGET.md for %s" % ctx.month)
+    roll_if_needed(ctx, b, out)
+    s = settings(ctx, b)
+    before = mode_for(percent(b.estimate(), s["cap"]), s["thresholds"])
+    start = month_start_utc(ctx)
+    since = um.parse_time(b.get("measured_until")) if b.get("measured_until") else None
+    first = since is None or since < start
+    if first:
+        since = start
+        replaced = 0
+        for f in b.ledger:
+            if not is_measured(f) and to_float(f[5], 0.0) > 0:
+                f[6] = (f[6] if f[6] != "-" else "") + " [estimate replaced by measured, was USD %s]" % f[5]
+                f[6] = f[6].strip()
+                f[5] = "0"
+                replaced += 1
+        if replaced:
+            out.append("first measurement: counted from the start of %s; %d estimated ledger lines replaced (kept at 0)"
+                       % (ctx.month, replaced))
+    until = _dt.datetime.now(_dt.timezone.utc)
+    totals = um.collect(dirs, since, until)
+    run_label = run or "-"
+    grand = 0.0
+    for fam in sorted(totals):
+        row = totals[fam]
+        usd = um.cost(fam, row, s["prices"])
+        if usd is None:
+            ctx.warn("no price for model %s in prices_usd_per_mtok; its %d requests are not counted" % (fam, row["requests"]))
+            continue
+        grand += usd
+        parts = um.shares(row, s["prices"], fam)
+        biggest = max(parts, key=parts.get) if parts else "-"
+        detail = ("measured: %d requests; tokens in %s, cache write %s, cache read %s, out %s; most of it %s%s"
+                  % (row["requests"], tokens_text(row["input"]), tokens_text(row["write_5m"] + row["write_1h"]),
+                     tokens_text(row["read"]), tokens_text(row["output"]), biggest,
+                     "; fast mode on %d" % row["fast"] if row.get("fast") else ""))
+        if note:
+            detail += "; " + note.replace("|", "/")
+        b.ledger.append([run_label, ctx.today.isoformat(), fam, "-", "-", "%.4f" % usd, detail])
+        out.append("%s: USD %s (%s)" % (fam, money(usd), detail[len("measured: "):]))
+    b.set("measured_until", until.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))   # full precision: nothing counted twice
+    total, pct, mode = refresh(ctx, b)
+    save(ctx, b)
+    out.append("measured %s to %s: USD %s. %s: USD %s of %s (%d%%), mode %s"
+               % (since.strftime("%Y-%m-%d %H:%M"), until.strftime("%Y-%m-%d %H:%M UTC"), money(grand), ctx.month,
+                  money(total), num_text(s["cap"]), int(math.floor(pct)), mode))
     if mode != before:
         out.append("mode changed: %s -> %s (RULES.md, Budget)" % (before, mode))
     return out
@@ -378,19 +471,26 @@ def do_actual(ctx, usd, date, month_arg):
         ap = archive_path(ctx, prev)
         billed = prev if (ap.exists() and not Budget(common.read_text(ap)).get("actual_usd")) else ctx.month
     if billed == b.get("month"):
-        estimated = b.estimate()
+        estimated, measured = split_estimate(b)
         archived = None
     else:
         archived = archive_path(ctx, billed)
         if not archived.exists():
             raise CheckFailed("no estimate for %s: %s not found" % (billed, common.rel(archived, ctx.root)))
-        estimated = Budget(common.read_text(archived)).estimate()
+        estimated, measured = split_estimate(Budget(common.read_text(archived)))
     old = s["factor"]
+    if measured > 0:
+        out.append("measured from Claude Code's logs for %s: USD %s; the bill is USD %s"
+                   % (billed, money(measured), money(usd)))
     if estimated <= 0:
         new = old
-        out.append("no estimate for %s to compare with; overhead factor stays %.2f" % (billed, old))
+        if measured <= 0:
+            out.append("no estimate for %s to compare with; overhead factor stays %.2f" % (billed, old))
+    elif usd - measured <= 0:
+        new = old
+        out.append("the measured spend covers the bill; overhead factor stays %.2f" % old)
     else:
-        raw = old * usd / estimated
+        raw = old * (usd - measured) / estimated
         new = min(5.0, max(1.0, raw))
         out.append("actual USD %s for %s against estimated USD %s: overhead factor %.2f -> %.2f%s"
                    % (money(usd), billed, money(estimated), old, new,
@@ -430,8 +530,10 @@ def do_show(ctx):
         s["factor"], ("USD %s on %s" % (last, b.get("last_actual_date") or "?")) if last else "none yet"))
     t = s["thresholds"]
     out.append("Modes: lean from %g%%, minimal from %g%%, paused at %g%%." % (t["lean"], t["minimal"], t["paused"]))
-    out.append("Prices, USD per million tokens in/out: %s (as of %s unless edited)."
+    out.append("Prices, USD per million tokens in/out/cache read: %s (as of %s unless edited)."
                % (b.get("prices_usd_per_mtok") or DEFAULT_PRICES, PRICES_AS_OF))
+    if b.get("measured_until"):
+        out.append("Measured from Claude Code's logs up to %s." % b.get("measured_until"))
     rows = b.ledger if b.get("month") == ctx.month else []
     out.append("Ledger, %d line%s this month:" % (len(rows), "" if len(rows) == 1 else "s"))
     out.append(LEDGER_HEADER)
@@ -473,14 +575,31 @@ def main(argv=None):
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--mode", action="store_true")
     ap.add_argument("--today", metavar="YYYY-MM-DD")
+    ap.add_argument("--measure", action="store_true",
+                    help="record the real token use from Claude Code's logs since the last measurement")
+    ap.add_argument("--transcripts", metavar="DIR", help="with --measure: the Claude Code project log folder")
     a = ap.parse_args(argv)
     root = common.find_root()
     try:
+        if a.measure:
+            today = parse_day(a.today, "--today") if a.today else common.now_house(root).date()
+            ctx = Ctx(root, today)
+            if a.init or a.actual is not None or a.show or a.mode or a.model or a.in_chars is not None \
+                    or a.out_chars is not None:
+                raise UsageError("--measure goes only with --run, --note and --transcripts")
+            out = do_measure(ctx, (a.run or "").strip(), a.note, a.transcripts)
+            for w in ctx.warnings:
+                sys.stderr.write("warning: %s\n" % w)
+            for line in out:
+                print(line)
+            return 0
+        if a.transcripts:
+            raise UsageError("--transcripts goes with --measure")
         actions = [n for n, on in (("--init", a.init), ("--run", a.run is not None),
                                    ("--actual", a.actual is not None), ("--show", a.show),
                                    ("--mode", a.mode)) if on]
         if len(actions) != 1:
-            raise UsageError("give exactly one of --init, --run, --actual, --show, --mode")
+            raise UsageError("give exactly one of --init, --run, --actual, --show, --mode, --measure")
         today = parse_day(a.today, "--today") if a.today else common.now_house(root).date()
         ctx = Ctx(root, today)
         if a.month is not None and not MONTH_RE.match(a.month):

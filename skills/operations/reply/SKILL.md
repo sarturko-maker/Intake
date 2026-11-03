@@ -33,7 +33,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - links: [email being answered](...) · [draft file](...) · attachments, each workspace-relative;
    - then: "Change anything? Send it from Outlook yourself, then drop your sent email into inbox/. The next run files it and notes whether it went as drafted."
 7. Changes asked: save as v<N+1>; never overwrite the earlier version.
-8. `bash tools/budget-update --run <R> --model <price key> --in-chars <n> --out-chars <n> --note "reply <REF>"`.
+8. `bash tools/budget-update --measure --run <R> --note "reply <REF>"` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "reply <REF>"`, once per model used.
 
 When the sent email comes back through intake, the reader compares it with the latest draft. It records "sent as drafted" or "sent with changes: <one line>" in log.md and the brief, and proposes accepted_unchanged (yes or no) for the lawyer to confirm. Changes the lawyer made are evidence of how we say things: the wrap-up and the skills use them.
 

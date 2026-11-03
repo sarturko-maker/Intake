@@ -34,5 +34,5 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - New type: you add the line to knowledge/TYPES.md (type, folder, example) and create the folder; then the indexer, given `approved: type <file> = <type>`, sets that entry's type.
    - Conflicts go into the digest under Questions for you; seeds never win.
 4. Shape review (duplicate subjects, unused sub-areas, clusters that want a sub-area) is phase 2. If asked, say it is not active yet.
-5. `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note index` once per model used (m: the BUDGET.md price key of that model).
+5. `bash tools/budget-update --measure --run <R> --note index` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note index`, once per model used (m: its BUDGET.md price key).
 6. Tell the lawyer: what was indexed; what needs an owner or date (they add it to the file, or tell you and you record it by the knowledge confirm flow, close skill step 8); which proposals wait for an answer.

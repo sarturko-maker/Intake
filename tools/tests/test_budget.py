@@ -1,5 +1,8 @@
 """Tests for tools/budget-update (spec D10)."""
 
+import datetime as dt
+import json
+import os
 import re
 import sys
 import unittest
@@ -17,7 +20,7 @@ overhead_factor: 1.25
 last_actual_usd:
 last_actual_date:
 thresholds: lean=70 minimal=90 paused=100
-prices_usd_per_mtok: opus=4/20 sonnet=2/10 haiku=0.10/0.50
+prices_usd_per_mtok: opus=4/20/0.20 sonnet=2/10/0.20 haiku=0.10/0.50/0.01 fable=10/50/0.25
 """
 
 # sonnet at 2 USD per million input tokens, overhead 1.25: one input character costs 6.25e-7 USD
@@ -284,3 +287,98 @@ class BudgetTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MeasureTest(unittest.TestCase):
+    """budget-update --measure: the real token use from Claude Code's logs, priced exactly."""
+
+    def setUp(self):
+        self.ws = Workspace(skills=False)
+        self.budget = self.ws.root / "BUDGET.md"
+        self.config = self.ws.root.parent / "claude-config"
+        slug = "".join(ch if ch.isalnum() else "-" for ch in str(self.ws.root.resolve()))
+        self.logs = self.config / "projects" / slug
+        (self.logs / "sess-1" / "subagents").mkdir(parents=True)
+        self.now = dt.datetime.now(dt.timezone.utc)
+
+    def tearDown(self):
+        self.ws.cleanup()
+
+    def entry(self, mid, model, minutes_ago, usage, speed="standard", when=None):
+        t = (when or (self.now - dt.timedelta(minutes=minutes_ago))).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        u = dict(usage, speed=speed)
+        return json.dumps({"type": "assistant", "timestamp": t, "requestId": "req_" + mid,
+                           "message": {"id": mid, "model": model, "usage": u}})
+
+    def write(self, rel, lines):
+        p = self.logs / rel
+        with open(str(p), "a", encoding="utf-8") as fh:
+            fh.write("\n".join(lines) + "\n")
+
+    def bu(self, *args):
+        env = dict(self.ws.env(), CLAUDE_CONFIG_DIR=str(self.config))
+        return self.ws.run("budget-update", "--today", self.now.strftime("%Y-%m-%d"), *args, env=env)
+
+    def ledger(self):
+        text = self.budget.read_text(encoding="utf-8")
+        return [line.split(" | ") for line in text.split("## Ledger")[1].strip().splitlines()[1:]]
+
+    def test_measures_every_model_and_subagent_once_and_prices_the_cache(self):
+        sonnet = {"input_tokens": 1000, "cache_creation_input_tokens": 10000, "cache_read_input_tokens": 100000,
+                  "output_tokens": 2000, "cache_creation": {"ephemeral_1h_input_tokens": 10000,
+                                                            "ephemeral_5m_input_tokens": 0}}
+        opus = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 1000000,
+                "output_tokens": 10000}
+        self.write("sess-1.jsonl", [self.entry("m1", "claude-sonnet-5-5", 5, sonnet),
+                                    self.entry("m1", "claude-sonnet-5-5", 5, sonnet),     # same response twice
+                                    "not json", json.dumps({"type": "user", "message": {"content": "x"}})])
+        self.write("sess-1/subagents/agent-a.jsonl", [self.entry("m2", "claude-opus-5-5", 3, opus)])
+        r = self.bu("--measure", "--run", "R1", "--note", "intake")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        rows = {f[2]: f for f in self.ledger()}
+        # sonnet: 1000*2 + 10000*2*2 (1-hour write) + 100000*0.20 + 2000*10 = 82,000 micro-USD
+        self.assertAlmostEqual(float(rows["sonnet"][5]), 0.082, places=6)
+        # opus: 1,000,000 cache reads at 0.20 + 10,000 out at 20 = 0.40
+        self.assertAlmostEqual(float(rows["opus"][5]), 0.40, places=6)
+        self.assertTrue(rows["sonnet"][6].startswith("measured: 1 requests"))
+        self.assertIn("intake", rows["sonnet"][6])
+        self.assertIn("estimated_spend_usd: 0.48", self.budget.read_text(encoding="utf-8"))
+        self.assertIn("measured_until: ", self.budget.read_text(encoding="utf-8"))
+        # a second measurement counts only what came after the first
+        self.write("sess-1.jsonl", [self.entry("m3", "claude-sonnet-5-5", 0, {"input_tokens": 0, "output_tokens": 1000},
+                                               speed="fast", when=dt.datetime.now(dt.timezone.utc))])
+        r = self.bu("--measure", "--run", "R2")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        last = self.ledger()[-1]
+        self.assertEqual((last[0], last[2]), ("R2", "sonnet"))
+        self.assertAlmostEqual(float(last[5]), 1000 * 10 * 2 / 1e6, places=6)     # fast mode: twice the price
+        self.assertIn("fast mode on 1", last[6])
+
+    def test_first_measurement_replaces_this_months_estimates(self):
+        r = self.ws.run("budget-update", "--today", self.now.strftime("%Y-%m-%d"), "--run", "R0", "--model", "sonnet",
+                        "--in-chars", "400000", "--out-chars", "0")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.write("sess-1.jsonl", [self.entry("m1", "claude-haiku-5-5", 2, {"input_tokens": 1000000,
+                                                                             "output_tokens": 0})])
+        r = self.bu("--measure")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("1 estimated ledger lines replaced", r.stdout)
+        rows = self.ledger()
+        self.assertEqual(rows[0][5], "0")
+        self.assertIn("estimate replaced by measured", rows[0][6])
+        self.assertAlmostEqual(float(rows[1][5]), 0.10, places=6)
+        self.assertIn("estimated_spend_usd: 0.10", self.budget.read_text(encoding="utf-8"))
+        # the bill then leaves the overhead factor alone: nothing is estimated any more
+        r = self.ws.run("budget-update", "--today", self.now.strftime("%Y-%m-%d"), "--actual", "0.12")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("overhead_factor: 1.25", self.budget.read_text(encoding="utf-8"))
+
+    def test_no_logs_says_so(self):
+        env = dict(self.ws.env(), CLAUDE_CONFIG_DIR=str(self.ws.root.parent / "nowhere"))
+        r = self.ws.run("budget-update", "--measure", env=env)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("no Claude Code logs found", r.stderr)
+        self.assertFalse(self.budget.exists())
+
+    def test_measure_takes_no_estimate_flags(self):
+        self.assertEqual(self.bu("--measure", "--model", "sonnet").returncode, 2)

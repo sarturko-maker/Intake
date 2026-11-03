@@ -2,11 +2,17 @@
 # budget-update: keep BUDGET.md: monthly cap, estimated spend, mode, ledger.
 # Usage: bash tools/budget-update --init [--month YYYY-MM]
 #        bash tools/budget-update --run RUN --model opus|sonnet|haiku --in-chars N --out-chars M [--note T]
+#        bash tools/budget-update --measure [--run RUN] [--note T] [--transcripts DIR]
 #        bash tools/budget-update --actual USD [--date YYYY-MM-DD] [--month YYYY-MM]
 #        bash tools/budget-update --show | --mode
 #   --init     create BUDGET.md if absent (cap 100, overhead 1.25, default prices and thresholds)
 #   --run      append one ledger line per model per run: est = (in/4*price_in + out/4*price_out)/1e6*overhead_factor
-#   --actual   record the bill; overhead_factor = old * actual / estimated, limited to 1.0-5.0.
+#   --measure  Claude Code: the real token use since measured_until, from Claude Code's own logs on this computer
+#              ($CLAUDE_CONFIG_DIR or ~/.claude, projects/<workspace path>/, subagents included), priced at list
+#              prices (cache writes 1.25x or 2x input, cache reads at their own price, fast mode 2x): one ledger
+#              line per model, note "measured: ...". The first one counts from the start of the month and replaces
+#              that month's estimates (kept at 0). No logs: exit 1; record the estimate with --run instead.
+#   --actual   record the bill; overhead_factor = old * (actual - measured) / estimated, limited to 1.0-5.0.
 #              Billed month: --month; else BUDGET.md's month if it has ended; else last month if
 #              digests/budget-<last month>.md has no actual yet; else this month (spend to date).
 #   --show     print the summary and this month's ledger
