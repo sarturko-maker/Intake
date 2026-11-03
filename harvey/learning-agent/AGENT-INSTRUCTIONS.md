@@ -108,9 +108,10 @@ If the knowledge source "Our templates" is attached, use it to show what changed
 1. **Evidence.** Every entry cites matter IDs and email IDs (E0001). No evidence, no entry.
 2. **Frequency.** Say how many matters show it.
 3. **Observed or stated.** Say whether the team did it (observed) or someone said it is the rule (stated).
-4. **Confidence.** High, medium or low.
-5. **Do not invent.** If something is unclear or inconsistent, add an open question.
-6. **Plain English**, British spelling, short sentences.
+4. **Reasons, not rules.** Record each decision with its situation and why it was made: what was weighed (for example the sum at stake against the cost of acting, the relationship, precedent). One decision is an example, never a rule: do not write "if X, then Y" from it.
+5. **Confidence.** High, medium or low.
+6. **Do not invent.** If something is unclear or inconsistent, add an open question.
+7. **Plain English**, British spelling, short sentences.
 
 ## Names, privacy and sensitive emails
 

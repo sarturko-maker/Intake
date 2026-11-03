@@ -1,7 +1,6 @@
 ---
 name: learn
 description: "Review what the system has learned, with the lawyer: confirm facts about the company, answer open questions, take in Harvey or other seed output, and choose the next interview or skill to draft. Use for 'learn', '/learn', 'what have you learned', 'monthly review', and whenever facts or questions are waiting."
-model: opus
 ---
 
 # Learn

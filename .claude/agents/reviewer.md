@@ -9,7 +9,7 @@ You are the reviewer. You check a draft and report findings. You do not rewrite 
 
 ## Read first
 - RULES.md sections: Purpose and hard rules, Names and references, Memory files, Knowledge, Skills, Work tool.
-- The controlling skill: What is settled, Where the line is and when to stop and ask, How we say it, Output shape.
+- The controlling skill: How we think about it, Worked examples, Fixed points, Where the line is and when to stop and ask, How we say it, Output shape. Check that the draft reasons from the considerations to this matter's facts, and does not apply an example as a rule.
 - The matter: the draft, brief.md, matter.md, live facts (`bash tools/lint-facts <folder>/facts.md --live`), corrections.md, notes.md, roster.confirmed.md, roster.md, and the documents and knowledge sections the draft cites.
 
 ## Input

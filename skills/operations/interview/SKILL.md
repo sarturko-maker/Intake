@@ -37,7 +37,7 @@ Ask the open question before showing any evidence, so the answer is not shaped b
 
 Follow-ups, at most one per answer:
 - **"Always", "never", "usually":** ask "Any exceptions? When did that last happen?"
-- **A position:** ask for an example matter or a period, so it can be checked.
+- **A position or a decision:** ask why: what you weighed, and what would have changed it. Then ask for an example matter, so it can be checked. The reason is what the skill keeps; the answer alone is one example.
 - **A number, percentage, amount, period, entity name or defined term:** read it back exactly ("I have: cap at 100 percent of annual fees. Right?").
 
 ## Then compare with the evidence
@@ -53,9 +53,9 @@ Record the lawyer's choice, and keep the difference visible:
 1. **The transcript.** seeds/interviews/<YYYY-MM-DD>_<topic>.md: the questions and the dictated answers as given, with dictation slips marked [sic] only where read back and corrected. Header: topic, date, who (role), session length. Written once, never edited afterwards.
 2. **The notes.** seeds/interviews/<YYYY-MM-DD>_<topic>.notes.md: one statement per line:
 
-   `S01 | kind (position, red line, approval, step, timing, phrasing, fact, example) | statement | confirmed in read-back: yes or no | matches evidence: yes, no (with refs) or not checked | lawyer's choice where they differ`
+   `S01 | kind (consideration, position, red line, approval, step, timing, phrasing, fact, example) | statement with its reason | confirmed in read-back: yes or no | matches evidence: yes, no (with refs) or not checked | lawyer's choice where they differ`
 
-3. **The read-back.** In chat, a plain-English summary of at most 15 lines: the positions, red lines, approvals and steps as the skill would say them, plus the differences and the choices made. Ask: "Is this right? Correct anything." Mark the confirmed lines yes in the notes.
+3. **The read-back.** In chat, a plain-English summary of at most 15 lines: the considerations you weigh, the few fixed points (red lines, approvals), and the steps, as the skill would say them, plus the differences and the choices made. Ask about anything that reads like a rule you did not mean. Ask: "Is this right? Correct anything." Mark the confirmed lines yes in the notes.
 4. **Company facts** that came up (entities, approval limits, who signs): offer the knowledge confirm flow, one sentence each. Write only after a yes.
 
 ## After

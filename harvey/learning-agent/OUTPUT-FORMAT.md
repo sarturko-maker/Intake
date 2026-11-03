@@ -264,8 +264,9 @@ SKILL.md sections:
 - When to use, and when not
 - Questions we ask first
 - How we handle it: the steps, who does each, who approves
-- What is settled: our standard positions, in short
-- What we weigh: the context factors that change outcomes, with short examples
+- How we think about it: the considerations we weigh and how they pull against each other, with the reasons; never "if X, then Y"
+- Worked examples: short cases, each with the situation, what was weighed, what we did and why
+- Fixed points: only what someone stated is firm (red lines, approval limits), marked stated
 - Where the line is, and when to stop and ask
 - How we say it: phrasing patterns and short quotes
 - Output shape
