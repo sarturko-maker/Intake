@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# before-bash: PreToolUse hook for Bash (see .claude/settings.json).
+# Usage: the harness runs  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/before-bash"  with the hook JSON on
+#   stdin. It reads tool_input.command and refuses (exit 2, reason on stderr) a command that would change,
+#   outside the Write and Edit tools, a memory file (matter.md, facts.md, subject.md, roster.md, brief.md,
+#   notes.md), a human-only file (corrections.md, roster.confirmed.md, anything in a matter's human/) or
+#   house/. Through Bash the history copy, the checks and the lawyer's approval would not happen.
+#   Refused: redirection (> or >>) or tee into one; an in-place editor (sed -i, perl -i) on one; a script
+#   that names one and writes files (Python open(..., "w"), write_text, shutil, os.replace, PowerShell
+#   Set-Content, Node writeFileSync); cp, mv or install onto one; rm, truncate or dd on one; git checkout,
+#   restore, reset, stash or clean on house/. Reading them is fine, and so is running the tools in tools/.
+# Exit: 0 go ahead; 2 refused. Unreadable input never blocks: warning, exit 0.
+# Needs bash 3.2+. JSON is read with python3/python/py, else jq, else sed.
+# What this enforces: RULES.md, Protections. Without hooks: RULES.md, Protections, 'Not live, by hand'.
+
+export LC_ALL=C
+export PYTHONIOENCODING=utf-8 PYTHONDONTWRITEBYTECODE=1
+HOOK=before-bash
+
+warn() { printf '%s: warning: %s\n' "$HOOK" "$*" >&2; }
+
+PY=""
+for cand in python3 python "py -3"; do
+  # shellcheck disable=SC2086
+  if command -v "${cand%% *}" >/dev/null 2>&1 &&
+     $cand -c 'import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)' >/dev/null 2>&1; then
+    PY="$cand"
+    break
+  fi
+done
+
+hook_input="$(cat 2>/dev/null)"
+
+# Print tool_input.command from the hook JSON. Return 1 when it cannot be read.
+extract_command() {
+  local out rc
+  if [ -n "$PY" ]; then
+    # shellcheck disable=SC2086
+    out="$(printf '%s' "$hook_input" | $PY -c '
+import json, sys
+try:
+    data = json.loads(sys.stdin.buffer.read().decode("utf-8", "replace"))
+except Exception:
+    sys.exit(3)
+ti = data.get("tool_input") if isinstance(data, dict) else None
+cmd = ti.get("command") if isinstance(ti, dict) else None
+if not isinstance(cmd, str):
+    sys.exit(3)
+sys.stdout.buffer.write(cmd.encode("utf-8"))
+' 2>/dev/null)"
+    rc=$?
+    [ $rc -eq 0 ] && { printf '%s' "$out"; return 0; }
+    [ $rc -eq 3 ] && return 1
+  fi
+  if command -v jq >/dev/null 2>&1; then
+    out="$(printf '%s' "$hook_input" | jq -je '.tool_input.command | strings' 2>/dev/null)" &&
+      { printf '%s' "$out"; return 0; }
+    return 1
+  fi
+  # sed fallback: good enough to find the patterns below (escapes stay as they are).
+  out="$(printf '%s' "$hook_input" | tr -d '\r\n' |
+         grep -o -E '"command"[[:space:]]*:[[:space:]]*"([^"\\]|\\.)*"' | head -n 1)"
+  [ -n "$out" ] || return 1
+  out="${out#*:}"
+  out="${out#"${out%%[![:space:]]*}"}"
+  out="${out#\"}"
+  printf '%s' "${out%\"}"
+}
+
+if ! cmd="$(extract_command)" || [ -z "$cmd" ]; then
+  warn "could not read tool_input.command from the hook input; nothing checked."
+  exit 0
+fi
+c="$(printf '%s' "$cmd" | tr 'A-Z\\' 'a-z/')"   # lower case; Windows backslashes as slashes
+
+# A protected target: a memory or human-only file, or a path in a matter's human/ folder or in house/.
+T='[^[:space:]"'"'"'|;&<>()]*'
+NAME='(matter|facts|subject|roster|brief|notes|corrections|roster\.confirmed)\.md'
+PROT="(${T}${NAME}|(${T}/)?(human|house)/${T})"
+END='["'"'"']?[[:space:]]*($|[;&|)])'
+
+refuse() {
+  printf 'Refused: this command would %s outside the Write and Edit tools, so the history copy, the checks or the lawyer'"'"'s approval would not happen (RULES.md, Protections). Write memory files with Write or Edit; never change human/ or house/ through Bash. If the command only reads that file, split it so it does not also write.\n' "$1" >&2
+  exit 2
+}
+
+# The patterns live in variables: bash parses ; & | ( ) in a literal [[ =~ ]] pattern as shell syntax.
+Q="[\"']"
+RE_NAMES="${NAME}|(^|[^a-z0-9_.-])(human|house)/"
+RE_REDIRECT=">>?[[:space:]]*${Q}?${PROT}"
+RE_TEE="(^|[^a-z0-9_-])tee([[:space:]]+-[a-z-]+)*[[:space:]]+${Q}?${PROT}"
+RE_INPLACE='(^|[^a-z0-9_-])(sed|perl|ruby)[[:space:]]+(-[a-z]*i|--in-place)'
+RE_CPMV="(^|[;&|[:space:](])(cp|mv|install|rsync)[[:space:]][^;&|]*[[:space:]]${Q}?${PROT}${END}"
+RE_RM="(^|[;&|[:space:](])(rm|unlink|truncate|shred)[[:space:]][^;&|]*${PROT}"
+RE_DD="(^|[[:space:]])dd[[:space:]][^;&|]*of=${PROT}"
+RE_OPEN="open\\([^)]*,[[:space:]]*(mode[[:space:]]*=[[:space:]]*)?${Q}[rbt]*[wax+]"
+RE_POPEN="\\.open\\([[:space:]]*(mode[[:space:]]*=[[:space:]]*)?${Q}[rbt]*[wax+]"
+RE_SCRIPT='write_text\(|write_bytes\(|writelines\(|shutil\.(copy|move)|os\.(replace|rename|remove|unlink)|\.unlink\(|\.rename\(|set-content|add-content|out-file|writefilesync|appendfilesync'
+RE_GIT='(^|[;&|[:space:]])git[[:space:]][^;&|]*(checkout|restore|reset|stash|clean)[^;&|]*house'
+
+if [[ $c =~ $RE_NAMES ]]; then
+  [[ $c =~ $RE_REDIRECT ]] && refuse "redirect output into a protected file"
+  [[ $c =~ $RE_TEE ]] && refuse "write a protected file with tee"
+  [[ $c =~ $RE_INPLACE ]] && refuse "edit a protected file in place"
+  [[ $c =~ $RE_CPMV ]] && refuse "copy or move onto a protected file"
+  [[ $c =~ $RE_RM ]] && refuse "delete or empty a protected file"
+  [[ $c =~ $RE_DD ]] && refuse "overwrite a protected file with dd"
+  if [[ $c =~ $RE_OPEN ]] || [[ $c =~ $RE_POPEN ]] || [[ $c =~ $RE_SCRIPT ]]; then
+    refuse "let a script write files while it names a protected file"
+  fi
+fi
+[[ $c =~ $RE_GIT ]] && refuse "change house/ through git"
+exit 0

@@ -17,6 +17,6 @@ Read RULES.md before acting. It is the contract; this file adds only what is spe
 - Dispatch readers in parallel, one matter each; matters under one subject go one after another, since they share subject.md.
 - Keep the main session lean: read changes/<run>.md and subagent reports, not the whole tree.
 - Hooks and deny rules are in .claude/settings.json; TOOLING.md records whether they are live. When a hook refuses a write, read its message and comply. Never work around it.
-- Write memory files with Write or Edit only, so the hooks run. Never through shell redirection.
+- Write memory files with Write or Edit only, so the hooks run. Never through Bash in any form (redirection, sed, cp, mv, or a Python script): the before-bash hook refuses it. This applies to every subagent.
 - Ask the human in plain chat text, not question widgets.
 - Obey the mode in BUDGET.md.

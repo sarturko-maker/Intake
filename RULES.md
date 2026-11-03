@@ -220,13 +220,13 @@ The lawyer should not have to write things down: you ask, the lawyer answers in 
 
 Claude Code: deny rules and hooks in .claude/settings.json; TOOLING.md says if they are live.
 - Deny edits and writes to **/corrections.md, **/roster.confirmed.md and every matter's human/; house/** asks the lawyer (permission prompt) before any change; proven at cold start.
-- Hooks: history copy before writes to matter.md, facts.md, subject.md and a matter's notes.md; over 16,000 characters rejected and restored; facts.md linted after writes, restored on failure; notes.md must keep every earlier line, else restored. The agent's own writes to memory files are recorded in changes/agent-writes.csv, so matter-sync does not report them as the lawyer's edits. A refusal is an instruction: read it, comply, never bypass.
+- Hooks: history copy before writes to matter.md, facts.md, subject.md and a matter's notes.md; over 16,000 characters rejected and restored; facts.md linted after writes, restored on failure; notes.md must keep every earlier line, else restored; a Bash command that would write a memory file, a human-only file or house/ is refused (before-bash). The agent's own writes to memory files are recorded in changes/agent-writes.csv, so matter-sync does not report them as the lawyer's edits. A refusal is an instruction: read it, comply, never bypass.
 
 Not live, by hand:
 1. Before rewriting matter.md, facts.md or subject.md: `bash tools/history-copy FILE`.
 2. After writing matter.md or subject.md: `wc -m FILE` at most 16,000, else restore and consolidate.
 3. After appending facts: `bash tools/lint-facts FILE --previous HISTORY_COPY`; errors: restore, fix.
-4. Never write memory files by shell redirection, sed -i or tee: use the file write or edit tool.
+4. Never write memory files through the shell in any form (redirection, tee, sed -i, cp, mv, or a Python or other script): use the file write or edit tool.
 5. notes.md: add lines at the end only; never change an earlier line.
 
 Received file changed (scan): `bash tools/lint-received MATTER_FOLDER`; list its findings under Please check; never repair. A changed Office document the lawyer opened is usually Word saving a sensitivity label: say so in the Please check line; on the lawyer's yes, `bash tools/lint-received --accept FILE` (records the new hash; the file is untouched).

@@ -23,7 +23,7 @@ One of:
 - corrections.md and roster.confirmed.md win. Never invent a fact, figure, name, position or authority: mark a gap `[to confirm: <what>]`. Seeds are leads, never a basis. skills/POINTERS.md is reference, never a position.
 - A judgement skill gives options with a view; it does not decide. Past the skill's line: stop and put it to the lawyer.
 - No commitment, signature, payment, approval or authority on the organisation's behalf.
-- Write with Write or Edit, never by shell redirection, so the hooks run. Memory files: one log.md line only (Edit). Never write corrections.md, notes.md, roster.confirmed.md, house/ (RULES.md, Protections), correspondence/ or documents/received/.
+- Write with Write or Edit, never through Bash (no redirection, no Python or other script), so the hooks run. Memory files: one log.md line only (Edit). Never write corrections.md, notes.md, roster.confirmed.md, house/ (RULES.md, Protections), correspondence/ or documents/received/.
 
 ## Matter draft
 - File: `drafts/YYYY-MM-DD_<type>_<topic>_v<N>.md` in the matter, N one above the highest for that type and topic. Drafts stay in drafts/ (RULES.md, Purpose and hard rules). First line: `Draft for the lawyer. Not sent.`

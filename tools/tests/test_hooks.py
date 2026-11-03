@@ -816,12 +816,71 @@ class SettingsTest(unittest.TestCase):
                 if {"Write", "Edit", "MultiEdit"} <= tools:
                     commands += [h["command"] for h in g["hooks"] if h.get("type") == "command"]
             self.assertIn('bash "$CLAUDE_PROJECT_DIR/.claude/hooks/%s"' % script, commands, event)
+        bash_hooks = [h["command"] for g in self.data["hooks"]["PreToolUse"] if g.get("matcher") == "Bash"
+                      for h in g["hooks"]]
+        self.assertIn('bash "$CLAUDE_PROJECT_DIR/.claude/hooks/before-bash"', bash_hooks)
+
+
+class BeforeBashTest(unittest.TestCase):
+    """before-bash refuses Bash commands that would change memory, human-only or house files outside
+    Write and Edit (so the history copy and checks cannot be skipped), and lets reading and tools through."""
+
+    REFUSED = [
+        "python3 -c \"open('areas/c/s/2026-0002_a_b/agent/matter.md','w').write('x')\"",
+        "python3 - <<'PY'\nfrom pathlib import Path\nPath('agent/facts.md').write_text('x')\nPY",
+        "python3 - <<'PY'\np='agent/brief.md'\nwith open(p, \"w\", encoding=\"utf-8\") as fh: fh.write('x')\nPY",
+        "echo x >> areas/c/s/2026-0002_a_b/agent/facts.md",
+        "cat new.md | tee agent/notes.md",
+        "sed -i 's/a/b/' agent/matter.md",
+        "cp /tmp/x.md areas/c/s/2026-0002_a_b/agent/matter.md",
+        "rm areas/c/s/2026-0002_a_b/agent/facts.md",
+        "echo x > areas/c/s/2026-0002_a_b/human/corrections.md",
+        "echo x > house/brief.md",
+        "git checkout -- house",
+        "echo x > AREAS\\C\\S\\2026-0002_A_B\\AGENT\\MATTER.MD",
+    ]
+    ALLOWED = [
+        "cat agent/matter.md",
+        "bash tools/lint-facts agent/facts.md --live > changes/live.txt 2>/dev/null",
+        "bash tools/history-copy agent/matter.md",
+        "python3 -c \"print(open('agent/matter.md', 'r', encoding='utf-8').read())\"",
+        "printf 'did | x | correspondence/a.eml\\n' | bash tools/learn-add --matter 2026-0002 --work-type nda",
+        "cp agent/matter.md /tmp/copy.md",
+        "wc -m agent/matter.md agent/subject.md",
+        "bash tools/place-email inbox/a.eml --to areas/c/s/2026-0002_a_b --run R1 --reason x --confidence 0.9",
+        "echo hello > /tmp/out.txt",
+        "git status",
+    ]
+
+    def run_hook(self, data):
+        if not isinstance(data, bytes):
+            data = json.dumps(data).encode("utf-8")
+        p = subprocess.run([BASH, str(HOOKS / "before-bash")], input=data, capture_output=True, timeout=60)
+        return p.returncode, p.stderr.decode("utf-8", "replace")
+
+    @unittest.skipUnless(BASH, "bash not found")
+    def test_refused_and_allowed(self):
+        for cmd in self.REFUSED:
+            rc, err = self.run_hook({"tool_name": "Bash", "tool_input": {"command": cmd}})
+            self.assertEqual(rc, 2, cmd)
+            self.assertIn("Refused:", err)
+            self.assertIn("Write or Edit", err)
+        for cmd in self.ALLOWED:
+            rc, err = self.run_hook({"tool_name": "Bash", "tool_input": {"command": cmd}})
+            self.assertEqual((rc, err), (0, ""), cmd)
+
+    @unittest.skipUnless(BASH, "bash not found")
+    def test_unreadable_input_never_blocks(self):
+        for data in (b"", b"{not json", b'{"tool_input": {}}'):
+            rc, err = self.run_hook(data)
+            self.assertEqual(rc, 0)
+            self.assertIn("warning", err)
 
 
 class HookFilesTest(unittest.TestCase):
 
     def test_scripts(self):
-        for name in ("before-write", "after-write"):
+        for name in ("before-write", "after-write", "before-bash"):
             p = HOOKS / name
             data = p.read_bytes()
             self.assertTrue(data.startswith(b"#!/usr/bin/env bash\n"), name)
