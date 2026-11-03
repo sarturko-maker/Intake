@@ -87,6 +87,8 @@ UNREAD FILES
 `<path> | <reason>`
 WORKFLOW-LOG
 `<corrected|re-filed|unreadable|rule-conflict|workaround|wasted-effort|tool-failure> | <note, references not names>`
+COULD HAVE BEEN CHEAPER
+at most two, `<what you read or did that the result did not need> | about <N> characters | <the cheaper way to the same result>`, for example a whole document read for one clause, a quoted thread read again, a file that changed nothing; `none` when the run was lean
 
 Last line: `chars read: N, chars written: M`.
 

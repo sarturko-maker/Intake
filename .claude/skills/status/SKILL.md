@@ -15,6 +15,7 @@ R = run id: the first `bash tools/scan-changes` prints `report: changes/<R>.md`;
 3. `bash tools/index-rebuild --run <R> --digest-parts changes/<R>-digest.md`. It applies the lawyer's INDEX.csv edits and journals them. Each `closed-by-lawyer <REF>`: put "Wrap-up for <REF>" first under What you should do next; run the wrap-up (close skill, 'Wrap-up') only when the lawyer asks.
 4. `bash tools/lint-received`. Findings go under Please check, one WORKFLOW-LOG.md line each. A changed Office document is usually Word saving a sensitivity label when the lawyer opened it: say so, and offer "accept <file>".
 5. `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note status` once per model used (m: the BUDGET.md price key of that model). Then `bash tools/budget-update --show` for the cost line.
+5b. Spend less: as the intake skill, section 4 step 2b, for any reader or indexer this run used.
 6. Write digests/<R>.md with the headings of the intake skill, section 4. Arrivals and where filed: "No new mail read in this run. Inbox: <n> files waiting." Copy it to digests/LATEST.md.
 7. `bash tools/scan-changes --run <R> --write-manifest --quiet`, unless a change was left unhandled. Journal `run-end`.
 7a. `bash tools/learn-index`: what has been learned and the next learning steps (learning mode: these come first in the reply).

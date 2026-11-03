@@ -33,6 +33,9 @@ Drafted from the lawyer's interview, knowledge/ and closed matters of this kind.
 ## How we say it
 <!-- Fill from interview question 7 (how you phrase the reply) and the tone in house/brief.md. -->
 
+## What to read
+<!-- Fill from the documents past matters turned on and the wasted-effort lines for this work type: what to read first, what can usually be skipped (whole documents when one clause decides, quoted history, unchanged attachments), and when a short read is enough. Every line with its source. This keeps runs under this skill cheap without changing the result. -->
+
 ## Output shape
 <!-- Fill: what the reader or drafter produces under this skill. -->
 - brief.md: the sections this skill fills, and what goes under What the lawyer must decide.

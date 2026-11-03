@@ -18,6 +18,7 @@ Emails dropped in inbox/ are filed into matters; the agent keeps memory, index a
 10. Never delete workspace files, except test files you made; place-email alone drops an identical second copy of an email.
 11. Never guess names, owners, areas or positions: ask, or use please-check.
 12. Every run ends with "What you should do next", numbered, in the digest and your reply, in the task format (Index and digest), with links to the files.
+13. Never edit the workspace's own files here: RULES.md, CLAUDE.md, AGENTS.md, tools/, skills/operations/, .claude/ (local Claude Code settings go in .claude/settings.local.json). They come from the repository, and a local edit blocks the next update. Propose a change as a note for the maintainer (budget skill, 'Spend less').
 
 ## Every session
 
@@ -39,7 +40,7 @@ Procedure: skills/operations/<skill>/SKILL.md. Read it, follow it.
 | /close REF | "close 2026-0042" | close |
 | /checkpoint REF | "checkpoint 2026-0042" | checkpoint |
 | /bundle REF | "bundle 2026-0042 for Harvey" | bundle |
-| /budget | "how much have we spent", "budget actual 37.20" | budget |
+| /budget | "how much have we spent", "budget actual 37.20", "optimise", "where could we spend less" | budget |
 | /interview TOPIC | "interview me about NDAs", "let's do the interview" | interview |
 | /reply REF | "draft a reply to 2026-0042" | reply |
 | /draft-skill NAME | "draft a skill for NDA review", "approve" | draft-skill |
@@ -156,7 +157,7 @@ Writing rules:
 - Pasted digest line `confirm nothing needed: NOISE-0001, NOISE-0002`: type `closed` in those rows.
 - Locked INDEX.csv (Excel): INDEX.new.csv is written; ask to close Excel, rerun.
 - INDEX.md: open by area, oldest first; noise; closed in 30 days; the four measures (lawyer minutes per matter, share accepted unchanged, outcome agreement, hours to ready).
-- Digest digests/<run>.md, copied to digests/LATEST.md, plain English, `##` headings in order: Cost line and mode; What we learned (learning mode); Arrivals and where filed; New matters and subjects; Proposed sub-areas; Nothing needed (confirm); Please check; Reopened; Questions for you (at most three); Quiet for ten days or more; Needs an owner or date; Measures; What you should do next (numbered: due soonest, waiting on you by age, confirmations, please-check, stale). `--digest-parts` writes five of them.
+- Digest digests/<run>.md, copied to digests/LATEST.md, plain English, `##` headings in order: Cost line and mode (plus one "Could have spent less" line when the run logged any); What we learned (learning mode); Arrivals and where filed; New matters and subjects; Proposed sub-areas; Nothing needed (confirm); Please check; Reopened; Questions for you (at most three); Quiet for ten days or more; Needs an owner or date; Measures; What you should do next (numbered: due soonest, waiting on you by age, confirmations, please-check, stale). `--digest-parts` writes five of them.
 - /status: scan, apply edits, index, digest; no new mail.
 - Task format (chat reply and digest), for each matter that needs the lawyer, in What-you-should-do-next order:
   Plain words a 15-year-old would follow; assume the lawyer has read nothing about the matter.
@@ -213,6 +214,7 @@ The lawyer should not have to write things down: you ask, the lawyer answers in 
 - Estimate: characters read and written / 4, at list prices, times overhead_factor (1.25 until the first bill).
 - Modes by percent of cap: full below 70. lean from 70: deep-read only mark-ups and referenced pages; no drafts. minimal from 90: filing and brief.md, memory from email text; digest says "filed, not fully read". paused at 100: tools only (noise, tag with internal or roster-address sender, thread); the rest to please-check; no reading.
 - Spend order: filing, brief and index, memory, attachments, drafts, learning. One read per thread; never re-read hashed duplicates; stable instructions first; carry over, never overrun.
+- Spend less: every run notes, briefly, where the same result could have cost less. Readers report at most two such points; the orchestrator adds its own and writes each as a `wasted-effort` line in WORKFLOW-LOG.md. The digest's cost line says how many and roughly what share of the run. "optimise" reviews them (budget skill): grouped by cause, the biggest savings first, each with the change that would get them. A legal skill changes after the lawyer's yes; the workspace's own files are never edited here (hard rule 13): the change goes into a note for the maintainer, with no names or client details.
 
 ## Protections
 
@@ -264,4 +266,4 @@ Received file changed (scan): `bash tools/lint-received MATTER_FOLDER`; list its
 
 ## Workflow log
 
-WORKFLOW-LOG.md: `# time | run | kind | note`; one short line, references not names, append-only, when you are corrected (`corrected`), re-file (`re-filed`), cannot read a file (`unreadable`), hit a rule conflict (`rule-conflict`), use a fallback (`workaround`), waste effort (`wasted-effort`), or a tool fails (`tool-failure`). Example: `2026-10-28 09:14 | 2026-10-28_091200 | workaround | pandoc missing; unzipped the mark-up`.
+WORKFLOW-LOG.md: `# time | run | kind | note`; one short line, references not names, append-only, when you are corrected (`corrected`), re-file (`re-filed`), cannot read a file (`unreadable`), hit a rule conflict (`rule-conflict`), use a fallback (`workaround`), waste effort (`wasted-effort`), or a tool fails (`tool-failure`). Example: `2026-10-28 09:14 | 2026-10-28_091200 | workaround | pandoc missing; unzipped the mark-up`. A `wasted-effort` note says what, about how many characters, and the cheaper way: `2026-0042: read all 40 pages of the MSA for one clause; about 120,000 characters; cheaper: contents page and clause 9`.
