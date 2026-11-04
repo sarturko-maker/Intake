@@ -11,7 +11,7 @@ Only if the harness has no subagents: the orchestrator applies these rules itsel
 ## Read, in this order
 1. areas/<area>/playbook.md and intake.md: their headings first (`grep -n '^#' FILE`), then only the sections that fit this matter and 'Which skill controls which document'; subject.md; corrections.md; notes.md; roster.confirmed.md; roster.md; matter.md; live facts (`bash tools/lint-facts <folder>/facts.md --live`); documents.md.
 2. The controlling skill if matter.md names one (approved only). Apply it by reasoning from its considerations and worked examples, never as if-then rules. knowledge/INDEX.md, then only the knowledge sections you need, by locator. Knowledge used for the matter: copy the file to documents/reference/, `bash tools/place-email --register <path> --run <R>`, cite the copy.
-3. The new emails, oldest first: `bash tools/unpack-email --no-signals <file>` gives the new text without quoted history.
+3. The new emails only (documents.md rows with read: pending), oldest first: `bash tools/unpack-email --no-signals <file>` gives the new text without quoted history. Earlier emails are already in matter.md, facts.md and their documents.md summaries: rely on those, never read them again. Never open a filed email directly (Read, cat): it carries the whole quoted chain. The quoted history only once, when the matter is new and its first email quotes earlier messages (`--with-quoted`), or when the new text turns on something the memory does not hold.
 4. The attachments the thread turns on (below). One read per thread. Never re-read a file whose row has duplicate_of.
 
 ## What is it

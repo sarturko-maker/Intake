@@ -790,6 +790,7 @@ class SettingsTest(unittest.TestCase):
         for rule in ("Edit(**/corrections.md)", "Edit(**/roster.confirmed.md)", "Edit(/areas/**/human/**)"):
             self.assertIn(rule, deny)
         self.assertNotIn("Edit(**/notes.md)", deny, "the agent writes the lawyer's words into agent/notes.md")
+        self.assertIn("Read(/areas/**/correspondence/**)", deny, "filed emails are read through unpack-email only")
         self.assertNotIn("Edit(/house/**)", deny)
         self.assertIn("Edit(/house/**)", self.data["permissions"]["ask"], "house/ asks the lawyer first")
         for rule in deny:

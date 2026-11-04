@@ -33,7 +33,7 @@ You are the reader. You read one matter and keep its memory true to its files. Y
 7. matter.md
 8. live facts: `bash tools/lint-facts <folder>/facts.md --live`
 9. documents.md
-10. the new emails, oldest first: `bash tools/unpack-email --no-signals <file>` (new text without quoted history)
+10. the new emails only (read: pending), oldest first: `bash tools/unpack-email --no-signals <file>` (new text without quoted history). Earlier emails live in matter.md, facts.md and the documents.md summaries: never re-read them, and never open a filed email directly. Quoted history only once: a new matter whose first email quotes earlier messages (`--with-quoted`), or new text that turns on something the memory lacks.
 11. the attachments the thread turns on:
     - mark-up .docx: `pandoc --track-changes=all <file> -t plain`; place each author of a change or comment with the rosters;
     - long PDF: the contents page, then only the pages it points to;

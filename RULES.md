@@ -90,7 +90,7 @@ Thresholds: filing confidence 0.75; run ceiling 60 threads; candidate window 60 
 
 1. Start: mode; `bash tools/scan-changes --run RUN`; `bash tools/matter-sync --run RUN` (registers new and changed files in human/ and agent/, finds the lawyer's edits, lists what each matter needs read); journal `run-start`. Knowledge changes: per the intake skill.
 2. `.msg`: `bash tools/msg2eml FILE.msg`, journal `converted`; exit 3: leave it, ask for .eml. Other non-.eml files: to inbox/please-check/ with a note.
-3. `bash tools/unpack-email --json FILE...`; then one email at a time, oldest Date first.
+3. `bash tools/unpack-email --json FILE...`; then one email at a time, oldest Date first. A chain is read once: later runs read only the new text of new emails, relying on matter.md, facts.md and the documents.md summaries for the rest. Filed emails are opened only through unpack-email, never directly (Claude Code: a deny rule).
 4. First hit wins:
    a. Noise (a noise hint, newsletter, marketing, notification), even in a matter thread: `--to noise --title T --label L`.
    b. Sensitive: misdirected, another party's privileged material, HR-personal: recognise only (special cases).
