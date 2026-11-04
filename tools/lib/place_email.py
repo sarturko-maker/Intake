@@ -149,8 +149,29 @@ def documents_path(matter):
     return path
 
 
-def doc_line(name, folder, origin, frm, date, mid, sha, read, dup=""):
-    return common.join_pipe([name, folder, origin, frm, date, "", mid, sha, read, "", dup])
+def doc_line(name, folder, origin, frm, date, mid, sha, read, dup="", summary=""):
+    return common.join_pipe([name, folder, origin, frm, date, "", mid, sha, read, summary, dup])
+
+
+def subject_read_index(agent):
+    """{sha256: (reference, folder, name, summary)} for files already read in the other matters of this
+    matter's subject, that is the same client (RULES.md, hard rule 6: the matter and its subject folder).
+    Not for general/unfiled, which gathers unrelated matters."""
+    mdir = Path(agent).parent
+    subj = mdir.parent
+    if subj.name == "unfiled" or not subj.is_dir():
+        return {}
+    out = {}
+    for sib in sorted(subj.iterdir()):
+        if sib == mdir or not sib.is_dir() or not common.is_matter_dir(sib):
+            continue
+        ref = common.MATTER_DIR_RE.match(sib.name).group(1)
+        for r in common.read_pipe_records(common.agent_dir(sib) / "documents.md", common.DOCUMENTS_COLUMNS):
+            h = (r.get("hash") or "").strip().lower()
+            summary = (r.get("summary") or "").strip()
+            if h and summary and (r.get("read") or "").strip().lower() == "yes":
+                out.setdefault(h, (ref, (r.get("folder") or "").strip(), (r.get("name") or "").strip(), summary))
+    return out
 
 
 def stored_hashes(records):
@@ -206,6 +227,7 @@ def store_attachments(state, matter, p, records, rows):
     origin = "ours" if p.direction == "out" else "received"
     target = Path(matter) / out_dir_rel
     known = stored_hashes(records)
+    read_elsewhere = None                  # built on first need: the same file read in another matter of this client
     date = p.info["date"]
     for a in p.attachments:
         if a.kind == "signature-image":
@@ -232,6 +254,16 @@ def store_attachments(state, matter, p, records, rows):
             dest = et.unique_path(target, a.name)
             write_new(dest, a.data)
         known[a.sha256] = dest.name
+        if read_elsewhere is None:
+            read_elsewhere = subject_read_index(matter)
+        seen = read_elsewhere.get(a.sha256.lower())
+        if seen:
+            ref, folder, name, summary = seen
+            where = "%s %s/%s" % (ref, folder, name) if folder else "%s %s" % (ref, name)
+            rows.append(doc_line(dest.name, out_dir_rel, origin, p.from_addr, date, p.message_id, a.sha256,
+                                 "no: read in %s, same file" % where, summary=summary.replace("|", "/")))
+            state.say("stored", a.name, state.rel(dest), "same file already read in %s; summary copied" % ref)
+            continue
         rows.append(doc_line(dest.name, out_dir_rel, origin, p.from_addr, date, p.message_id,
                              a.sha256, "pending"))
         state.say("stored", a.name, state.rel(dest))

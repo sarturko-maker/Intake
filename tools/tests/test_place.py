@@ -434,3 +434,53 @@ class RegisterAndRefusalTest(PlaceBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SameClientReuseTest(PlaceBase):
+    """The same attachment already read in another matter of the same client (subject): stored in the new
+    matter, not read again, its summary copied. Another client reads it afresh (RULES.md, hard rule 6)."""
+
+    def first_read(self, matter, name, data, summary):
+        d = matter / "agent" / "documents" / "received"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / name).write_bytes(data)
+        common.append_line(matter / "agent" / "documents.md", common.join_pipe(
+            [name, "documents/received", "received", "j.schmidt@acme-automotive.de", "2026-10-15 08:47", "",
+             "first@acme-automotive.de", hashlib.sha256(data).hexdigest(), "yes", summary, ""]))
+
+    def arrive(self, matter, name, data, mid):
+        f = make_email(self.inbox(mid + ".eml"), sender=JULIA, to=(TOM,), subject="Documents",
+                       message_id="<%s@acme-automotive.de>" % mid, attachments=[(name, data, DOCX)])
+        self.place(f, "--to", matter.relative_to(self.ws.root).as_posix(), "--run", "R1")
+        return [r for r in self.docs(matter) if r["name"] == name]
+
+    def test_same_client_reuses_the_summary(self):
+        data = b"PK\x03\x04 the same master supply agreement"
+        self.first_read(self.matter, "Acme_MSA_v1.docx", data, "MSA v1 from the customer; cap at 100% of fees")
+        ref2, m2 = self.ws.new_matter("commercial", "acme-automotive", "nda", sub_area="customers",
+                                      opened="2026-10-20")
+        rows = self.arrive(m2, "Acme_MSA_v1.docx", data, "again")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["read"], "no: read in %s documents/received/Acme_MSA_v1.docx, same file" % self.ref)
+        self.assertEqual(rows[0]["summary"], "MSA v1 from the customer; cap at 100% of fees")
+        self.assertEqual(rows[0]["duplicate_of"], "")
+        self.assertTrue((m2 / "agent" / "documents" / "received" / "Acme_MSA_v1.docx").is_file())
+        self.assertEqual(self.ws.run("lint-received").returncode, 0)
+
+    def test_another_client_reads_it_afresh(self):
+        data = b"PK\x03\x04 a template both customers sent"
+        self.first_read(self.matter, "Template.docx", data, "the customer's template")
+        ref3, m3 = self.ws.new_matter("commercial", "halden-water", "nda", sub_area="customers", opened="2026-10-20")
+        self.assertEqual(self.arrive(m3, "Template.docx", data, "other")[0]["read"], "pending")
+
+    def test_a_file_not_yet_read_elsewhere_is_read(self):
+        data = b"PK\x03\x04 still pending in the first matter"
+        d = self.matter / "agent" / "documents" / "received"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "Draft.docx").write_bytes(data)
+        common.append_line(self.matter / "agent" / "documents.md", common.join_pipe(
+            ["Draft.docx", "documents/received", "received", "x", "2026-10-15 08:47", "", "", sha(d / "Draft.docx"),
+             "pending", "", ""]))
+        ref2, m2 = self.ws.new_matter("commercial", "acme-automotive", "nda", sub_area="customers",
+                                      opened="2026-10-20")
+        self.assertEqual(self.arrive(m2, "Draft.docx", data, "third")[0]["read"], "pending")

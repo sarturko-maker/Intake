@@ -114,7 +114,7 @@ Special cases:
 - Two matters: primary, `--cross-ref` the other.
 - Sensitive: new-matter `--area general --subject unfiled --topic sensitive-<n> --title "Sensitive: for the lawyer"`; label `misdirected`, `privileged-other-party` or `hr-personal`; needs_lawyer; flag `sensitive`; one bare line in brief and matter; nothing from the contents.
 - Out of area: best area, else general/unfiled; flag `out-of-area`.
-- Identical email: deleted by place-email (`duplicate-dropped`). Known attachment hash: `duplicate_of`, not stored or read.
+- Identical email: deleted by place-email (`duplicate-dropped`). Known attachment hash: `duplicate_of`, not stored or read. The same file already read in another matter of the same subject (not general/unfiled): stored, not read again; place-email copies its summary (`read: no: read in <REF> <path>, same file`).
 
 Attachments: each gets a documents.md row, read or `no: <reason>`. Mark-up: tracked changes and comments (`pandoc --track-changes=all FILE -t plain`). Long PDF: contents page, then the pages it points to. Never signature images, logos, calendar parts.
 
