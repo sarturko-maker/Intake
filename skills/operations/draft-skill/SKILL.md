@@ -22,7 +22,8 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - learning/work-types/<slug>.md: the evidence for this work type, matter by matter (start here);
    - seeds/interviews/*<topic>*.notes.md: confirmed interview statements only (interview skill);
    - our substantive emails in matters of this kind (documents.md rows with origin ours and a "[substantive]" summary): what we actually said and did; the strongest evidence after the lawyer's own answers;
-   - for 'What to read': the documents and clauses those matters actually turned on, and the `wasted-effort` lines in WORKFLOW-LOG.md for them, so the skill reads only what the result needs.
+   - for 'What to read': the documents and clauses those matters actually turned on, and the `wasted-effort` lines in WORKFLOW-LOG.md for them, so the skill reads only what the result needs;
+   - a Harvey draft for this work type (seeds/harvey/*/skills.md): a lead to test, never a source on its own. A line from it goes into the skill only when the lawyer confirmed it in the interview (cite the interview) or our own evidence supports it (cite the matter). Then add what our own evidence shows and Harvey missed: considerations, worked examples from our matters, and our phrasing.
 4. Interview: at most eight questions, one or two at a time, only on what the interview notes and sources leave open (no notes yet: suggest "interview me about <topic>" first). Ask the open question first; then show in one line what the sources say, with the source, so the lawyer can confirm or correct it. Skip what is already answered.
    1. When does this kind of request come in, and from whom?
    2. What do you check first?

@@ -1,5 +1,7 @@
 # Harvey learning set-up: how to run it
 
+For a quicker first pass that drafts work types, skills and knowledge needs from a review table, see `harvey/skills-agent/`. Use one or the other.
+
 Goal: learn how the legal team works from a month or more of emails. The emails come mostly from the intake mailbox, plus some of your own. The output is drafts of three things: a work-types report, skills (how we work) and knowledge (facts about the company). You and Claude Code check everything later.
 
 ## What we know from the test (73 emails)

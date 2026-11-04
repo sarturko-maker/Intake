@@ -180,7 +180,7 @@ The lawyer should not have to write things down: you ask, the lawyer answers in 
 - Confirm flow: one chat sentence (fact, source, owner); on yes write it with confirmed_by and last_confirmed; standard answers name their owning department. Never guess an owner.
 - A change supersedes: valid_until on the old entry, a new entry; never a silent edit.
 - Splits (answer sets, entity and people lists) and new types (with an example): after a yes.
-- Seeds are leads, never truth; knowledge and corrections beat them.
+- Seeds are leads, never truth; knowledge and corrections beat them. Harvey's skill drafts and knowledge needs (harvey/skills-agent/) are tested in the interview: a line enters a skill only on the lawyer's confirmation or our own evidence, and our own findings are added.
 - Interviews (seeds/interviews/) are dated statements of one lawyer's recollection: transcript written once, never edited; notes used only where confirmed in the read-back. For how we should work, the lawyer's confirmed answer decides; for what actually happens, evidence beats recollection; differences stay visible, never silently resolved.
 - Knowledge used in a matter: copy into documents/reference/, then `bash tools/place-email --register PATH --run RUN`.
 - standard-answers/ is the most sensitive folder: open it only for the matter in hand.

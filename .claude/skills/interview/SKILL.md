@@ -19,6 +19,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 2. Read quietly, and do not show yet (learning/work-types/<slug>.md first: the evidence matter by matter):
    - the evidence for this topic: knowledge/INDEX.md and the relevant files, closed matters of this kind, seeds/ (Harvey output: leads only), any existing skill, earlier interviews in seeds/interviews/, and our substantive sent emails in matters of this kind (documents.md origin ours, "[substantive]");
    - from these, note the points to test later: what the evidence shows we do, the positions seen with their context, and the gaps.
+   - a Harvey draft for this work type (seeds/harvey/*/skills.md, "Skill: <slug>"): treat it with suspicion. It was drafted by search over a Vault and may miss, merge or overstate. Mark each of its lines: agrees with our evidence, contradicts it, or Harvey only. Never show it before the open questions, so it cannot steer the answers.
 3. Say how it works, in two lines: about eight questions, about 15 minutes; numbers and names are read back; nothing changes a skill until the lawyer approves the read-back.
 
 ## Ask: open questions first, evidence after
@@ -42,7 +43,7 @@ Follow-ups, at most one per answer:
 
 ## Then compare with the evidence
 
-After the open answers, show the differences with the evidence, one line each, and ask the lawyer to settle each one. Example: "You said we hold the cap at 100 percent. In 2 of 5 matters we went to 150 percent for strategic customers (M012, M031). Should the skill say 100 percent with an exception for strategic customers, or something else?"
+After the open answers, show the differences with the evidence, one line each, and ask the lawyer to settle each one. With a Harvey draft: also its lines that contradict your evidence or the lawyer's answers, and its Harvey-only lines that would matter to the skill, each with its evidence, most important first. The lawyer confirms, corrects or drops each. A line the lawyer does not settle stays a question. Example: "You said we hold the cap at 100 percent. In 2 of 5 matters we went to 150 percent for strategic customers (M012, M031). Should the skill say 100 percent with an exception for strategic customers, or something else?"
 
 Record the lawyer's choice, and keep the difference visible:
 - **For how we should work** (positions, red lines, approvals): the lawyer's confirmed answer is what the skill will say. The past exceptions are kept as precedents with their context.

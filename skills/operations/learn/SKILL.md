@@ -19,6 +19,13 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - record the file name, its sha256 (from `bash tools/hash-files`) and today's date in learning/seeds-imported.md.
 
    Seeds are never "observed". A seed that contradicts observed evidence or knowledge becomes a question.
+
+   Harvey skills scout output (seeds/harvey/<date>/, made with harvey/skills-agent/):
+   - `work-types.md`: match each type to a slug in learning/work-types/ and add one evidence line per type (`asked | <what is usually asked> | seed work-types.md`). A type with no match: propose a new slug to the lawyer; never create one on your own.
+   - `knowledge-needs.md`: each kind of fact becomes a question, `knowledge | Where is <kind of fact> kept, and who owns it? | seed knowledge-needs.md`; each fact seen becomes a fact to confirm (`--knowledge`, source "seed knowledge-needs.md").
+   - `coverage-and-questions.md`: its questions join the open questions (`--question`).
+   - `skills.md`: not imported line by line. Each draft waits in seeds/harvey/ for the interview and draft-skill of its work type. Tell the lawyer which drafts arrived, and suggest an interview for the most common one.
+   Outside parties stay as Harvey's codes; never ask for the code key.
 3. **Facts waiting.** Take the pending lines in learning/knowledge-candidates.md, at most five at a time, in one numbered message: "<fact> (source). Keep it? Who owns it?" The lawyer answers in their own words, for example "yes 1, 2, 4; no 3; 5 is owned by Finance".
    - Each yes: run the knowledge confirm flow (RULES.md 'Knowledge'). Write or update the entry in the type's folder (knowledge/TYPES.md), stamped with confirmed_by and last_confirmed, then set the candidate's status to `confirmed (knowledge/<file>)` with Edit.
    - Each no: `rejected`.
