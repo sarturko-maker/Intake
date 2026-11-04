@@ -71,10 +71,28 @@ def parse_time(text):
     return t if t.tzinfo else t.replace(tzinfo=_dt.timezone.utc)
 
 
+def who_of(f):
+    """Which step a transcript belongs to: "main session", or the subagent's type (reader, filer ...), read
+    from the agent-<id>.meta.json Claude Code writes beside a subagent's log."""
+    if f.parent.name != "subagents":
+        return "main session"
+    meta = f.with_name(f.stem + ".meta.json")
+    try:
+        t = json.loads(meta.read_text(encoding="utf-8")).get("agentType")
+    except (OSError, ValueError, AttributeError):
+        t = None
+    return str(t or "subagent")
+
+
 def collect(dirs, since, until):
-    """{family or model: {requests, input, write_5m, write_1h, read, output, fast_usd_share}} for responses
-    with since < timestamp <= until (aware datetimes), each response counted once."""
-    seen, totals = set(), {}
+    """{family or model: {requests, input, write_5m, write_1h, read, output, ...}} for responses with
+    since < timestamp <= until (aware datetimes), each response counted once."""
+    return collect_detail(dirs, since, until)[0]
+
+
+def collect_detail(dirs, since, until):
+    """(totals by family, totals by (step, family), {step: number of agents}): see collect and who_of."""
+    seen, totals, by_who, agents = set(), {}, {}, {}
     for d in dirs:
         for f in sorted(Path(d).rglob("*.jsonl")):
             try:
@@ -108,6 +126,10 @@ def collect(dirs, since, until):
                     if model.startswith("<"):          # <synthetic> lines carry no real use
                         continue
                     fam = family(model) or model
+                    who = who_of(f)
+                    if who != "main session":
+                        agents.setdefault(who, set()).add(f.stem)
+                    _add(by_who.setdefault((who, fam), dict.fromkeys(FIELDS, 0)), usage)
                     row = totals.setdefault(fam, dict.fromkeys(FIELDS, 0))
                     row.setdefault("fast", 0)
                     cc = usage.get("cache_creation") if isinstance(usage.get("cache_creation"), dict) else {}
@@ -127,7 +149,23 @@ def collect(dirs, since, until):
                         row.setdefault("fast_parts", dict.fromkeys(parts, 0))
                         for k, v in parts.items():
                             row["fast_parts"][k] += v
-    return totals
+    return totals, by_who, {k: len(v) for k, v in agents.items()}
+
+
+def _add(row, usage):
+    """Add one response's tokens to a plain totals row (no fast-mode split)."""
+    cc = usage.get("cache_creation") if isinstance(usage.get("cache_creation"), dict) else {}
+    w1h = int(cc.get("ephemeral_1h_input_tokens") or 0)
+    w5m = int(cc.get("ephemeral_5m_input_tokens") or 0)
+    total_write = int(usage.get("cache_creation_input_tokens") or 0)
+    if total_write > w1h + w5m:
+        w5m += total_write - w1h - w5m
+    row["requests"] += 1
+    row["input"] += int(usage.get("input_tokens") or 0)
+    row["write_5m"] += w5m
+    row["write_1h"] += w1h
+    row["read"] += int(usage.get("cache_read_input_tokens") or 0)
+    row["output"] += int(usage.get("output_tokens") or 0)
 
 
 def prices_for(fam, prices):

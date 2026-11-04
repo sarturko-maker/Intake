@@ -84,6 +84,8 @@ def render_markdown(info):
         add("- quoted_first_date: %s" % info["quoted_first_date"])
     if info.get("reply_kind_hint"):
         add("- reply_kind_hint: %s" % info["reply_kind_hint"])
+    if info.get("quoted_file"):
+        add("- quoted_file: %s (%d characters)" % (info["quoted_file"], info.get("quoted_chars_total", 0)))
     add("")
     add("### Body")
     add(info["body"] if info["body"] else "(empty)")
@@ -109,6 +111,30 @@ def extract(p, ctx, dest_root):
     return written
 
 
+QUOTED_SHOWN = 2000
+
+
+def quoted_to_file(p, info, root):
+    """Write the whole quoted history to changes/quoted/<canonical stem>.txt and show only its oldest part,
+    where the original request usually sits: printing whole threads made every later step re-read them."""
+    full = p.quoted_body
+    qdir = Path(root) / "changes" / "quoted"
+    qdir.mkdir(parents=True, exist_ok=True)
+    qf = qdir / (os.path.splitext(p.canonical_name)[0] + ".txt")
+    common.write_text_atomic(qf, full)
+    info["quoted_file"] = common.rel(qf, root)
+    info["quoted_chars_total"] = len(full)
+    shown = full
+    if len(full) > QUOTED_SHOWN:
+        shown = full[-QUOTED_SHOWN:]
+        cut = shown.find("\n")
+        if 0 <= cut < 200:
+            shown = shown[cut + 1:]
+        shown = "[... %d earlier characters; the whole quoted history is in %s]\n%s" % (
+            len(full) - len(shown), info["quoted_file"], shown)
+    info["quoted"] = shown
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="bash tools/unpack-email",
                                  description="Headers, new body, attachments and signals of .eml files.")
@@ -118,7 +144,11 @@ def main(argv=None):
     ap.add_argument("--extract", metavar="DIR", help="write attachments to DIR/<canonical stem>/")
     ap.add_argument("--no-signals", action="store_true", help="skip thread and tag matching")
     ap.add_argument("--with-quoted", action="store_true",
-                    help="also give the quoted history (for our sent emails that start a matter)")
+                    help="also give the quoted history (for our sent emails that start a matter): its oldest "
+                         "%d characters, where the request usually is; the whole history goes to "
+                         "changes/quoted/<name>.txt" % QUOTED_SHOWN)
+    ap.add_argument("--quoted-inline", action="store_true",
+                    help="with --with-quoted: print the whole quoted history instead")
     ap.add_argument("files", nargs="*", metavar="FILE")
     args = ap.parse_args(argv)
     if not args.files:
@@ -155,6 +185,8 @@ def main(argv=None):
             failed = True
             continue
         info = p.info
+        if args.with_quoted and not args.quoted_inline and p.quoted_body:
+            quoted_to_file(p, info, root)
         if args.extract:
             try:
                 for i, where in extract(p, ctx, args.extract).items():

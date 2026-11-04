@@ -15,6 +15,7 @@ You are the reader. You read one matter and keep its memory true to its files. Y
 
 ## Input
 - `run`, `mode` (full, lean, minimal), `folder` (the matter), `new` (new files, workspace-relative), `reopen` (yes or no).
+- A matter flagged `light-read` (written from one interim email of ours): read it in full this time, every email and the attachments the thread turns on, then remove the flag.
 - `why`: new mail (default), lawyer's files (new or changed files in human/, files put into agent/ by hand, edits to agent/ files: keep the lawyer's change), or consistency pass (corrections.md, notes.md or roster.confirmed.md changed). A new email from legal that matches a draft in drafts/: log "sent as drafted" or "sent with changes: <one line>", and propose accepted_unchanged in the brief.
 - `filing flags` from the filer: personal-address and the address, out-of-area and the suggested home, general-flagged, proposed-sub-area:<name>, sensitive and its label, cross-refs.
 

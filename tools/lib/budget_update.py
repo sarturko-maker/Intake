@@ -418,7 +418,12 @@ def do_measure(ctx, run, note, transcripts):
             out.append("first measurement: counted from the start of %s; %d estimated ledger lines replaced (kept at 0)"
                        % (ctx.month, replaced))
     until = _dt.datetime.now(_dt.timezone.utc)
-    totals = um.collect(dirs, since, until)
+    totals, by_who, agents = um.collect_detail(dirs, since, until)
+    steps = {}                                   # step -> {family: USD}
+    for (who, fam), row in by_who.items():
+        usd_step = um.cost(fam, row, s["prices"])
+        if usd_step is not None:
+            steps.setdefault(who, {})[fam] = steps.get(who, {}).get(fam, 0.0) + usd_step
     run_label = run or "-"
     grand = 0.0
     for fam in sorted(totals):
@@ -434,10 +439,18 @@ def do_measure(ctx, run, note, transcripts):
                   % (row["requests"], tokens_text(row["input"]), tokens_text(row["write_5m"] + row["write_1h"]),
                      tokens_text(row["read"]), tokens_text(row["output"]), biggest,
                      "; fast mode on %d" % row["fast"] if row.get("fast") else ""))
+        fam_total = sum(v.get(fam, 0.0) for v in steps.values()) or 1.0
+        split = sorted(((v.get(fam, 0.0), w) for w, v in steps.items() if v.get(fam)), reverse=True)
+        if split:
+            detail += "; by step: " + ", ".join("%s %d%%" % (w, round(100 * u / fam_total)) for u, w in split)
         if note:
             detail += "; " + note.replace("|", "/")
         b.ledger.append([run_label, ctx.today.isoformat(), fam, "-", "-", "%.4f" % usd, detail])
         out.append("%s: USD %s (%s)" % (fam, money(usd), detail[len("measured: "):]))
+    for who in sorted(steps, key=lambda w: -sum(steps[w].values())):
+        fams = ", ".join("%s USD %s" % (f, money(u)) for f, u in sorted(steps[who].items(), key=lambda x: -x[1]))
+        count = (" x%d" % agents[who]) if who in agents else ""
+        out.append("  %s%s: %s" % (who, count, fams))
     b.set("measured_until", until.strftime("%Y-%m-%dT%H:%M:%S.%fZ"))   # full precision: nothing counted twice
     total, pct, mode = refresh(ctx, b)
     save(ctx, b)

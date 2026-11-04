@@ -23,7 +23,7 @@ Rules: RULES.md 'Budget'. No subagents needed: do it yourself.
 
 The question: where could we have spent fewer tokens for the same result? Rules: RULES.md 'Budget' (Spend less) and hard rule 13.
 
-1. Read the `wasted-effort` lines in WORKFLOW-LOG.md since the last review (the date of the newest changes/optimise-*.md), and the ledger lines of BUDGET.md for the same runs. Few lines yet: look at the last runs instead, in JOURNAL.md, the digests and the ledger: readers per run, characters per run, the biggest reads.
+1. Run `bash tools/budget-update --measure` and read its split by step (main session, reader xN, filer ..., each with its model), then the `wasted-effort` lines in WORKFLOW-LOG.md since the last review (the date of the newest changes/optimise-*.md) and the ledger lines of BUDGET.md for the same runs. The split shows which steps used which model; a step on Opus that the default would do is a saving. Few lines yet: look at the last runs instead, in JOURNAL.md, the digests and the ledger: readers per run, characters per run, the biggest reads.
 2. Group them by cause, and estimate each group's saving in characters and in USD (its share of the runs' characters times their estimated cost). Common causes:
    - a reader started for a matter that only had an interim email, or a filer for five emails or fewer;
    - a whole document read when the thread turned on one clause (contents page, then the clause);

@@ -354,6 +354,21 @@ class MeasureTest(unittest.TestCase):
         self.assertAlmostEqual(float(last[5]), 1000 * 10 * 2 / 1e6, places=6)     # fast mode: twice the price
         self.assertIn("fast mode on 1", last[6])
 
+    def test_cost_is_split_by_step(self):
+        """Each subagent's log sits beside a meta file naming its type: the split shows which step spent what."""
+        use = {"input_tokens": 0, "output_tokens": 100000}
+        self.write("sess-1.jsonl", [self.entry("m1", "claude-opus-5-5", 4, use)])
+        for n in (1, 2):
+            self.write("sess-1/subagents/agent-r%d.jsonl" % n, [self.entry("r%d" % n, "claude-sonnet-5-5", 3, use)])
+            (self.logs / "sess-1" / "subagents" / ("agent-r%d.meta.json" % n)).write_text('{"agentType": "reader"}')
+        r = self.bu("--measure", "--run", "R1")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("main session: opus USD 2.00", r.stdout)
+        self.assertIn("reader x2: sonnet USD 2.00", r.stdout)
+        rows = {f[2]: f for f in self.ledger()}
+        self.assertIn("by step: reader 100%", rows["sonnet"][6])
+        self.assertIn("by step: main session 100%", rows["opus"][6])
+
     def test_first_measurement_replaces_this_months_estimates(self):
         r = self.ws.run("budget-update", "--today", self.now.strftime("%Y-%m-%d"), "--run", "R0", "--model", "sonnet",
                         "--in-chars", "400000", "--out-chars", "0")

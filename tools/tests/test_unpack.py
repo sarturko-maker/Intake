@@ -298,6 +298,23 @@ class SentItemsTest(UnpackBase):
         inbound = make_email(self.inbox("in.eml"), message_id="<s-3@kestrel-eng.co.uk>")
         self.assertEqual(self.one(inbound)["reply_kind_hint"], "")
 
+    def test_long_quoted_history_goes_to_a_file_and_only_its_oldest_part_is_shown(self):
+        older = "".join("\n\nFrom: Person %d <p%d@kestrel-eng.co.uk>\nSent: 1%d October 2026 09:00\nSubject: NDA\n\n%s"
+                        % (i, i, i, "Some earlier discussion. " * 40) for i in range(1, 6))
+        first = "\n\nFrom: Tom Hale <tom.hale@kestrel-eng.co.uk>\nSent: 10 October 2026 08:00\nSubject: NDA\n\nPlease review the NDA."
+        f = make_email(self.inbox("long.eml"), sender=ALEX, to=(TOM,), subject="RE: NDA",
+                       message_id="<s-9@kestrel-eng.co.uk>", body="Thanks, on it." + older + first)
+        a = self.one(f, extra=["--with-quoted"])
+        self.assertTrue(a["quoted_file"].startswith("changes/quoted/"))
+        whole = (self.ws.root / a["quoted_file"]).read_text(encoding="utf-8")
+        self.assertIn("Person 1", whole)
+        self.assertIn("Please review the NDA.", a["quoted"])          # the oldest part, where the request is
+        self.assertNotIn("Person 1 ", a["quoted"])
+        self.assertIn("earlier characters; the whole quoted history is in", a["quoted"])
+        self.assertLess(len(a["quoted"]), 2200)
+        inline = self.one(f, extra=["--with-quoted", "--quoted-inline"])
+        self.assertIn("Person 1", inline["quoted"])
+
 
 class NoiseHintsTest(UnpackBase):
 

@@ -32,7 +32,7 @@ You set: title (unless `title_locked: yes`), label, status, proposed_outcome, wa
 - requester: the internal team or person who asked. counterparty: the other organisation's short name.
 - arrived: Date of the first inbound email, `YYYY-MM-DD HH:MM`. ready_at: set once, when the proposed outcome first becomes anything but in_progress; never reset. last_activity: date of the newest email or file.
 - controlling_skill: the approved skill in skills/<area>/ that governs the work, or empty. Never a draft.
-- flags: comma-separated: wrap-up-pending, reopened, personal-address, possible-impersonation, out-of-area, general-flagged, sensitive, proposed-sub-area:<name>. Keep flags you did not set.
+- flags: comma-separated: wrap-up-pending, reopened, personal-address, possible-impersonation, out-of-area, general-flagged, sensitive, light-read, proposed-sub-area:<name>. Keep flags you did not set, except light-read, which the reader removes after its full read.
 - Never touch reference, kind, area, sub_area, subject, opened, closed, follows, confirmed_outcome, confirmed_by, lawyer_minutes, accepted_unchanged. Exceptions: reopen; the lawyer's own words in chat (status and close skills).
 - Reopen (new mail on a closed matter): status open, closed emptied, flag reopened, log `reopened: new email after close`.
 
