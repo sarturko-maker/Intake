@@ -14,7 +14,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 1. `bash tools/budget-update --mode`: if it is minimal or paused, say the draft waits for budget, unless the lawyer insists.
 2. Find the matter folder from REF (INDEX.csv, or a folder whose name starts with REF). Read:
    - brief.md, matter.md, notes.md, corrections.md, roster.confirmed.md and roster.md;
-   - the email to answer: the latest inbound email in correspondence/ (documents.md shows the order), plus earlier ones only as needed;
+   - the email to answer: the latest inbound email in correspondence/ (documents.md shows the order), plus earlier ones only as needed; for documents, their cards in summaries/ first, the document only for the part the reply turns on;
    - the controlling skill if one is approved (controlling_skill in matter.md), else the closest approved skill;
    - the area's playbook.md tone section, and house/brief.md 'Tone for drafts' and 'Always and never';
    - knowledge/INDEX.md, then only the knowledge files the reply relies on (standard answers, entity facts).

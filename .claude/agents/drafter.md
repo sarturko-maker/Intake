@@ -27,6 +27,7 @@ One of:
 
 ## Matter draft
 - File: `drafts/YYYY-MM-DD_<type>_<topic>_v<N>.md` in the matter, N one above the highest for that type and topic. Drafts stay in drafts/ (RULES.md, Purpose and hard rules). First line: `Draft for the lawyer. Not sent.`
+- Documents: their cards in agent/summaries/ first; open the document for the clauses the draft turns on.
 - Substance: reason from the skill's considerations and worked examples to this matter's facts; never apply an example as a rule; say where this matter differs from the examples.
 - Shape: the controlling skill's Output shape, section by section. No skill: the shape the instructions give; say in the report that no skill controlled it.
 - A reply's subject ends with `[<reference>]`. Tone: house/brief.md and the playbook.

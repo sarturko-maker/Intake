@@ -33,8 +33,7 @@
       "Bash(git push *)",
       "Bash(git commit *)",
       "Bash(git remote *)",
-      "Bash(gh *)",
-      "Read(/areas/**/correspondence/**)"
+      "Bash(gh *)"
     ],
     "ask": [
       "Edit(/house/**)",

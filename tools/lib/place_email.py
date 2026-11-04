@@ -154,7 +154,7 @@ def doc_line(name, folder, origin, frm, date, mid, sha, read, dup="", summary=""
 
 
 def subject_read_index(agent):
-    """{sha256: (reference, folder, name, summary)} for files already read in the other matters of this
+    """{sha256: (reference, folder, name, summary, card or None)} for files already read in the other matters of this
     matter's subject, that is the same client (RULES.md, hard rule 6: the matter and its subject folder).
     Not for general/unfiled, which gathers unrelated matters."""
     mdir = Path(agent).parent
@@ -170,7 +170,10 @@ def subject_read_index(agent):
             h = (r.get("hash") or "").strip().lower()
             summary = (r.get("summary") or "").strip()
             if h and summary and (r.get("read") or "").strip().lower() == "yes":
-                out.setdefault(h, (ref, (r.get("folder") or "").strip(), (r.get("name") or "").strip(), summary))
+                name = (r.get("name") or "").strip()
+                card = common.agent_dir(sib) / "summaries" / (name + ".md")
+                out.setdefault(h, (ref, (r.get("folder") or "").strip(), name, summary,
+                                   card if card.is_file() else None))
     return out
 
 
@@ -258,8 +261,15 @@ def store_attachments(state, matter, p, records, rows):
             read_elsewhere = subject_read_index(matter)
         seen = read_elsewhere.get(a.sha256.lower())
         if seen:
-            ref, folder, name, summary = seen
+            ref, folder, name, summary, card = seen
             where = "%s %s/%s" % (ref, folder, name) if folder else "%s %s" % (ref, name)
+            if card is not None:                # the card goes with it, under this matter's name for the file
+                own = Path(matter) / "summaries" / (dest.name + ".md")
+                if not own.exists():
+                    own.parent.mkdir(parents=True, exist_ok=True)
+                    common.write_text_atomic(own, "Copied from %s, where the same file was read (%s).\n\n%s"
+                                             % (ref, where, common.read_text(card)))
+                summary = summary.replace("summaries/%s.md" % name, "summaries/%s.md" % dest.name)
             rows.append(doc_line(dest.name, out_dir_rel, origin, p.from_addr, date, p.message_id, a.sha256,
                                  "no: read in %s, same file" % where, summary=summary.replace("|", "/")))
             state.say("stored", a.name, state.rel(dest), "same file already read in %s; summary copied" % ref)

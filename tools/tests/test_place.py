@@ -456,14 +456,22 @@ class SameClientReuseTest(PlaceBase):
 
     def test_same_client_reuses_the_summary(self):
         data = b"PK\x03\x04 the same master supply agreement"
-        self.first_read(self.matter, "Acme_MSA_v1.docx", data, "MSA v1 from the customer; cap at 100% of fees")
+        self.first_read(self.matter, "Acme_MSA_v1.docx", data,
+                        "MSA v1 from the customer; cap at 100% of fees (card: summaries/Acme_MSA_v1.docx.md)")
+        card = self.matter / "agent" / "summaries" / "Acme_MSA_v1.docx.md"
+        card.parent.mkdir(parents=True, exist_ok=True)
+        card.write_text("MSA v1. Cap 100% of annual fees (cl. 9.2). Term 3 years (cl. 2).\n", encoding="utf-8")
         ref2, m2 = self.ws.new_matter("commercial", "acme-automotive", "nda", sub_area="customers",
                                       opened="2026-10-20")
         rows = self.arrive(m2, "Acme_MSA_v1.docx", data, "again")
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["read"], "no: read in %s documents/received/Acme_MSA_v1.docx, same file" % self.ref)
-        self.assertEqual(rows[0]["summary"], "MSA v1 from the customer; cap at 100% of fees")
+        self.assertEqual(rows[0]["summary"],
+                         "MSA v1 from the customer; cap at 100% of fees (card: summaries/Acme_MSA_v1.docx.md)")
         self.assertEqual(rows[0]["duplicate_of"], "")
+        copied = (m2 / "agent" / "summaries" / "Acme_MSA_v1.docx.md").read_text(encoding="utf-8")
+        self.assertTrue(copied.startswith("Copied from %s" % self.ref))
+        self.assertIn("Cap 100% of annual fees (cl. 9.2)", copied)
         self.assertTrue((m2 / "agent" / "documents" / "received" / "Acme_MSA_v1.docx").is_file())
         self.assertEqual(self.ws.run("lint-received").returncode, 0)
 
