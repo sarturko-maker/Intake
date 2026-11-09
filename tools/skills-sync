@@ -15,9 +15,13 @@ case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '
 set -u
 
 CHECK=0
+skip=0
 for arg in "$@"; do
+  [ "$skip" = 1 ] && { skip=0; continue; }
   case "$arg" in
     --check) CHECK=1 ;;
+    --run) skip=1 ;;            # accepted like every tool; not used
+    --run=*) ;;
     *) echo "skills-sync: unknown argument: $arg" >&2
        echo "Usage: bash tools/skills-sync [--check]" >&2
        exit 2 ;;

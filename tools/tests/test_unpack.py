@@ -310,10 +310,46 @@ class SentItemsTest(UnpackBase):
         self.assertIn("Person 1", whole)
         self.assertIn("Please review the NDA.", a["quoted"])          # the oldest part, where the request is
         self.assertNotIn("Person 1 ", a["quoted"])
-        self.assertIn("earlier characters; the whole quoted history is in", a["quoted"])
-        self.assertLess(len(a["quoted"]), 2200)
+        self.assertIn("the oldest of 6 quoted messages", a["quoted"])
+        self.assertEqual(a["quoted_messages"], 6)
+        self.assertLess(len(a["quoted"]), 3300)
         inline = self.one(f, extra=["--with-quoted", "--quoted-inline"])
         self.assertIn("Person 1", inline["quoted"])
+
+    def test_disclaimers_are_dropped_and_quoted_work_can_be_skipped(self):
+        quoted = ("\n\nFrom: Tom Hale <tom.hale@kestrel-eng.co.uk>\nSent: 12 October 2026 09:12\nSubject: NDA\n\n"
+                  "Please review the NDA by Friday.\n\nCONFIDENTIALITY NOTICE: This email is confidential and may "
+                  "be privileged.\nIf you are not the intended recipient, delete it.\n")
+        f = make_email(self.inbox("d.eml"), sender=ALEX, to=(TOM,), subject="RE: NDA",
+                       message_id="<s-10@kestrel-eng.co.uk>", body="On it." + quoted)
+        a = self.one(f, extra=["--with-quoted"])
+        self.assertIn("Please review the NDA by Friday.", a["quoted"])
+        self.assertNotIn("CONFIDENTIALITY", a["quoted"])
+        self.assertNotIn("intended recipient", (self.ws.root / a["quoted_file"]).read_text(encoding="utf-8"))
+        quick = self.one(f, extra=["--no-quoted"])
+        self.assertEqual((quick["body"], quick["quoted_first_date"]), ("On it.", ""))
+        self.assertNotIn("quoted", quick)
+        res = self.ws.run("unpack-email", "--json", "--no-quoted", "--with-quoted", str(f))
+        self.assertEqual(res.returncode, 2)
+
+    def test_a_long_quoted_thread_is_quick(self):
+        # A 154,000-character quoted history once took over two minutes: a date pattern backtracked over long
+        # runs of blank lines. It must stay a matter of seconds, with and without the quoted history.
+        import time
+        block = ("\n\nFrom: Tom Hale <tom.hale@kestrel-eng.co.uk>\nSent: 12 October 2026 09:12\nSubject: RE: NDA\n"
+                 + "> \n" * 40 + " \t \n" * 400 + "Please see the points below.\n" + "Text of an earlier message. " * 40)
+        body = "Thanks, done." + block * 52
+        self.assertGreater(len(body), 150000)
+        f = make_email(self.inbox("long-thread.eml"), sender=ALEX, to=(TOM,), subject="RE: NDA",
+                       message_id="<s-11@kestrel-eng.co.uk>", body=body)
+        for extra in (["--with-quoted"], ["--no-quoted"], []):
+            start = time.time()
+            a = self.one(f, extra=extra)
+            self.assertLess(time.time() - start, 20, extra)
+            self.assertEqual(a["body"], "Thanks, done.")
+        start = time.time()
+        self.assertEqual(emailtools.quoted_first_date(" \t \n" * 50000 + "Sent: 1 Oct 2026 10:00\n"), "2026-10-01")
+        self.assertLess(time.time() - start, 5)
 
 
 class NoiseHintsTest(UnpackBase):

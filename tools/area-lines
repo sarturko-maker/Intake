@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# area-lines: print only the lines of an area's playbook.md and intake.md (and a subject.md) that match a
+#   pattern, each with the heading it sits under, so one point can be looked up without reading whole files.
+# Usage: bash tools/area-lines AREA PATTERN [--subject SLUG] [--after N]
+#   PATTERN  a regular expression, case-insensitive, for example "signatory|LOA|letter of authority"
+#   --subject SLUG  also search that subject's subject.md in the area
+#   --after N       lines of the same paragraph to show after each match (default 2)
+# A file with no match prints its headings, so a better pattern can be chosen. Reads only.
+# Exit: 0 a match, 1 no match, 2 usage error, 3 Python missing (fallback printed).
+# Fallback without Python: grep -n -i -A2 -E "PATTERN" areas/AREA/playbook.md areas/AREA/intake.md
+FALLBACK='grep -n -i -A2 -E "PATTERN" areas/AREA/playbook.md areas/AREA/intake.md'
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/area_lines.py" "$@"

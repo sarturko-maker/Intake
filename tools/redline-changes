@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# redline-changes: print only the tracked changes and comments of a Word mark-up (.docx), each with its
+#   clause number, author and date, and the changed paragraph as it reads ([-deleted-] {+inserted+}).
+#   Use it instead of reading a whole mark-up: it shows what the other side changed and little else.
+# Usage: bash tools/redline-changes FILE.docx [--clause N] [--summary] [--no-context]
+#   --clause N    only clause N and its sub-clauses (9 gives 9, 9.1 and 9.2(a), not 19)
+#   --summary     one line per changed clause: the kinds of change and who made them (a first look at a
+#                 heavy mark-up; then --clause for the clauses that matter)
+#   --no-context  leave out the "reads:" line under each changed paragraph
+# Clause numbers come from Word's numbering or a number typed at the start of the paragraph; before the
+# first one, the paragraph's position (para 3). Footnotes, headers and footers are included. Formatting
+# changes are counted, not listed. Reads only.
+# Exit: 0 done (changes printed, or none found), 2 not a readable .docx, 3 Python missing (fallback printed).
+# Fallback: pandoc --track-changes=all FILE.docx -t plain
+FALLBACK='pandoc --track-changes=all FILE.docx -t plain'
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/redline.py" "$@"

@@ -305,8 +305,12 @@ def split_quoted(text):
     return strip_quoted(text)[0], quoted.strip()
 
 
-_QDATE_LINE = re.compile(r"^\s*>?\s*(?:\*\*)?(?:Sent|Date|Gesendet|Datum)(?:\*\*)?\s*:\s*(.+?)\s*$", re.I | re.M)
-_QON_LINE = re.compile(r"^\s*>?\s*(?:On|Am)\s+(.+?)(?:,\s*[^,]*)?\s+(?:wrote|schrieb)", re.I | re.M)
+# Line-anchored patterns use [ \t] rather than \s: \s also matches newlines, and on long runs of blank lines
+# or spaces (some mail systems send tens of thousands) the old patterns took minutes.
+_QDATE_LINE = re.compile(r"^[ \t]*>?[ \t]*(?:\*\*)?(?:Sent|Date|Gesendet|Datum)(?:\*\*)?[ \t]*:(?:\*\*)?[ \t]*([^\n]+?)[ \t]*$",
+                         re.I | re.M)
+_QON_LINE = re.compile(r"^[ \t]*>?[ \t]*(?:On|Am)[ \t]+([^\n]+?)(?:,[^,\n]*)?(?:[ \t]+|[ \t]*\n[ \t>]*)(?:wrote|schrieb)",
+                       re.I | re.M)
 _QFORMATS = ("%A, %d %B %Y %H:%M", "%A, %B %d, %Y %I:%M %p", "%d %B %Y %H:%M", "%d %B %Y at %H:%M",
              "%a, %d %b %Y at %H:%M", "%a, %d %b %Y %H:%M", "%d/%m/%Y %H:%M", "%d.%m.%Y %H:%M",
              "%Y-%m-%d %H:%M", "%A, %d %B %Y", "%d %B %Y", "%d/%m/%Y", "%d.%m.%Y")
@@ -400,7 +404,7 @@ def unique_path(folder, name):
     dest = folder / name
     stem, ext = os.path.splitext(name)
     n = 2
-    while dest.exists():
+    while os.path.exists(common.os_path(dest)):
         dest = folder / ("%s-%d%s" % (stem, n, ext))
         n += 1
     return dest
@@ -596,10 +600,12 @@ def is_msg_file(path):
     return str(path).lower().endswith(".msg")
 
 
-def parse_email(path, ctx, body_chars=BODY_CHARS, with_quoted=False):
-    """Parse one .eml file. Raises OSError when it cannot be read."""
+def parse_email(path, ctx, body_chars=BODY_CHARS, with_quoted=False, quoted=True):
+    """Parse one .eml file. Raises OSError when it cannot be read. quoted=False skips the work on the
+    quoted history (its first date and the history itself), for a quick look at many emails."""
     path = Path(path)
-    raw = path.read_bytes()
+    with open(common.os_path(path), "rb") as fh:
+        raw = fh.read()
     msg = BytesParser(policy=_policy.default).parsebytes(raw)
     p = ParsedEmail()
     p.path = path
@@ -625,7 +631,7 @@ def parse_email(path, ctx, body_chars=BODY_CHARS, with_quoted=False):
         except Exception:
             when = None
     if when is None:
-        when = _dt.datetime.fromtimestamp(path.stat().st_mtime, tz=_dt.timezone.utc)
+        when = _dt.datetime.fromtimestamp(os.stat(common.os_path(path)).st_mtime, tz=_dt.timezone.utc)
         p.notes.append(NOTE_DATE_FROM_FILE)
     p.date = ctx.to_house(when)
 
@@ -642,8 +648,14 @@ def parse_email(path, ctx, body_chars=BODY_CHARS, with_quoted=False):
     if not text.strip() and html_part is not None:
         text = _body_text(html_part)
     p.full_body = text.strip("\n")
-    p.new_body, quoted = strip_quoted(p.full_body)
-    p.quoted_body = split_quoted(p.full_body)[1] if quoted else ""
+    if quoted:
+        p.new_body, history = split_quoted(p.full_body)
+        quoted_n = max(0, len(p.full_body.strip()) - len(p.new_body))
+        p.quoted_body = history if quoted_n else ""
+    else:
+        p.new_body, quoted_n = strip_quoted(p.full_body)
+        p.quoted_body = ""
+    quoted = quoted_n
 
     skip = {id(x) for x in (plain, html_part) if x is not None}
     linesep = "\r\n" if b"\r\n" in raw else "\n"

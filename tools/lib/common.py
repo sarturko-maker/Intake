@@ -122,7 +122,7 @@ def die(msg, code=2):
 # ---------------------------------------------------------------- text files
 
 def read_text(path):
-    with open(path, "r", encoding="utf-8", errors="replace", newline="") as fh:
+    with open(os_path(path), "r", encoding="utf-8", errors="replace", newline="") as fh:
         text = fh.read()
     if text.startswith("﻿"):
         text = text[1:]
@@ -162,10 +162,67 @@ def append_line(path, line):
 
 def sha256_file(path):
     h = hashlib.sha256()
-    with open(path, "rb") as fh:
+    with open(os_path(path), "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+# ---------------------------------------------------------------- long paths (Windows)
+# Windows programs fail on paths of 260 characters or more unless long paths are enabled, which they
+# usually are not on work laptops; a workspace in OneDrive starts long. Two defences: stored names are
+# shortened to keep paths under STORE_LIMIT (fit_name, the original name kept in documents.md), and the
+# tools open long paths with the \\?\ prefix (os_path), which works whatever the Windows setting.
+LONG_PATH = 248
+STORE_LIMIT = 240
+
+
+def windows_like():
+    return os.name == "nt" or sys.platform.startswith(("msys", "cygwin"))
+
+
+def path_limit():
+    """The longest path a file is stored under, in characters: INTAKE_MAX_PATH when set (tests), else 240 on
+    Windows (room for a "-2" and Word's lock file), else 0 (no limit)."""
+    v = os.environ.get("INTAKE_MAX_PATH", "").strip()
+    if v.isdigit():
+        return int(v)
+    return STORE_LIMIT if windows_like() else 0
+
+
+def os_path(path):
+    r"""The path to hand to open(), os and shutil. On Windows a long one gets the \\?\ prefix (\\?\UNC\ for a
+    network share), so it can be read and written even where Windows long paths are not enabled."""
+    s = str(path)
+    if os.name != "nt" or s.startswith("\\\\?\\"):
+        return s
+    a = os.path.abspath(s)
+    if len(a) < LONG_PATH:
+        return s
+    return ("\\\\?\\UNC\\" + a[2:]) if a.startswith("\\\\") else "\\\\?\\" + a
+
+
+def too_long(path):
+    """True when path is longer than path_limit() (never without a limit)."""
+    limit = path_limit()
+    return bool(limit) and len(os.path.abspath(str(path))) > limit
+
+
+def fit_name(folder, name, limit=None):
+    """name, or a shorter name that keeps folder/name within path_limit(): the start of the name, "~" and six
+    characters of a hash of the whole name, the extension kept ("Master Services Agreement~3f9a1c.docx").
+    The caller records the original name (documents.md summary "original name: ...")."""
+    limit = path_limit() if limit is None else limit
+    if not limit:
+        return name
+    base = len(os.path.abspath(os.path.join(str(folder), "x"))) - 1      # the folder and its separator
+    if base + len(name) <= limit:
+        return name
+    stem, ext = os.path.splitext(name)
+    if len(ext) > 12:
+        stem, ext = name, ""
+    tag = "~" + hashlib.sha1(name.encode("utf-8")).hexdigest()[:6]
+    room = max(8, limit - base - len(tag) - len(ext))
+    return stem[:room].rstrip(" .") + tag + ext
 
 
 def char_count(path):
@@ -486,9 +543,9 @@ def protect(path):
     it: Word adding a sensitivity label when the file is opened, for example. Opening and reading still
     work. Best effort. True when the file was changed to read-only."""
     try:
-        mode = os.stat(str(path)).st_mode
+        mode = os.stat(os_path(path)).st_mode
         if mode & 0o222:
-            os.chmod(str(path), stat.S_IMODE(mode) & ~0o222)
+            os.chmod(os_path(path), stat.S_IMODE(mode) & ~0o222)
             return True
     except OSError:
         pass

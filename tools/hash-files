@@ -91,7 +91,10 @@ print(h.hexdigest())' "$1" ;;
 }
 
 status=0
+skip=0
 for f in "$@"; do
+  [ "$skip" = 1 ] && { skip=0; continue; }
+  case "$f" in --run) skip=1; continue ;; --run=*) continue ;; esac   # accepted like every tool; not used
   if [ ! -f "$f" ] || [ ! -r "$f" ]; then
     echo "no file: $f" >&2
     status=1

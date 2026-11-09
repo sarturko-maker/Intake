@@ -3,9 +3,11 @@
 # Usage: the harness runs  bash "$CLAUDE_PROJECT_DIR/.claude/hooks/before-bash"  with the hook JSON on
 #   stdin. It reads tool_input.command and refuses (exit 2, reason on stderr) a command that would change,
 #   outside the Write and Edit tools, a memory file (matter.md, facts.md, subject.md, roster.md, brief.md,
-#   notes.md), a human-only file (corrections.md, roster.confirmed.md, anything in a matter's human/) or
-#   house/. Through Bash the history copy, the checks and the lawyer's approval would not happen.
-#   Refused: redirection (> or >>) or tee into one; an in-place editor (sed -i, perl -i) on one; a script
+#   notes.md, log.md, documents.md), a human-only file (corrections.md, roster.confirmed.md, anything in a
+#   matter's human/) or house/. Through Bash the history copy, the checks, the record of the agent's own
+#   writes and the lawyer's approval would not happen. Quoted paths with spaces count (OneDrive folders).
+#   Refused: redirection (> or >>) or tee into one, or into a $variable in a command that names one or a
+#   matter's agent/ folder; an in-place editor (sed -i, perl -i, awk -i inplace) on one; a script
 #   that names one and writes files (Python open(..., "w"), write_text, shutil, os.replace, PowerShell
 #   Set-Content, Node writeFileSync); cp, mv or install onto one; rm, truncate or dd on one; git checkout,
 #   restore, reset, stash or clean on house/. Reading them is fine, and so is running the tools in tools/.
@@ -74,40 +76,67 @@ fi
 c="$(printf '%s' "$cmd" | tr 'A-Z\\' 'a-z/')"   # lower case; Windows backslashes as slashes
 
 # A protected target: a memory or human-only file, or a path in a matter's human/ folder or in house/.
+# The file name starts a word or follows a slash (changelog.md is not log.md).
 T='[^[:space:]"'"'"'|;&<>()]*'
-NAME='(matter|facts|subject|roster|brief|notes|corrections|roster\.confirmed)\.md'
-PROT="(${T}${NAME}|(${T}/)?(human|house)/${T})"
+NAME='(matter|facts|subject|roster|brief|notes|log|documents|corrections|roster\.confirmed)\.md'
+PROT="((${T}/)?${NAME}|(${T}/)?(human|house)/${T})"
 END='["'"'"']?[[:space:]]*($|[;&|)])'
+Q="[\"']"
+VAR='[$]([{][a-z_][a-z0-9_]*[}]|[a-z_][a-z0-9_]*)'
+
+# The same command with blanks inside quotes turned into "_", so a quoted path with spaces
+# ("C:/Users/A B/OneDrive - Org/areas/.../agent/log.md") reads as one word for the patterns below.
+n="$(printf '%s\n' "$c" | awk '{ out = ""; L = length($0)
+  for (i = 1; i <= L; i++) { ch = substr($0, i, 1)
+    if (q == "") { if (ch == "\"" || ch == "'"'"'") q = ch }
+    else if (ch == q) q = ""
+    else if (ch == " " || ch == "\t") ch = "_"
+    out = out ch }
+  print out }' 2>/dev/null)"
+[ -n "$n" ] || n="$c"
 
 refuse() {
-  printf 'Refused: this command would %s outside the Write and Edit tools, so the history copy, the checks or the lawyer'"'"'s approval would not happen (RULES.md, Protections). Write memory files with Write or Edit; never change human/ or house/ through Bash. If the command only reads that file, split it so it does not also write.\n' "$1" >&2
+  printf 'Refused: this command would %s through Bash. Use the Edit tool instead: to add a line to log.md or notes.md, Edit with the new line at the end; to rewrite matter.md, brief.md or subject.md, Write. Only Write and Edit make the history copy, run the checks and record the agent'"'"'s own write; through Bash the change would also look like the lawyer'"'"'s edit at the next run (RULES.md, Protections). human/ and house/ never change through Bash. If the command only reads the file, split it so it does not also write.\n' "$1" >&2
   exit 2
 }
 
+# A pattern matches the command as typed or with quoted blanks joined.
+hit() { [[ $c =~ $1 ]] || [[ $n =~ $1 ]]; }
+
 # The patterns live in variables: bash parses ; & | ( ) in a literal [[ =~ ]] pattern as shell syntax.
-Q="[\"']"
 RE_NAMES="${NAME}|(^|[^a-z0-9_.-])(human|house)/"
-RE_REDIRECT=">>?[[:space:]]*${Q}?${PROT}"
-RE_TEE="(^|[^a-z0-9_-])tee([[:space:]]+-[a-z-]+)*[[:space:]]+${Q}?${PROT}"
-RE_INPLACE='(^|[^a-z0-9_-])(sed|perl|ruby)[[:space:]]+(-[a-z]*i|--in-place)'
+RE_AGENT="(^|[^a-z0-9_.-])agent/"
+RE_REDIRECT=">[>|]?[[:space:]]*${Q}?${PROT}"
+RE_TEE="(^|[^a-z0-9_-])tee([[:space:]]+[^;&|[:space:]]+)*[[:space:]]+${Q}?${PROT}"
+RE_INPLACE='(^|[^a-z0-9_-])((sed|perl|ruby)[[:space:]]+(-[a-z]*i|--in-place)|g?awk[[:space:]]+-i[[:space:]]*inplace)'
 RE_CPMV="(^|[;&|[:space:](])(cp|mv|install|rsync)[[:space:]][^;&|]*[[:space:]]${Q}?${PROT}${END}"
-RE_RM="(^|[;&|[:space:](])(rm|unlink|truncate|shred)[[:space:]][^;&|]*${PROT}"
-RE_DD="(^|[[:space:]])dd[[:space:]][^;&|]*of=${PROT}"
+RE_RM="(^|[;&|[:space:](])(rm|unlink|truncate|shred)[[:space:]]([^;&|]*[[:space:]])?${Q}?${PROT}"
+RE_DD="(^|[[:space:]])dd[[:space:]][^;&|]*of=${Q}?${PROT}"
 RE_OPEN="open\\([^)]*,[[:space:]]*(mode[[:space:]]*=[[:space:]]*)?${Q}[rbt]*[wax+]"
 RE_POPEN="\\.open\\([[:space:]]*(mode[[:space:]]*=[[:space:]]*)?${Q}[rbt]*[wax+]"
 RE_SCRIPT='write_text\(|write_bytes\(|writelines\(|shutil\.(copy|move)|os\.(replace|rename|remove|unlink)|\.unlink\(|\.rename\(|set-content|add-content|out-file|writefilesync|appendfilesync'
+RE_VAR_REDIRECT=">[>|]?[[:space:]]*${Q}?${VAR}"
+RE_VAR_TEE="(^|[^a-z0-9_-])tee([[:space:]]+-[a-z-]+)*[[:space:]]+${Q}?${VAR}"
+RE_VAR_CPMV="(^|[;&|[:space:](])(cp|mv|install|rsync)[[:space:]][^;&|]*[[:space:]]${Q}?${VAR}${END}"
 RE_GIT='(^|[;&|[:space:]])git[[:space:]][^;&|]*(checkout|restore|reset|stash|clean)[^;&|]*house'
 
 if [[ $c =~ $RE_NAMES ]]; then
-  [[ $c =~ $RE_REDIRECT ]] && refuse "redirect output into a protected file"
-  [[ $c =~ $RE_TEE ]] && refuse "write a protected file with tee"
-  [[ $c =~ $RE_INPLACE ]] && refuse "edit a protected file in place"
-  [[ $c =~ $RE_CPMV ]] && refuse "copy or move onto a protected file"
-  [[ $c =~ $RE_RM ]] && refuse "delete or empty a protected file"
-  [[ $c =~ $RE_DD ]] && refuse "overwrite a protected file with dd"
-  if [[ $c =~ $RE_OPEN ]] || [[ $c =~ $RE_POPEN ]] || [[ $c =~ $RE_SCRIPT ]]; then
+  hit "$RE_REDIRECT" && refuse "redirect output into a protected file"
+  hit "$RE_TEE" && refuse "write a protected file with tee"
+  hit "$RE_INPLACE" && refuse "edit a protected file in place"
+  hit "$RE_CPMV" && refuse "copy or move onto a protected file"
+  hit "$RE_RM" && refuse "delete or empty a protected file"
+  hit "$RE_DD" && refuse "overwrite a protected file with dd"
+  if hit "$RE_OPEN" || hit "$RE_POPEN" || hit "$RE_SCRIPT"; then
     refuse "let a script write files while it names a protected file"
   fi
+fi
+# A write to a file named by a variable ($f, "${out}") in a command that names a protected file or a
+# matter's agent/ folder: the target is most likely that file.
+if [[ $c =~ $RE_NAMES ]] || [[ $c =~ $RE_AGENT ]]; then
+  hit "$RE_VAR_REDIRECT" && refuse "redirect output into a file named by a variable (here a protected file)"
+  hit "$RE_VAR_TEE" && refuse "write a file named by a variable with tee (here a protected file)"
+  hit "$RE_VAR_CPMV" && refuse "copy or move onto a file named by a variable (here a protected file)"
 fi
 [[ $c =~ $RE_GIT ]] && refuse "change house/ through git"
 exit 0

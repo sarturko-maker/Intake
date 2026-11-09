@@ -91,10 +91,12 @@ def add_main(argv=None):
     ap.add_argument("--knowledge", action="store_true", help="lines are: type | fact | source")
     ap.add_argument("--question", action="store_true", help="lines are: about | question | evidence")
     ap.add_argument("--origin", default="observed", help="default origin for evidence lines")
-    ap.add_argument("--date", help="YYYY-MM-DD (default today, house time)")
+    ap.add_argument("--date", help="YYYY-MM-DD (default: the run's date, else today, house time)")
+    ap.add_argument("--run", metavar="RUN", help="the run id (YYYY-MM-DD_HHMMSS); its date is the default --date")
     a = ap.parse_args(argv)
     root = common.find_root()
-    today = a.date or common.now_house(root).date().isoformat()
+    run_date = a.run[:10] if a.run and re.match(r"^\d{4}-\d{2}-\d{2}(_|$)", a.run) else ""
+    today = a.date or run_date or common.now_house(root).date().isoformat()
     tag = re.sub(r"[^A-Za-z0-9-]", "", a.matter) or "x"
     lines = read_stdin_lines()
     if not lines:
@@ -190,6 +192,7 @@ def index_main(argv=None):
     ap = argparse.ArgumentParser(prog="bash tools/learn-index",
                                  description="Rebuild learning/index.md: what has been learned, readiness, next steps.")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--run", metavar="RUN", help="the run id; every tool accepts it (not used here)")
     a = ap.parse_args(argv)
     root = common.find_root()
     base = ldir(root)

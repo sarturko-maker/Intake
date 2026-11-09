@@ -26,7 +26,7 @@ Emails dropped in inbox/ are filed into matters; the agent keeps memory, index a
 2. No TOOLING.md: /cold-start. No house/brief.md or house/areas.md: `bash tools/init-workspace`, then ask the lawyer to fill them in. At `status: template`: stop; say what to fill in.
 3. Obey the mode: `bash tools/budget-update --mode`.
 4. Work from change reports and INDEX.csv, not the tree.
-5. RUN = `YYYY-MM-DD_HHMMSS`, house time (`TZ=<timezone> date +%Y-%m-%d_%H%M%S`). Pass `--run RUN` to every tool in the run.
+5. RUN = `YYYY-MM-DD_HHMMSS`, house time (`TZ=<timezone> date +%Y-%m-%d_%H%M%S`). Pass `--run RUN` to every tool in the run (every tool accepts it; learn-add dates its lines by it).
 
 ## Commands
 
@@ -36,7 +36,7 @@ Procedure: skills/operations/<skill>/SKILL.md. Read it, follow it.
 |---|---|---|
 | /cold-start | "cold start" | cold-start |
 | /intake | "process the inbox", "scan" | intake |
-| /status | "where are we", "confirm nothing needed: ...", answers to the digest | status |
+| /status | "where are we", "confirm nothing needed: ...", "full read 2026-0042", answers to the digest | status |
 | /close REF | "close 2026-0042" | close |
 | /checkpoint REF | "checkpoint 2026-0042" | checkpoint |
 | /bundle REF | "bundle 2026-0042 for Harvey" | bundle |
@@ -81,7 +81,7 @@ house/brief.md frontmatter: house_domains (internal senders), legal_addresses an
 - Subject folder: the area's subject_rule, slug `[a-z0-9-]+`, reused on a name or subject.md alias match; general: `unfiled`.
 - Matter folder `<reference>_<subject-slug>_<topic-slug>`, topic two or three words, at most 70 characters. Title: at most 80 characters, one line, a lawyer's file title; no RE:, FW:, addresses, dates or reference.
 - Email file `YYYY-MM-DD_HHMM_<in|out>_<from-slug>_<subject-slug>.eml`, house time, by place-email; `out` = From is in legal_addresses or is intake_mailbox.
-- Attachments keep their names (clash: `<stem>-2<ext>`). Our files `YYYY-MM-DD_<type>_<topic>_v<N>.<ext>`. Noise id `NOISE-<NNNN>`.
+- Attachments keep their names (clash: `<stem>-2<ext>`; a name that would make the path too long for Windows is stored shortened, `<start>~<6 characters><ext>`, and its documents.md summary starts `original name: <name>`, which every later summary keeps). Our files `YYYY-MM-DD_<type>_<topic>_v<N>.<ext>`. Noise id `NOISE-<NNNN>`.
 - Dates `YYYY-MM-DD`; date-times `YYYY-MM-DD HH:MM`, house time. Paths workspace-relative, forward slashes; in a matter's own files, matter-relative.
 
 ## Intake
@@ -101,7 +101,7 @@ Thresholds: filing confidence 0.75; run ceiling 60 threads; candidate window 60 
    f. New: `bash tools/new-matter --area A [--sub-area S] --subject SUBJ --topic TOPIC --subject-name "Name" --title T [--follows REF] --opened YYYY-MM-DD --run RUN` (opened = email date). Same subject, new work: `--follows`. No fit: general/unfiled, `general-flagged`. Undeclared sub-area: omit it, flag `proposed-sub-area:<name>`, propose it.
    g. Closed matter, same work: reopen (status open, closed emptied, flag `reopened`, journal `reopen-proposed`); new work: new matter, `--follows`.
 5. Place: `bash tools/place-email FILE --to MATTER_FOLDER --reason R --confidence C --run RUN [--cross-ref OTHER_FOLDER]`. Only place-email moves emails. Past 60 threads the rest wait (`carried-over`).
-6. Reader, one run per matter touched. Read: the parts of the area playbook.md and intake.md that fit this matter (headings first), subject.md, corrections.md, notes.md, roster.confirmed.md, roster.md, matter.md, live facts (`bash tools/lint-facts FACTS --live`), documents.md, new emails, attachments the thread turns on. Write the memory files (subject.md if the party changed) and frontmatter. Drafts only if the controlling skill asks, mode full.
+6. Reader, one run per matter touched. Short read when the only new content is one email of ours with at most one attachment (not a new or light-read matter, no inbound mail, nothing the lawyer changed, no "full read REF"): that email, the attachment's card, at most two `area-lines` look-ups, the quoted request once if needed, then each memory file once before changing it; widened when the email needs it. Full read otherwise: the parts of the area playbook.md and intake.md that fit this matter (headings first; one point: `bash tools/area-lines AREA PATTERN`), subject.md, corrections.md, notes.md, roster.confirmed.md, roster.md, matter.md, live facts (`bash tools/lint-facts FACTS --live`), documents.md, new emails, attachments the thread turns on. Write the memory files (subject.md if the party changed) and frontmatter. Drafts only if the controlling skill asks, mode full.
 7. Assemble: `bash tools/index-rebuild --run RUN --digest-parts changes/RUN-digest.md`; `bash tools/budget-update --measure --run RUN` (elsewhere the estimate); digest; `bash tools/scan-changes --run RUN --write-manifest`; journal `run-end`.
 
 Our sent emails (direction out, often from the lawyer's Sent Items) file by the same ladder: tag, thread, candidates. With no match they may start a matter: the request is in the quoted text (`unpack-email --with-quoted` shows its oldest part; the whole history is in changes/quoted/, read only when the part shown does not give the request), the requester is the recipient, `--opened` the quoted_first_date. A second copy of an email already filed (intake mailbox and Sent Items) is kept by place-email as `no: copy of ...` and never read again. Each of our emails is one of:
@@ -117,7 +117,7 @@ Special cases:
 - Out of area: best area, else general/unfiled; flag `out-of-area`.
 - Identical email: deleted by place-email (`duplicate-dropped`). Known attachment hash: `duplicate_of`, not stored or read. The same file already read in another matter of the same subject (not general/unfiled): stored, not read again; place-email copies its summary and its card (`read: no: read in <REF> <path>, same file`).
 
-Attachments: each gets a documents.md row, read or `no: <reason>`. A document longer than about two pages also gets a card, agent/summaries/<name>.md: about a page, never more than a fifth of the document (what it is and who sent it; the terms that matter for this kind of work, each with its clause or page; amounts, dates and periods exactly; what differs from the last version or our standard; open points; the pages not read). Its documents.md summary ends `(card: summaries/<name>.md)`. Later steps read the card first and open the document only for a part the card does not cover. Mark-up: tracked changes and comments (`pandoc --track-changes=all FILE -t plain`). Long PDF: contents page, then the pages it points to. Never signature images, logos, calendar parts.
+Attachments: each gets a documents.md row, read or `no: <reason>`. A document longer than about two pages also gets a card, agent/summaries/<name>.md: about a page, never more than a fifth of the document (what it is and who sent it; the terms that matter for this kind of work, each with its clause or page; amounts, dates and periods exactly; what differs from the last version or our standard; open points; the pages not read). Its documents.md summary ends `(card: summaries/<name>.md)`. Later steps read the card first and open the document only for a part the card does not cover. Mark-up: its tracked changes and comments only (`bash tools/redline-changes FILE`; a heavy one: `--summary`, then `--clause N`), then the parts of the document they turn on; pandoc only as the fallback. Long PDF: contents page, then the pages it points to. Never signature images, logos, calendar parts.
 
 Please-check note `<email>.note.md` (frontmatter file, received, from, subject, claimed_reference, candidates, run); `--note`: why unsure, what you would do, what the lawyer decides. Resolved: re-file with place-email; the note goes to resolved/ with the resolution appended.
 
@@ -223,7 +223,7 @@ The lawyer should not have to write things down: you ask, the lawyer answers in 
 
 Claude Code: deny rules and hooks in .claude/settings.json; TOOLING.md says if they are live.
 - Deny edits and writes to **/corrections.md, **/roster.confirmed.md and every matter's human/; house/** asks the lawyer (permission prompt) before any change; proven at cold start.
-- Hooks: history copy before writes to matter.md, facts.md, subject.md and a matter's notes.md; over 16,000 characters rejected and restored; facts.md linted after writes, restored on failure; notes.md must keep every earlier line, else restored; a Bash command that would write a memory file, a human-only file or house/ is refused (before-bash). The agent's own writes to memory files are recorded in changes/agent-writes.csv, so matter-sync does not report them as the lawyer's edits. A refusal is an instruction: read it, comply, never bypass.
+- Hooks: history copy before writes to matter.md, facts.md, subject.md and a matter's notes.md; over 16,000 characters rejected and restored; facts.md linted after writes, restored on failure; notes.md must keep every earlier line, else restored; a Bash command that would write a memory file (log.md and documents.md included), a human-only file or house/ is refused (before-bash), also through a quoted path with spaces or a `$variable`: use Edit. The agent's own writes to memory files are recorded in changes/agent-writes.csv, so matter-sync does not report them as the lawyer's edits. A refusal is an instruction: read it, comply, never bypass.
 
 Not live, by hand:
 1. Before rewriting matter.md, facts.md or subject.md: `bash tools/history-copy FILE`.
@@ -259,6 +259,8 @@ Received file changed (scan): `bash tools/lint-received MATTER_FOLDER`; list its
 | matter-migrate | old one-folder matters to agent/ + human/; notes into agent/; repairs Harvey packs split by an earlier version | move the files by hand |
 | learn-add | append learning lines: evidence, facts, questions | append by hand |
 | learn-index | rebuild learning/index.md and the next learning steps | count by hand |
+| area-lines | matching lines of an area's playbook.md, intake.md (and a subject.md), with their headings | grep -n -i -A2 |
+| redline-changes | a mark-up's tracked changes and comments only, with clause numbers | pandoc --track-changes=all |
 
 ## Harness notes
 

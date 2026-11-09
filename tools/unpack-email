@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # unpack-email: headers, new body text, attachments and filing signals of .eml files.
-# Usage: bash tools/unpack-email [--json] [--body-chars N] [--extract DIR] [--no-signals] [--with-quoted] FILE...
+# Usage: bash tools/unpack-email [--json] [--body-chars N] [--extract DIR] [--no-signals] [--with-quoted|--no-quoted] FILE...
 #   --json          JSON array, one object per file (default Markdown).
 #   --body-chars N  body limit in characters, default 4000; a longer body ends "[... N more characters]".
 #   --extract DIR   write document, image and email attachments to DIR/<canonical stem>/.
 #   --no-signals    skip thread_matches, tag_matches and already_filed.
-#   --with-quoted   also give the quoted history (our sent emails often carry the request below the reply).
+#   --with-quoted   also give the quoted history (our sent emails often carry the request below the reply):
+#                   its oldest message, where the request usually is; every quoted message, without
+#                   disclaimers, is written once to changes/quoted/<canonical stem>.txt (quoted_file). Read
+#                   that file once, only when the oldest message does not give the request.
+#   --quoted-inline with --with-quoted: print the whole quoted history instead of writing the file.
+#   --no-quoted     skip the quoted history (no quoted_first_date): fast, for putting many emails in order.
 # Also reports quoted_first_date (date of the earliest quoted message, best effort) and, for our own
 # emails, reply_kind_hint: substantive (advice, position, decision, mark-up), interim (acknowledge,
 # chase, ask, route, schedule) or unknown. Hints only: the filer decides.

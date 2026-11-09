@@ -201,6 +201,7 @@ def main(argv=None):
     view = ap.add_mutually_exclusive_group()
     view.add_argument("--live", action="store_true", help="print only live records")
     view.add_argument("--as-of", metavar="YYYY-MM-DD", help="print the records live on that date")
+    ap.add_argument("--run", metavar="RUN", help="the run id; every tool accepts it (not used here)")
     a = ap.parse_args(argv)
 
     path = Path(a.file)

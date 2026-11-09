@@ -37,7 +37,8 @@ POSIX = os.name != "nt"
 
 TOOL_NAMES = ["scan-changes", "unpack-email", "place-email", "new-matter", "msg2eml", "hash-files",
               "history-copy", "lint-facts", "lint-received", "index-rebuild", "budget-update",
-              "skills-sync", "work-bundle", "tooling-setup", "matter-sync", "matter-migrate", "learn-add", "learn-index"]
+              "skills-sync", "work-bundle", "tooling-setup", "matter-sync", "matter-migrate", "learn-add", "learn-index",
+              "init-workspace", "area-lines", "redline-changes"]
 DEMO_SCRIPTS = ["setup", "drop-batch", "check-filing"]
 AGENT_MODELS = {"filer": "sonnet", "reader": "sonnet", "indexer": "sonnet", "researcher": "sonnet",
                 "drafter": "sonnet", "reviewer": "sonnet", "distiller": "opus"}
@@ -838,6 +839,15 @@ class BeforeBashTest(unittest.TestCase):
         "echo x > house/brief.md",
         "git checkout -- house",
         "echo x > AREAS\\C\\S\\2026-0002_A_B\\AGENT\\MATTER.MD",
+        "echo '2026-11-09 10:00 | filed | - | R1' >> areas/c/s/2026-0002_a_b/agent/log.md",
+        "printf 'x' >> agent/documents.md",
+        "f=areas/c/s/2026-0002_a_b/agent/log.md; echo x >> \"$f\"",
+        "NOTES=\"agent/notes.md\"; printf '%s\\n' '- 2026-11-09: (you said) fine' | tee -a \"$NOTES\"",
+        "for f in agent/log.md; do echo x >> ${f}; done",
+        "echo x >> \"/c/Users/Jane Doe/OneDrive - Kestrel/legal/areas/c/s/2026-0002_a_b/agent/notes.md\"",
+        "cat >> 'C:\\Users\\Jane Doe\\OneDrive - Kestrel\\areas\\c\\s\\2026-0002_a_b\\agent\\log.md' <<'EOF'\nx\nEOF",
+        "awk -i inplace '{print}' agent/log.md",
+        "truncate -s 0 agent/log.md",
     ]
     ALLOWED = [
         "cat agent/matter.md",
@@ -850,6 +860,11 @@ class BeforeBashTest(unittest.TestCase):
         "bash tools/place-email inbox/a.eml --to areas/c/s/2026-0002_a_b --run R1 --reason x --confidence 0.9",
         "echo hello > /tmp/out.txt",
         "git status",
+        "grep -c pending areas/c/s/2026-0002_a_b/agent/documents.md",
+        "tail -n 5 agent/log.md",
+        "echo x >> CHANGELOG.md",
+        "for f in /tmp/a /tmp/b; do echo x > \"$f\"; done",
+        "cat \"/c/Users/Jane Doe/OneDrive - Kestrel/areas/c/s/2026-0002_a_b/agent/log.md\" > /tmp/log.txt",
     ]
 
     def run_hook(self, data):
@@ -864,7 +879,7 @@ class BeforeBashTest(unittest.TestCase):
             rc, err = self.run_hook({"tool_name": "Bash", "tool_input": {"command": cmd}})
             self.assertEqual(rc, 2, cmd)
             self.assertIn("Refused:", err)
-            self.assertIn("Write or Edit", err)
+            self.assertIn("Use the Edit tool", err)
         for cmd in self.ALLOWED:
             rc, err = self.run_hook({"tool_name": "Bash", "tool_input": {"command": cmd}})
             self.assertEqual((rc, err), (0, ""), cmd)

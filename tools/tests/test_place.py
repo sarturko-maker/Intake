@@ -432,6 +432,81 @@ class RegisterAndRefusalTest(PlaceBase):
         self.assertEqual(common.split_pipe(lines[1])[2], "noise")
 
 
+class LongPathTest(PlaceBase):
+    """An attachment whose stored path would be too long for Windows is stored under a shortened name, the
+    original kept at the start of its documents.md summary (the limit is set low here: INTAKE_MAX_PATH)."""
+
+    LONG = ("Master Services Agreement between Acme Automotive GmbH and Kestrel Engineering Ltd "
+            "incl Schedules 1-12 (clean) v3 FINAL.docx")
+
+    def env_limit(self, extra=40):
+        target = self.matter / "agent" / "documents" / "received"
+        e = dict(os.environ)
+        e["INTAKE_ROOT"] = str(self.ws.root)
+        e["INTAKE_MAX_PATH"] = str(len(os.path.abspath(str(target))) + extra)
+        return e, target
+
+    def test_long_attachment_name_is_shortened_and_recorded(self):
+        env, target = self.env_limit()
+        f = make_email(self.inbox("long.eml"), sender=JULIA, to=(TOM,), subject="MSA v3",
+                       message_id="<long.1@acme-automotive.de>", attachments=[(self.LONG, b"PK v3 long", DOCX)])
+        res = self.ws.run("place-email", f, "--to", self.mrel, "--run", "R1", env=env)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertIn("shortened", res.stdout)
+        stored = [p for p in target.iterdir()]
+        self.assertEqual(len(stored), 1)
+        name = stored[0].name
+        self.assertRegex(name, r"^Master Services Agreement.*~[0-9a-f]{6}\.docx$")
+        self.assertLessEqual(len(os.path.abspath(str(stored[0]))), int(env["INTAKE_MAX_PATH"]))
+        self.assertEqual(stored[0].read_bytes(), b"PK v3 long")
+        row = [r for r in self.docs() if r["folder"] == "documents/received"][0]
+        self.assertEqual(row["name"], name)
+        self.assertEqual(row["read"], "pending")
+        self.assertEqual(row["summary"], "original name: " + self.LONG)
+
+    def test_register_with_a_long_attachment_writes_its_rows(self):
+        env, target = self.env_limit()
+        corr = self.matter / "agent" / "correspondence"
+        f = make_email(corr / "put in by hand.eml", sender=JULIA, subject="MSA v3",
+                       message_id="<long.2@acme-automotive.de>", attachments=[(self.LONG, b"PK v3 again", DOCX)])
+        res = self.ws.run("place-email", "--register", f.relative_to(self.ws.root).as_posix(), "--run", "R2",
+                          env=env)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        rows = self.docs()
+        self.assertEqual([r["folder"] for r in rows], ["correspondence", "documents/received"])
+        self.assertTrue(rows[1]["summary"].startswith("original name: Master Services Agreement"))
+        self.assertTrue((target / rows[1]["name"]).is_file())
+
+    def test_short_names_are_left_alone(self):
+        env, target = self.env_limit(extra=200)
+        f = make_email(self.inbox("short.eml"), sender=JULIA, to=(TOM,), subject="MSA v3",
+                       message_id="<long.3@acme-automotive.de>", attachments=[(self.LONG, b"PK v3 short", DOCX)])
+        res = self.ws.run("place-email", f, "--to", self.mrel, "--run", "R3", env=env)
+        self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+        self.assertTrue((target / self.LONG).is_file())
+        self.assertEqual([r["summary"] for r in self.docs() if r["folder"] == "documents/received"], [""])
+
+    def test_os_path_prefix_on_windows(self):
+        import ntpath
+        from unittest import mock
+        long = "C:\\Users\\x\\" + "a" * 250 + ".docx"
+        unc = "\\\\server\\share\\" + "b" * 250
+        with mock.patch.object(common.os, "name", "nt"), mock.patch.object(common.os, "path", ntpath):
+            self.assertEqual(common.os_path(long), "\\\\?\\" + long)
+            self.assertEqual(common.os_path("C:\\short.docx"), "C:\\short.docx")
+            self.assertEqual(common.os_path(unc), "\\\\?\\UNC\\server\\share\\" + "b" * 250)
+            self.assertEqual(common.os_path("\\\\?\\" + long), "\\\\?\\" + long)
+        self.assertEqual(common.os_path("/tmp/" + "c" * 300), "/tmp/" + "c" * 300)   # not Windows: unchanged
+
+    def test_fit_name_keeps_extension_and_is_stable(self):
+        a = common.fit_name("/x/y", "A very long contract name indeed.docx", limit=30)
+        self.assertEqual(a, common.fit_name("/x/y", "A very long contract name indeed.docx", limit=30))
+        self.assertTrue(a.endswith(".docx"))
+        self.assertLessEqual(len("/x/y/") + len(a), 30)
+        self.assertEqual(common.fit_name("/x/y", "short.pdf", limit=30), "short.pdf")
+        self.assertEqual(common.fit_name("/x/y", "anything.pdf", limit=0), "anything.pdf")
+
+
 if __name__ == "__main__":
     unittest.main()
 

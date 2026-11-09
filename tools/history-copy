@@ -21,7 +21,10 @@ winshell=no
 case "$(uname -s 2>/dev/null)" in MINGW* | MSYS* | CYGWIN*) winshell=yes ;; esac
 
 status=0
+skip=0
 for given in "$@"; do
+  [ "$skip" = 1 ] && { skip=0; continue; }
+  case "$given" in --run) skip=1; continue ;; --run=*) continue ;; esac   # accepted like every tool; not used
   f="$given"
   backslash=no
   if [ "$winshell" = yes ]; then

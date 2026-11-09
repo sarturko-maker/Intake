@@ -95,10 +95,10 @@ def move_file(src, dest):
     """Move without overwriting and without touching the bytes."""
     dest = Path(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.exists():
+    if os.path.exists(common.os_path(dest)):
         raise Failure("will not overwrite %s" % dest)
     try:
-        shutil.move(str(src), str(dest))
+        shutil.move(common.os_path(src), common.os_path(dest))
     except OSError as exc:
         raise Failure("could not move %s to %s: %s (is it open in another program?)" % (src, dest, exc))
     if common.is_received_path(dest):
@@ -107,7 +107,7 @@ def move_file(src, dest):
 
 
 def write_new(dest, data):
-    with open(str(dest), "xb") as fh:
+    with open(common.os_path(dest), "xb") as fh:
         fh.write(data)
     if common.is_received_path(dest):
         common.protect(dest)
@@ -250,12 +250,20 @@ def store_attachments(state, matter, p, records, rows):
             state.say("duplicate", a.name, "", "same bytes as %s; not stored again" % first)
             continue
         target.mkdir(parents=True, exist_ok=True)
-        existing = target / a.name
-        if existing.is_file() and common.sha256_file(existing) == a.sha256:
+        stored = common.fit_name(target, a.name)    # a name too long for Windows paths is shortened
+        renamed = "original name: %s; " % a.name.replace("|", "/") if stored != a.name else ""
+        existing = target / stored
+        if os.path.isfile(common.os_path(existing)) and common.sha256_file(existing) == a.sha256:
             dest = existing  # identical bytes already there without a row: record them
         else:
-            dest = et.unique_path(target, a.name)
+            dest = et.unique_path(target, stored)
             write_new(dest, a.data)
+        if renamed:
+            state.say("shortened", a.name, state.rel(dest), "the full path would be too long for Windows; "
+                      "the original name is kept in documents.md")
+        if common.too_long(dest):
+            state.say("warning", state.rel(dest), "", "this path is longer than Windows programs accept; "
+                      "move the workspace to a shorter folder (for example C:/Legal/intake)")
         known[a.sha256] = dest.name
         if read_elsewhere is None:
             read_elsewhere = subject_read_index(matter)
@@ -271,11 +279,11 @@ def store_attachments(state, matter, p, records, rows):
                                              % (ref, where, common.read_text(card)))
                 summary = summary.replace("summaries/%s.md" % name, "summaries/%s.md" % dest.name)
             rows.append(doc_line(dest.name, out_dir_rel, origin, p.from_addr, date, p.message_id, a.sha256,
-                                 "no: read in %s, same file" % where, summary=summary.replace("|", "/")))
+                                 "no: read in %s, same file" % where, summary=renamed + summary.replace("|", "/")))
             state.say("stored", a.name, state.rel(dest), "same file already read in %s; summary copied" % ref)
             continue
         rows.append(doc_line(dest.name, out_dir_rel, origin, p.from_addr, date, p.message_id,
-                             a.sha256, "pending"))
+                             a.sha256, "pending", summary=renamed.rstrip("; ")))
         state.say("stored", a.name, state.rel(dest))
 
 # ---------------------------------------------------------------- into a matter
@@ -676,7 +684,7 @@ def matter_of(root, path):
 
 def register(state, value):
     path = resolve_input(state.root, value)
-    if not Path(path).is_file():
+    if not os.path.isfile(common.os_path(path)):
         raise Refusal("no file: %s" % value)
     matter = matter_of(state.root, path)
     if matter is None:
@@ -728,7 +736,8 @@ def register(state, value):
         event = "registered %s email from %s (put in by hand): %s" % (
             p.direction, p.from_addr or "unknown sender", p.subject or "(no subject)")
     else:
-        when = state.ctx.to_house(_dt.datetime.fromtimestamp(Path(path).stat().st_mtime, tz=_dt.timezone.utc))
+        when = state.ctx.to_house(_dt.datetime.fromtimestamp(os.stat(common.os_path(path)).st_mtime,
+                                                             tz=_dt.timezone.utc))
         date = when.strftime("%Y-%m-%d %H:%M")
         if sha in known:
             rows.append(doc_line(name, folder, origin, "", date, "", sha, "no: duplicate of %s" % known[sha],

@@ -7,6 +7,7 @@ and the build spec, D2. Parsing lives in emailtools.py, shared with place-email.
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -111,28 +112,57 @@ def extract(p, ctx, dest_root):
     return written
 
 
-QUOTED_SHOWN = 2000
+QUOTED_SHOWN = 3000
+
+# Where a disclaimer or legal footer starts: the rest of that message is dropped from what is shown.
+_DISCLAIMER = re.compile(
+    r"^(?:this (?:e-?mail|message|communication)\b.{0,100}\b(?:confidential|privileged|intended)"
+    r"|confidentiality (?:notice|note)|disclaimer\b|the information (?:contained )?in this (?:e-?mail|message)"
+    r"|if you (?:are not the intended|have received this)|please consider the environment"
+    r"|registered (?:office|in england)|company (?:registration|number)|diese (?:e-?mail|nachricht) (?:enth|ist))",
+    re.I)
+_QUOTE_MARKS = re.compile(r"^[ \t]*(?:>[ \t]?)+")
+
+
+def quoted_messages(history):
+    """The quoted history split into messages, newest first as in the email, quote marks removed."""
+    lines = [_QUOTE_MARKS.sub("", l) for l in history.split("\n")]
+    starts = [i for i in range(len(lines)) if et._history_starts(lines, i)]
+    if not starts or starts[0] != 0:
+        starts = [0] + starts
+    bounds = starts + [len(lines)]
+    return [lines[a:b] for a, b in zip(bounds, bounds[1:]) if any(x.strip() for x in lines[a:b])]
+
+
+def clean_message(lines):
+    """One quoted message without its disclaimer or legal footer, and without runs of blank lines."""
+    out = []
+    for line in lines:
+        if _DISCLAIMER.match(line.strip()):
+            break
+        out.append(line.rstrip())
+    text = re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip()
+    return text
 
 
 def quoted_to_file(p, info, root):
-    """Write the whole quoted history to changes/quoted/<canonical stem>.txt and show only its oldest part,
-    where the original request usually sits: printing whole threads made every later step re-read them."""
-    full = p.quoted_body
+    """One source for the quoted history: every quoted message, without disclaimers, goes to
+    changes/quoted/<canonical stem>.txt, and only the oldest message, where the request usually is, is
+    shown. Printing whole threads made every later step read them again."""
+    messages = [clean_message(m) for m in quoted_messages(p.quoted_body)]
+    messages = [m for m in messages if m]
     qdir = Path(root) / "changes" / "quoted"
     qdir.mkdir(parents=True, exist_ok=True)
     qf = qdir / (os.path.splitext(p.canonical_name)[0] + ".txt")
-    common.write_text_atomic(qf, full)
+    common.write_text_atomic(qf, "\n\n----\n\n".join(messages) + "\n")
     info["quoted_file"] = common.rel(qf, root)
-    info["quoted_chars_total"] = len(full)
-    shown = full
-    if len(full) > QUOTED_SHOWN:
-        shown = full[-QUOTED_SHOWN:]
-        cut = shown.find("\n")
-        if 0 <= cut < 200:
-            shown = shown[cut + 1:]
-        shown = "[... %d earlier characters; the whole quoted history is in %s]\n%s" % (
-            len(full) - len(shown), info["quoted_file"], shown)
-    info["quoted"] = shown
+    info["quoted_chars_total"] = len(p.quoted_body)
+    info["quoted_messages"] = len(messages)
+    oldest = messages[-1] if messages else ""
+    if len(oldest) > QUOTED_SHOWN:
+        oldest = oldest[:QUOTED_SHOWN].rstrip() + "\n[... cut at %d characters]" % QUOTED_SHOWN
+    info["quoted"] = ("[the oldest of %d quoted messages, where the request usually is; all of them, without "
+                      "disclaimers, are in %s]\n%s" % (len(messages), info["quoted_file"], oldest))
 
 
 def main(argv=None):
@@ -145,15 +175,21 @@ def main(argv=None):
     ap.add_argument("--no-signals", action="store_true", help="skip thread and tag matching")
     ap.add_argument("--with-quoted", action="store_true",
                     help="also give the quoted history (for our sent emails that start a matter): its oldest "
-                         "%d characters, where the request usually is; the whole history goes to "
-                         "changes/quoted/<name>.txt" % QUOTED_SHOWN)
+                         "message, where the request usually is; every quoted message, without disclaimers, goes "
+                         "to changes/quoted/<name>.txt")
     ap.add_argument("--quoted-inline", action="store_true",
                     help="with --with-quoted: print the whole quoted history instead")
+    ap.add_argument("--no-quoted", action="store_true",
+                    help="skip the quoted history (no first date, no history): fast, for ordering many emails")
     ap.add_argument("files", nargs="*", metavar="FILE")
+    ap.add_argument("--run", metavar="RUN", help="the run id; every tool accepts it (not used here)")
     args = ap.parse_args(argv)
     if not args.files:
         ap.print_usage(sys.stderr)
         sys.stderr.write("give at least one .eml file\n")
+        return 2
+    if args.no_quoted and (args.with_quoted or args.quoted_inline):
+        sys.stderr.write("--no-quoted cannot go with --with-quoted or --quoted-inline\n")
         return 2
     if args.body_chars < 0:
         sys.stderr.write("--body-chars must be 0 or more\n")
@@ -179,7 +215,8 @@ def main(argv=None):
             failed = True
             continue
         try:
-            p = et.parse_email(path, ctx, body_chars=args.body_chars, with_quoted=args.with_quoted)
+            p = et.parse_email(path, ctx, body_chars=args.body_chars, with_quoted=args.with_quoted,
+                               quoted=not args.no_quoted)
         except OSError as exc:
             sys.stderr.write("cannot read %s: %s\n" % (name, exc))
             failed = True

@@ -35,8 +35,12 @@ usage() {
 INSTALL=0
 YES=0
 VERIFY_ONLY=0
+skip=0
 for arg in "$@"; do
+  [ "$skip" = 1 ] && { skip=0; continue; }
   case "$arg" in
+    --run) skip=1 ;;            # accepted like every tool; not used
+    --run=*) ;;
     --install) INSTALL=1 ;;
     --yes|-y) YES=1 ;;
     --verify-only) VERIFY_ONLY=1 ;;

@@ -42,6 +42,20 @@ class LearningTest(WorkspaceTest):
                  "--matter", "2026-0001", "--work-type", "nda-review")
         self.assertIn("2026-0001-3 |", p.read_text())
 
+    def test_run_is_accepted_everywhere_and_dates_the_lines(self):
+        r = self.add("asked | Sales asked for an NDA | agent/correspondence/a.eml\n",
+                     "--matter", "2026-0001", "--work-type", "nda-review", "--work-type-name", "NDA review",
+                     "--area", "commercial", "--run", "2026-11-08_101500")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        body = (self.ws.root / "learning" / "work-types" / "nda-review.md").read_text()
+        self.assertIn("2026-0001-1 | 2026-11-08 | 2026-0001 | asked", body)
+        r = self.add("entity | Example Ltd is our UK company | 2026-0001 email\n", "--matter", "2026-0001",
+                     "--knowledge", "--run", "2026-11-08_101500", "--date", "2026-11-09")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("2026-11-09", (self.ws.root / "learning" / "knowledge-candidates.md").read_text())
+        self.assertEqual(self.ws.run("learn-index", "--run", "2026-11-08_101500").returncode, 0)
+        self.assertEqual(self.ws.run("learn-index", "--quiet", "--run=R").returncode, 0)
+
     def test_knowledge_and_questions(self):
         self.assertEqual(self.add("entity | Example ME FZE is a UAE free zone company | 2026-0001 email\n",
                                   "--matter", "2026-0001", "--knowledge").returncode, 0)

@@ -26,7 +26,8 @@ The question: where could we have spent fewer tokens for the same result? Rules:
 1. Run `bash tools/budget-update --measure` and read its split by step (main session, reader xN, filer ..., each with its model), then the `wasted-effort` lines in WORKFLOW-LOG.md since the last review (the date of the newest changes/optimise-*.md) and the ledger lines of BUDGET.md for the same runs. The split shows which steps used which model; a step on Opus that the default would do is a saving. Few lines yet: look at the last runs instead, in JOURNAL.md, the digests and the ledger: readers per run, characters per run, the biggest reads.
 2. Group them by cause, and estimate each group's saving in characters and in USD (its share of the runs' characters times their estimated cost). Common causes:
    - a reader started for a matter that only had an interim email, or a filer for five emails or fewer;
-   - a whole document read when the thread turned on one clause (contents page, then the clause);
+   - a whole document read when the thread turned on one clause (contents page, then the clause); a mark-up read in full (redline-changes gives only the changes); a playbook read whole for one point (area-lines);
+   - a full read where the short read would do (one email of ours, at most one attachment);
    - the same text read twice: a quoted thread, a forwarded copy, an attachment already hashed;
    - Opus used where the default model gives the same result;
    - matter.md rewritten for a one-line change (an edit to the frontmatter would do);

@@ -10,7 +10,8 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 - Exit codes: `0` ok, `1` findings or check failed, `2` usage error, `3` dependency missing (fallback printed).
 - Workspace root: `INTAKE_ROOT` if set (tests), else the folder above `tools/`.
 - Output: short plain lines. JSON only with `--json`.
-- Paths workspace-relative with forward slashes. Dates `YYYY-MM-DD`; date-times `YYYY-MM-DD HH:MM`, house time; RUN `YYYY-MM-DD_HHMMSS`, house time. Pass `--run RUN` to every tool in a run.
+- Paths workspace-relative with forward slashes. Dates `YYYY-MM-DD`; date-times `YYYY-MM-DD HH:MM`, house time; RUN `YYYY-MM-DD_HHMMSS`, house time. Pass `--run RUN` to every tool in a run: every tool accepts it (the read-only ones ignore it).
+- Windows long paths: files are opened with the `\\?\` prefix when a path is long (common.os_path), so they can be read even where Windows long paths are off; place-email stores an attachment whose path would pass 240 characters under a shortened name (`<start>~<6 characters><ext>`, the original name first in its documents.md summary). `INTAKE_MAX_PATH` overrides the limit (tests).
 - A tool fails or is missing: use its fallback, say so in the digest, log `workaround` or `tool-failure` in WORKFLOW-LOG.md.
 
 | Tool | Does | Runs on | Fallback |
@@ -29,6 +30,12 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 | budget-update | BUDGET.md ledger and mode | Python | edit BUDGET.md by hand |
 | skills-sync | mirror skills/ to .claude/skills/ | bash | copy folders |
 | work-bundle | work tool bundle | bash (+ Python or awk) | copy the list by hand |
+| matter-sync | register new and changed files in matters, find the lawyer's edits, START-HERE.md | Python | open the folders by hand |
+| matter-migrate | old one-folder matters to agent/ + human/ | Python | move the files by hand |
+| learn-add, learn-index | learning lines; learning/index.md and next steps | Python | append and count by hand |
+| init-workspace | blank house files from templates/house/ | bash | copy by hand |
+| area-lines | matching lines of an area's playbook.md, intake.md, a subject.md, with headings | Python | grep -n -i -A2 |
+| redline-changes | tracked changes and comments of a .docx, with clause numbers | Python | pandoc --track-changes=all |
 
 ## tooling-setup
 
@@ -61,10 +68,11 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 
 ## unpack-email
 
-`bash tools/unpack-email [--json] [--body-chars N] [--extract DIR] [--no-signals] FILE...`
+`bash tools/unpack-email [--json] [--body-chars N] [--extract DIR] [--no-signals] [--with-quoted [--quoted-inline] | --no-quoted] FILE...`
 
 - `.eml` only; a `.msg` exits 2: `convert first: bash tools/msg2eml FILE`.
 - Per file (full list in `--help`): file, canonical_name (`YYYY-MM-DD_HHMM_<in|out>_<from-slug>_<subject-slug>.eml`, house time, subject slug max 40 without the tag), direction (`out` when From is in legal_addresses or is intake_mailbox), internal (From domain in house_domains), personal_address (free-mail domain), date, from {name, address}, to, cc, subject, message_id, in_reply_to, references (no angle brackets), tags (subject and new body first, else full body), noise_hints (auto-reply, bulk, calendar, empty-body, logo-only), body (new text only, quoted history stripped, default 4000 characters then `[... N more characters]`), body_chars_total, attachments {name, content_type, size, sha256, kind, inline}; kind document, image, signature-image, calendar, email.
+- Quoted history (`--with-quoted`): the oldest quoted message, where the request usually is, as `quoted`; every quoted message, without disclaimers, written once to `changes/quoted/<canonical stem>.txt` (`quoted_file`, `quoted_messages`, `quoted_chars_total`). Read that file once, only when the oldest message does not give the request. `--quoted-inline` prints the whole history instead. `--no-quoted` skips it (no quoted_first_date): the fast pass for putting a batch in order.
 - signals (not with `--no-signals`): thread_matches (matters whose documents.md holds an In-Reply-To/References id, with status), tag_matches (folder, status, sender_check: internal, roster-address, roster-name-freemail, roster-name-other-domain, not-on-roster).
 - Reads: the .eml files, house/brief.md, matters' documents.md, roster.md, roster.confirmed.md. Writes: nothing, except attachments with `--extract DIR`.
 - Exit: 0, 2 usage (also a .msg), 3 Python missing.
@@ -76,6 +84,7 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 `bash tools/place-email --register PATH_INSIDE_MATTER [--run RUN] [--json]`
 
 - Into a matter: FILE to `<matter>/correspondence/<canonical_name>` (different content with the same name: `-2`, `-3`); a same-stem `.msg` moves with it as `<canonical-stem>.msg`; attachments of kind document, image, email to `documents/received/` (`documents/ours/` when direction is out), names kept (`<stem>-2<ext>` for a different file with the same name); a sha256 already in the matter's documents.md is not stored again (row `duplicate_of=<earlier name>`); a sha256 already read (`read=yes`, with a summary) in another matter of the same subject folder, except general/unfiled, is stored but not read again: its row gets `read=no: read in <REF> <path>, same file` and that summary, and its card (`agent/summaries/<name>.md`) is copied, headed "Copied from <REF>"; signature images and calendar parts are not stored (`read=no: signature image`, `read=no: calendar part`). documents.md rows for the email and each attachment (`read=pending`), a log.md line, a JOURNAL.md `filed` line (reason, confidence). `--cross-ref F`: a line in F's log.md and the journal.
+- A name that would make the stored path too long for Windows (over 240 characters) is shortened to `<start>~<6 characters><ext>`; its documents.md summary starts `original name: <name>`, and a warning names any path still too long (move the workspace to a shorter folder). `--register` opens long paths with the Windows long-path prefix.
 - Identical email already in the matter: the inbox copy is deleted, journal `duplicate-dropped`. The only deletion any tool makes.
 - `noise`: to `inbox/noise/<canonical_name>`; next `NOISE-NNNN` row in inbox/noise/NOISE.csv (status waiting_lawyer, proposed nothing_needed, `--title` default the subject, `--label`); journal `noise`; attachments not extracted.
 - `please-check`: to `inbox/please-check/<canonical_name>` plus `<canonical_name>.note.md` (frontmatter file, received, from, subject, claimed_reference, candidates, run; body from `--note`); journal `please-check`. Re-filing from please-check resolves the note into `resolved/`.
@@ -217,6 +226,25 @@ CLI reference for the helpers in `tools/`. Agent-facing. RULES.md (Tools) says w
 - The change scan skips bundle folders. Reads: the matter, its subject.md, the skill, the area intake.md, house/brief.md (timezone). Writes: the bundle folder.
 - Exit: 0, 2 usage (no or unknown matter, bad date, unknown skill, two folders with one reference).
 - Fallback: create the folder by hand and copy the list; facts-live.md = the facts.md lines no later line supersedes.
+
+## area-lines
+
+`bash tools/area-lines AREA PATTERN [--subject SLUG] [--after N]`
+
+- Prints the lines of `areas/AREA/playbook.md` and `areas/AREA/intake.md` (and, with `--subject`, that subject's subject.md) that match PATTERN (a regular expression, case-insensitive), each as `<line> [<heading > subheading>] <text>`, followed by up to N more lines of the same paragraph (default 2). A file with no match prints its headings, so a better pattern can be chosen.
+- For one point (a signatory, a letter of authority, an approval limit) instead of reading the whole playbook.
+- Reads only. Exit: 0 a match, 1 no match, 2 usage (unknown area or subject, bad pattern), 3 Python missing.
+- Fallback: `grep -n -i -A2 -E "PATTERN" areas/AREA/playbook.md areas/AREA/intake.md`.
+
+## redline-changes
+
+`bash tools/redline-changes FILE.docx [--clause N] [--summary] [--no-context]`
+
+- Prints only the tracked changes (inserted, deleted, moved away, moved here) and comments of a Word mark-up, one per line: `<where> | <kind> | <author> | <date> | "<text>"`, a comment followed by `on "<the text it is anchored to>"`; under each changed paragraph `reads: "..."`, the paragraph with `[-deleted-]` and `{+inserted+}` text (long unchanged stretches shortened). Last line: the count by author; formatting changes are counted, not listed.
+- Where: `clause 12.2`, `clause 12.2(a)` from Word's automatic numbering (numbering.xml and heading styles) or a number typed at the start of the paragraph; an unnumbered paragraph takes the clause above it; `schedule 2 para 1.1` after a schedule or annex heading; `para N` before the first number; `footnote`, `header`, `footer`.
+- `--clause N`: only clause N and its sub-clauses (12 gives 12, 12.1, 12.2(a); not 2 or 112); also `--clause "schedule 2"`. `--summary`: one line per changed clause with the kinds of change and who made them, a first look at a heavy mark-up. `--no-context`: no `reads:` lines.
+- Reads only; standard library (zip and XML). Exit: 0 (also when there are no changes), 2 not a readable .docx (a .doc or PDF: pandoc, or ask for the .docx), 3 Python missing.
+- Fallback: `pandoc --track-changes=all FILE.docx -t plain`.
 
 ## Tests
 

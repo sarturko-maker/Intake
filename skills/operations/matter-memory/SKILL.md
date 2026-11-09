@@ -54,7 +54,7 @@ You set: title (unless `title_locked: yes`), label, status, proposed_outcome, wa
 `YYYY-MM-DD HH:MM | <event> | <source file or -> | <run>`. Events such as: read and recorded; outcome proposed <outcome>; reopened; consistency pass; work product recorded; closed by the lawyer; checkpoint; wrap-up done.
 
 ## documents.md
-Rows come from tools/place-email. You fill only read (`yes` or `no: <reason>`), summary (one line) and version_of (the earlier version's name). Never change other columns.
+Rows come from tools/place-email. You fill only read (`yes` or `no: <reason>`), summary (one line) and version_of (the earlier version's name). Never change other columns. A summary that starts `original name: <name>` (the stored name was shortened to fit Windows paths) keeps that start: write yours after it, `original name: <name>; <summary>`.
 
 ## brief.md
 Rewritten whole, one page: Requester; What they want; By when; What we still need from them; What the lawyer must decide; Proposed outcome; Proposed next step. Every claim with its pointer. It is the work tool's task text.
