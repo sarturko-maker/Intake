@@ -478,12 +478,14 @@ class LongPathTest(PlaceBase):
         self.assertTrue((target / rows[1]["name"]).is_file())
 
     def test_short_names_are_left_alone(self):
-        env, target = self.env_limit(extra=200)
+        env, target = self.env_limit()        # the same limit; a name that fits is not touched
         f = make_email(self.inbox("short.eml"), sender=JULIA, to=(TOM,), subject="MSA v3",
-                       message_id="<long.3@acme-automotive.de>", attachments=[(self.LONG, b"PK v3 short", DOCX)])
+                       message_id="<long.3@acme-automotive.de>",
+                       attachments=[("Acme MSA v3 clean.docx", b"PK v3 short", DOCX)])
         res = self.ws.run("place-email", f, "--to", self.mrel, "--run", "R3", env=env)
         self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
-        self.assertTrue((target / self.LONG).is_file())
+        self.assertNotIn("shortened", res.stdout)
+        self.assertTrue((target / "Acme MSA v3 clean.docx").is_file())
         self.assertEqual([r["summary"] for r in self.docs() if r["folder"] == "documents/received"], [""])
 
     def test_os_path_prefix_on_windows(self):
@@ -496,7 +498,8 @@ class LongPathTest(PlaceBase):
             self.assertEqual(common.os_path("C:\\short.docx"), "C:\\short.docx")
             self.assertEqual(common.os_path(unc), "\\\\?\\UNC\\server\\share\\" + "b" * 250)
             self.assertEqual(common.os_path("\\\\?\\" + long), "\\\\?\\" + long)
-        self.assertEqual(common.os_path("/tmp/" + "c" * 300), "/tmp/" + "c" * 300)   # not Windows: unchanged
+        if os.name != "nt":                   # elsewhere a long path is handed over unchanged
+            self.assertEqual(common.os_path("/tmp/" + "c" * 300), "/tmp/" + "c" * 300)
 
     def test_fit_name_keeps_extension_and_is_stable(self):
         a = common.fit_name("/x/y", "A very long contract name indeed.docx", limit=30)

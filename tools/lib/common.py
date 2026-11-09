@@ -553,17 +553,23 @@ def protect(path):
 
 
 def force_rmtree(path):
-    """shutil.rmtree that also removes read-only files (Windows refuses to delete them otherwise)."""
+    r"""shutil.rmtree that also removes read-only files (Windows refuses to delete them otherwise) and, on
+    Windows, files whose paths are too long (the folder is opened with the \\?\ prefix, so every path
+    inside it carries the prefix too)."""
     def _retry(func, p, _exc):
         try:
             os.chmod(p, stat.S_IWRITE | stat.S_IREAD)
             func(p)
         except OSError:
             pass
+    target = str(path)
+    if os.name == "nt" and not target.startswith("\\\\?\\"):
+        a = os.path.abspath(target)
+        target = ("\\\\?\\UNC\\" + a[2:]) if a.startswith("\\\\") else "\\\\?\\" + a
     if sys.version_info >= (3, 12):
-        shutil.rmtree(str(path), onexc=_retry)
+        shutil.rmtree(target, onexc=_retry)
     else:
-        shutil.rmtree(str(path), onerror=_retry)
+        shutil.rmtree(target, onerror=_retry)
 
 
 def matter_of_path(root, path):
