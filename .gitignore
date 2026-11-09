@@ -32,6 +32,9 @@
 /changes/*
 !/changes/.gitkeep
 
+# A history/ folder at the top: copies an early history-copy made in the wrong place. Never in git.
+/history/
+
 # Legal skills drafted with the lawyer hold your organisation's positions: never in git.
 # Only the operational skills, POINTERS.md and their generated mirror are kept.
 /skills/*

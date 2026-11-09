@@ -589,7 +589,8 @@ class AfterWriteFactsStubTest(HookCase):
 
     def test_lint_gets_the_previous_copy_from_the_matter_folder(self):
         record = self.tmp / "lint-args.txt"
-        self.lint_stub('printf "%s\\n" "$PWD" "$@" > "$LINT_ARGS"; exit 0')
+        # The folder as a Windows path under Git Bash (cygpath -m), so Python on Windows can compare it.
+        self.lint_stub('here="$(cygpath -m "$PWD" 2>/dev/null || pwd)"; printf "%s\\n" "$here" "$@" > "$LINT_ARGS"; exit 0')
         rc, _, err = self.write_cycle(self.facts, self.original + FACT2 + "\n", env={"LINT_ARGS": str(record)})
         self.assertEqual(rc, 0, err)
         lines = record.read_text(encoding="utf-8").splitlines()

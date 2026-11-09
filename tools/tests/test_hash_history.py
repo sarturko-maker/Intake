@@ -112,7 +112,9 @@ class HistoryCopyTest(TempDirTest):
         env = self.fake_date_env()
         bash_dir, py_dir = self.tmp / "bash", self.tmp / "py"
         when = dt.datetime.strptime(FIXED_STAMP, "%Y-%m-%d_%H%M%S")
-        for name in self.NAMES:
+        # Windows drops a trailing dot from a file name ("a.b." is saved as "a.b"), so that case is Unix-only.
+        names = [n for n in self.NAMES if not (os.name == "nt" and n.endswith("."))]
+        for name in names:
             b = self.make(bash_dir, name)
             p = self.make(py_dir, name)
             for _ in range(3):
@@ -158,12 +160,14 @@ class HistoryCopyTest(TempDirTest):
         f = self.make(self.tmp / "m", "matter.md", "page text")
         given = str(f).replace("/", "\\")
         env = dict(self.fake_date_env(), INTAKE_WINPATHS="1")
-        res = run("history-copy", given, env=env)
+        elsewhere = self.tmp / "elsewhere"      # run from another folder: no history/ may appear there
+        elsewhere.mkdir()
+        res = run("history-copy", given, env=env, cwd=elsewhere)
         self.assertEqual(res.returncode, 0, res.stderr)
         dest = self.tmp / "m" / "history" / ("matter.%s.md" % FIXED_STAMP)
         self.assertEqual(res.stdout, "%s\n" % str(dest).replace("/", "\\"))
         self.assertEqual(dest.read_text(encoding="utf-8"), "page text")
-        self.assertFalse((ROOT / "history").exists())
+        self.assertFalse((elsewhere / "history").exists())
         missing = str(self.tmp / "m" / "missing.md").replace("/", "\\")
         self.assertEqual(run("history-copy", missing, env=env).stdout, "no file: %s\n" % missing)
 
