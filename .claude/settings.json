@@ -24,6 +24,7 @@
       "Bash(bash tools/matter-migrate *)",
       "Bash(bash tools/learn-add *)",
       "Bash(bash tools/learn-index *)",
+      "Bash(bash tools/learn-mark *)",
       "Bash(bash tools/init-workspace *)",
       "Bash(bash tools/area-lines *)",
       "Bash(bash tools/redline-changes *)"

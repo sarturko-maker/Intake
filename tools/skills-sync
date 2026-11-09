@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # skills-sync: mirror the canonical skills in skills/ to .claude/skills/ (generated, never edited by hand).
 # Usage: bash tools/skills-sync [--check]
-#   (no option)  mirror every skills/<group>/<name>/ holding SKILL.md to .claude/skills/<name>/, replacing it whole;
-#                remove mirror folders with no canonical skill; write .claude/skills/.generated
+#   (no option)  mirror every skills/<group>/<name>/ holding SKILL.md to .claude/skills/<name>/, replacing it whole
+#                (without its history/ folder); remove mirror folders with no canonical skill; write
+#                .claude/skills/.generated
 #   --check      compare only, write nothing; exit 1 on any difference (slice 4 check)
 # Groups: operations, or an area key from house/areas.md (other groups are mirrored with a warning).
 # Two groups with a skill of the same name: name clash, nothing written, exit 2.
@@ -73,9 +74,10 @@ if [ -f "$ROOT/house/areas.md" ]; then
   done
 fi
 
-# File list of a tree, relative, OS junk left out.
+# File list of a tree, relative, OS junk left out. A skill's history/ folder (earlier versions of a legal
+# skill, kept by the hooks) is not part of the skill and is never mirrored.
 tree_files() {
-  (cd "$1" && find . -type f ! -name .DS_Store ! -name Thumbs.db ! -name desktop.ini | LC_ALL=C sort)
+  (cd "$1" && find . -type f ! -path './history/*' ! -name .DS_Store ! -name Thumbs.db ! -name desktop.ini | LC_ALL=C sort)
 }
 
 # 0 when both trees hold the same files with the same bytes.
@@ -113,6 +115,7 @@ while IFS="$(printf '\t')" read -r name group; do
     mkdir -p "$DST"
     rm -rf "$dst"
     cp -R "$src" "$dst" || { echo "skills-sync: could not copy skills/$group/$name" >&2; exit 1; }
+    rm -rf "$dst/history"
     UPDATED="$UPDATED${UPDATED:+, }$name"
   fi
 done <<< "$LIST"

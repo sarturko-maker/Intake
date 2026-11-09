@@ -15,7 +15,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 2. Find the matter folder from REF (INDEX.csv, or a folder whose name starts with REF). Read:
    - brief.md, matter.md, notes.md, corrections.md, roster.confirmed.md and roster.md;
    - the email to answer: the latest inbound email in correspondence/ (documents.md shows the order), plus earlier ones only as needed; for documents, their cards in summaries/ first, the document only for the part the reply turns on;
-   - the controlling skill if one is approved (controlling_skill in matter.md), else the closest approved skill;
+   - the controlling skill (controlling_skill in matter.md: the skill for this type of work, working or approved), else the closest skill;
    - the area's playbook.md tone section, and house/brief.md 'Tone for drafts' and 'Always and never';
    - knowledge/INDEX.md, then only the knowledge files the reply relies on (standard answers, entity facts).
 3. If the reply turns on a decision only the lawyer can make (accept or push back, which fallback, who signs), ask that one question first. The lawyer's words in the request count as the decision.
@@ -35,6 +35,6 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 7. Changes asked: save as v<N+1>; never overwrite the earlier version.
 8. `bash tools/budget-update --measure --run <R> --note "reply <REF>"` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "reply <REF>"`, once per model used.
 
-When the sent email comes back through intake, the reader compares it with the latest draft. It records "sent as drafted" or "sent with changes: <one line>" in log.md and the brief, and proposes accepted_unchanged (yes or no) for the lawyer to confirm. Changes the lawyer made are evidence of how we say things: the wrap-up and the skills use them.
+When the sent email comes back through intake, the reader compares it with the latest draft. It records "sent as drafted" or "sent with changes: <one line>" in log.md and the brief, and a `compared` line in the learning register. Changes the lawyer made are the best evidence of how we say things: the next learning pass folds them into the skill, with nobody asked.
 
 No subagents are needed: the orchestrator drafts. A drafter subagent may help for long replies or mark-ups, saving into drafts/.

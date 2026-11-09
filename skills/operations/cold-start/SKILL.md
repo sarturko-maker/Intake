@@ -5,7 +5,7 @@ description: "First run on a machine, or when TOOLING.md is missing: check the h
 
 # Cold start
 
-Show each result; never assert it. Ask in plain chat, one short question at a time; never assume an answer. Never invent names, areas or positions.
+Show each result; never assert it. Ask only what the set-up cannot go on without (the house files, an install). Never invent names, areas or positions.
 Only if the harness has no subagents: do the indexer's and drafter's work yourself, one folder or area at a time.
 R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 
@@ -28,8 +28,8 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 11. `bash tools/scan-changes --run <R> --write-manifest` (the first run reports everything as new).
 
 ## 4. Index
-12. Dispatch the indexer on every file in house/, knowledge/ and seeds/ (method and format: index skill). It writes knowledge/INDEX.md ending with 'Needs an owner or date': files lacking owner, source or validity date. Owners are never guessed.
-13. Propose in chat, one at a time, from its report: splitting standard-answer sets, entity lists and people lists into one knowledge entry each (RULES.md 'Knowledge'); a new type, with an example, for material that fits none. Write only after a yes (index skill, step 3).
+12. Dispatch the indexer on every file in house/, knowledge/ and seeds/ (method and format: index skill). It writes knowledge/INDEX.md ending with 'Needs an owner or date': dropped documents lacking owner, source or validity date. Owners are never guessed.
+13. From its report, with nobody asked (index skill, step 3): standard-answer sets, entity lists and people lists are split into one working knowledge entry each; material that fits no type three times over gets a type in knowledge/TYPES.local.md. Say what was done in the report.
 
 ## 5. Area files
 14. Per area without them, one drafter per area in parallel: areas/<key>/playbook.md and areas/<key>/intake.md from skills/operations/cold-start/templates/playbook.md and intake.md, `status: draft`. Fill only from the area's block in house/areas.md, house/brief.md and the knowledge files knowledge/INDEX.md points to, each point with its source. Where nothing is known, keep the prompt and write "Not known yet." Never invent a position.
@@ -37,9 +37,9 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
 16. `bash tools/scan-changes --run <R> --write-manifest` again, so the next run sees only new changes.
 
 ## 6. Inbox
-16b. `bash tools/learn-index` (creates learning/). Files in seeds/ (Harvey output): offer "learn" to take them in.
+16b. `bash tools/learn-index` (creates learning/). Files in seeds/ (Harvey output): the first learning pass takes them in as leads.
 17. inbox/ has files: run the intake skill. Otherwise run the status skill (the first digest, with 'Needs an owner or date').
 
 ## 7. Report
 18. Five lines or fewer: tools found, installed or blocked, with fallbacks; what was created; what was indexed; what needs an owner or date; where to look (digests/LATEST.md, INDEX.md, inbox/please-check/).
-19. Tell the lawyer what to do next: answer any open question above; read and approve the draft playbook.md and intake.md per area (say "approve the commercial playbook" or what to change); with no approved legal skills yet, start the interviews, most frequent work type first ("interview me about <type>"), then "draft a skill for <type>"; drop emails into inbox/ and say "process the inbox".
+19. Tell the lawyer what to do next: drop emails into inbox/, sent items included, and say "process the inbox". Skills and knowledge entries then write themselves as matters are read (learning/index.md shows them); the lawyer reads them when they like and says what to change. The draft playbook.md and intake.md per area are in use from the start; "approve the commercial playbook" stamps one when the lawyer has read it.

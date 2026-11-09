@@ -1,13 +1,13 @@
 ---
 name: close
-description: "Close a matter on the lawyer's word and run its wrap-up: closing note, subject profile, up to three why questions kept as decision facts, knowledge confirm flow. Use for 'close 2026-0042', '/close REF', and for each closed-by-lawyer line from index-rebuild (already closed in INDEX.csv, wrap-up-pending)."
+description: "Close a matter on the lawyer's word and run its wrap-up without asking anything: closing note with the reasons the record shows, subject profile, and what the matter teaches recorded for the skills and the knowledge base. Use for 'close 2026-0042', '/close REF', 'close 2026-0042: <why>', 'close 2026-0042 and ask me why', and for each closed-by-lawyer line from index-rebuild (already closed in INDEX.csv, wrap-up-pending)."
 argument-hint: "<REF>"
 model: opus
 ---
 
 # Close
 
-Closing is the lawyer's decision and only a status: nothing moves or is deleted, and new mail reopens the matter by itself. Rules: RULES.md 'Wrap-up and learning', 'Memory files', 'Knowledge'. Ask in plain chat, one short question at a time; never assume an answer.
+Closing is the lawyer's decision and only a status: nothing moves or is deleted, and new mail reopens the matter by itself. The wrap-up asks nothing: the distiller works the reasons out of the record and marks its own readings as assumed. Rules: RULES.md 'Wrap-up and learning', 'Memory files'.
 Only if the harness has no subagents: do the distiller's steps yourself.
 R = the open run's id when intake or status calls this skill; else `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`. Today = house date.
 
@@ -19,18 +19,17 @@ R = the open run's id when intake or status calls this skill; else `TZ=<timezone
 
 ## Wrap-up
 5. `bash tools/matter-sync <REF> --run <R>`: registers any file not yet recorded, in agent/ or human/.
-6. Dispatch the distiller, call 1, with R, mode, REF, folder and "close". It:
-   a. re-reads the matter from the start: matter.md, brief.md, every facts.md line (superseded too), log.md, documents.md, corrections.md, both rosters, correspondence oldest first, the files in human/, subject.md, the controlling skill;
-   b. records new files (documents.md read and summary, log line);
-   c. rewrites matter.md whole by the matter-memory skill, with '## Closing note': the outcome, what was decided and why, what we conceded, what to remember next time; every claim with a pointer;
-   d. rewrites subject.md: this matter's line under Matters (closed, one line); 'Standing positions agreed before' (agreed here, with pointers); 'What usually follows what' from follows links ("NDA 2026-0036, then MSA 2026-0042");
-   e. writes at most three why questions under '## Questions for the lawyer', only where the record shows a choice without its reason: a concession, a departure from the playbook or a skill, an unexpected outcome;
-   f. returns the questions; company facts learned that may belong in knowledge/ (one sentence each, with source, proposed type, file and owner); any correction or re-filing of the agent's work here; last line `chars read: N, chars written: M`.
-7. Ask the why questions in chat, one at a time, and wait for each answer. Then the distiller, call 2, with the answers (declined ones marked): it appends one line per answer to facts.md, `F<next> | <today> | decision | valid_from=<today> | source=lawyer in chat <today> | supersedes= | <the answer, one sentence>`, runs `bash tools/lint-facts <folder>/facts.md`, and folds the answers into matter.md. Declined: nothing recorded. No subagents: do it yourself with your edit tool.
-8. Knowledge confirm flow, per candidate fact: one chat sentence with fact, source and owner, for example "Shall I add to knowledge: '<fact>' (from <REF>)? Which department owns it?". Write only after a yes: one file in the type's folder under knowledge/, frontmatter per RULES.md 'Knowledge', `origin: matter`, `source: <REF> <file>`, `confirmed_by: <lawyer_name in house/brief.md>`, `last_confirmed: <today>`; a standard answer also names its owning department. If it changes an existing entry, set `valid_until: <today>` on the old entry and write a new one; never edit silently. Then index the new file (index skill, those files only).
-9. Edit matter.md frontmatter: remove `wrap-up-pending`. Log `wrap-up done`. Unanswered questions stay in matter.md.
+6. What the lawyer said with the close ("close 2026-0042: we gave way on the cap because they are a strategic customer", an outcome, minutes): write it down first. Reasons and context: the note skill, steps 2 and 3 (a dated "(you said)" line in agent/notes.md). confirmed_outcome, lawyer_minutes, accepted_unchanged: into matter.md frontmatter as the status skill does. Never ask for any of them.
+7. Dispatch the distiller, one call, with R, mode, REF, folder and "close". It:
+   a. re-reads the matter from the start;
+   b. records new files, and the lawyer's reasons from notes.md as `decision` facts;
+   c. rewrites matter.md whole with '## Closing note': the outcome, what was decided and why, what we conceded, what to remember next time; a reason the record does not give is its own reading, marked `(assumed: ...)`, with the point listed under '## Questions for the lawyer' (at most three);
+   d. rewrites subject.md: this matter's line under Matters (closed, one line); 'Standing positions agreed before'; 'What usually follows what' from follows links;
+   e. records what the matter teaches with learn-add: evidence for its type of work, company facts, open points. The learning pass turns these into the working skill and knowledge entries; nobody confirms them one by one.
+8. Only when the lawyer asked for it ("close 2026-0042 and ask me why", "ask me why"): put the distiller's open points to the lawyer, one at a time, at most three; then the distiller, call 2, with the answers (declined ones marked). It records each as a `decision` fact (`source=lawyer in chat <today>`) and a learning line with origin lawyer, and folds them into matter.md. Otherwise ask nothing: the points stay in matter.md with the readings taken, and the lawyer can settle one at any time ("note <REF>: ...").
+9. Edit matter.md frontmatter: remove `wrap-up-pending`. Log `wrap-up done`.
 10. The agent was corrected in this matter (corrections.md lines, re-filed emails): append to WORKFLOW-LOG.md `<time> | <R> | corrected | <REF>: <what, one line>`.
 11. `bash tools/budget-update --measure --run <R> --note "wrap-up <REF>"` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "wrap-up <REF>"`, once per model used (m: its BUDGET.md price key). Then `bash tools/index-rebuild --run <R>`.
 
 ## Next
-12. Tell the lawyer: closed and wrapped up, and what was recorded. If confirmed_outcome, lawyer_minutes or accepted_unchanged are empty, ask them to fill those in INDEX.csv or say them in a sentence. New mail on this matter reopens it by itself.
+12. Tell the lawyer in three lines: closed and wrapped up; the closing note in one line, with any reason it had to assume; and that a reason or a correction can be added at any time ("note <REF>: ..."). New mail on this matter reopens it by itself. Do not ask for an outcome, minutes or anything else.

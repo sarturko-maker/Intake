@@ -65,3 +65,7 @@ How question match is scored: for each matter, the lawyer marks each question: *
 | 2 → 3, per category | At least 30 matters in the category (**To confirm**); at least 90% of first drafts accepted unchanged (**To confirm**); no material error in the last 30; the lawyer confirms the category as a fixed point |
 
 A gate missed means the phase continues; it does not mean failure. Write down why it was missed and what changes.
+
+## The lab's rehearsal
+
+The lab already runs a small version of the Phase 1.5 measure on the lawyer's own mail. Before legal answers a request, it notes what it expects legal to ask and do; when legal's email arrives, it records match, partly or missed. `learning/index.md` shows "expected right" per type of work: matches plus half the partlies, over everything compared. It scores a whole reply, not each question, and the lab scores itself, so treat it as an early signal, not as the gate. It tells you which types of work are ready to try in Phase 1.5 first, and its misses are question bank candidates.

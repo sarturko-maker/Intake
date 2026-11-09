@@ -2,7 +2,8 @@
 
 Interface: tools/scan-changes (usage text) and the build spec, D1. Files are compared by
 size and mtime; only candidates are hashed. A deleted path whose hash reappears at a
-new path is reported as moved.
+new path is reported as moved. A new or changed file under knowledge/ or skills/ that still
+reads as the agent wrote it (changes/agent-writes.csv) is marked "(the agent's own write)".
 """
 
 import argparse
@@ -137,10 +138,34 @@ def compare(root, current, manifest):
     return entries, hashes, unreadable
 
 
+OWN_WRITE = " (the agent's own write)"
+
+
+def agent_writes(root):
+    """{lower-case path: set of sha256} the agent itself wrote since the last manifest: changes/agent-writes.csv,
+    kept by the after-write hook."""
+    out = {}
+    for r in common.read_csv(Path(root) / "changes" / "agent-writes.csv"):
+        if r.get("path") and r.get("sha256"):
+            out.setdefault(r["path"].replace("\\", "/").lower(), set()).add(r["sha256"].strip().lower())
+    return out
+
+
+def mark_own_writes(root, entries, hashes):
+    """A new or changed skill or knowledge file that still reads as the agent wrote it is the agent's own write,
+    not the lawyer's edit: the report says so, and the run has nothing to do for it."""
+    written = agent_writes(root)
+    for e in entries:
+        if e["kind"] in ("new", "modified") and group_of(e["path"]) in ("knowledge", "skills") \
+                and hashes.get(e["path"], "").lower() in written.get(e["path"].lower(), ()):
+            e["by"] = "agent"
+    return entries
+
+
 def entry_line(e):
     if e["kind"] == "moved":
         return "- moved: %s -> %s" % (e["old_path"], e["path"])
-    return "- %s: %s (%d)" % (e["kind"], e["path"], e["size"])
+    return "- %s: %s (%d)%s" % (e["kind"], e["path"], e["size"], OWN_WRITE if e.get("by") == "agent" else "")
 
 
 def counts_of(entries):
@@ -219,6 +244,7 @@ def main(argv=None):
         manifest = {r["path"]: r for r in common.read_csv(mpath) if r.get("path")}
     current = walk(root)
     entries, hashes, unreadable = compare(root, current, manifest)
+    mark_own_writes(root, entries, hashes)
     report = root / "changes" / ("%s.md" % run)
     common.write_text_atomic(report, render_report(run, entries, unreadable, len(current), manifest is None))
     if args.write_manifest:

@@ -11,6 +11,8 @@
 #   work-product/bundle-*/, MANIFEST.csv JOURNAL.md INDEX.md WORKFLOW-LOG.md TOOLING.md BUDGET.md
 #   HANDOFF.md, and OS junk (.DS_Store Thumbs.db desktop.ini ~$* *.tmp .~lock*). INDEX.csv is scanned.
 # Report groups: matter folder, else inbox/knowledge/house/seeds/skills/areas, else root.
+# A new or changed file under knowledge/ or skills/ that still reads as the agent wrote it (changes/agent-writes.csv,
+#   kept by the after-write hook) ends "(the agent's own write)": not the lawyer's edit, nothing to do for it.
 # Exit: 0 ok, 1 findings or check failed, 2 usage error, 3 Python missing (fallback printed).
 # Fallback without Python: list files changed since the last run with find -newer MANIFEST.csv, hash them with bash tools/hash-files, and write changes/<run>.md by hand.
 FALLBACK="list files changed since the last run with find -newer MANIFEST.csv, hash them with bash tools/hash-files, and write changes/<run>.md by hand."

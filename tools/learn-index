@@ -1,14 +1,29 @@
 #!/usr/bin/env bash
-# learn-index: rebuild learning/index.md, the page of what the system has learned (no model cost).
-# Usage: bash tools/learn-index [--quiet]
-# Reads learning/work-types/*.md, knowledge-candidates.md, questions.md, skills/*/<slug>/SKILL.md and
-# seeds/interviews/*.notes.md. Shows per work type: matters, evidence, positions, seeds, interview, skill,
-# and where it stands (collecting evidence, ready for an interview at 3 matters with a position, ready to
-# draft after the interview, draft waiting for approval, approved). Lists facts waiting for a yes, open
-# questions, and numbered next learning steps (also printed).
+# learn-index: rebuild learning/index.md, the page of what the system has learned, and say what the next
+# learning pass should write (no model cost).
+# Usage: bash tools/learn-index [--quiet] [--today YYYY-MM-DD] [--run RUN]
+#        bash tools/learn-index --edits [FILE]
+# Reads learning/work-types/*.md, knowledge-candidates.md, questions.md, skills/<area>/<slug>/SKILL.md and the
+# knowledge entries. The page shows, per type of work: matters, evidence, lines from the lawyer, the skill
+# (working or approved, its version and date), how often the agent expected the right thing, and where it
+# stands; then the knowledge entries, the open points, and what the next pass will write. Nothing on it waits
+# for the lawyer.
+# Prints one line per item for the learning pass:
+#   due: skill <slug> | area <area> | <why> | evidence_lines <N> | <skill path, or "no skill yet">
+#   due: knowledge | <n> facts to write up, oldest <d> days
+#   later: ...   the same items when they can wait (the explicit "learn" takes them too)
+# A skill is due: no skill yet and two matters show our own work, or the lawyer said something about it; the
+#   lawyer edited it by hand; a new line from the lawyer; eight new lines; or any new line once it is a week old.
+#   Knowledge is due at ten facts, when the oldest has waited three days, when the lawyer stated one, or whenever
+#   a skill is due.
+# Also keeps knowledge/INDEX.md in step: every knowledge entry (a .md file with a type in its frontmatter) gets
+#   or refreshes its index block from the file itself, so entries the agent wrote need no indexer run.
+# --edits lists the skills and knowledge entries the lawyer edited by hand since the agent last wrote them (the
+#   newest history/<stem>.<stamp>.written.md copy, kept by the after-write hook or learn-mark --wrote); with FILE
+#   it shows what was changed.
 # Exit: 0 ok, 2 usage error, 3 Python missing (fallback printed).
-# Fallback without Python: count the matters per work-type file by hand and write the next steps in the digest.
-FALLBACK="count matters and positions per learning/work-types file by hand and list the next learning steps in the digest."
+# Fallback without Python: count the matters per work-type file by hand; write a skill once two matters show our own work.
+FALLBACK="count matters per learning/work-types file by hand; a type of work with two matters that show our own work is ready for its working skill."
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
 . "$here/lib/find-python.sh"

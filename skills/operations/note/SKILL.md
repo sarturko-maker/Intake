@@ -19,7 +19,7 @@ R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`.
    - Never change or remove an earlier line; the hook refuses it. To correct a note, add a line that says what changed.
 3. **Log.** One log.md line: `YYYY-MM-DD HH:MM | note added (you said) | notes.md | R`.
 4. **Does it change anything?** If the note settles a point, changes who we wait for, the next step or a date, or gives a position: run the reader on the matter (why: notes changed), so matter.md, brief.md and facts.md follow (facts cite `source=notes.md YYYY-MM-DD`). Otherwise stop here: the next reader run reads it.
-5. **Learning mode.** A note that shows how we work (a position, a fallback, who approves, why): `printf '%s\n' "<kind> | <text> | notes.md <date>" | bash tools/learn-add --matter <REF> --work-type <slug> --origin lawyer`. A company fact: the knowledge confirm flow, one sentence.
+5. **Learning.** A note that shows how we work (a position, a fallback, who approves, why): `printf '%s\n' "<kind> | <text> | notes.md <date>" | bash tools/learn-add --matter <REF> --work-type <slug> --origin lawyer --run <R>`. A company fact: `printf '%s\n' "<type> | <fact> | notes.md <date>" | bash tools/learn-add --matter <REF> --knowledge --run <R>`. Nothing is asked back: the lawyer said it, so it is recorded. A statement about how the team works in general, not about this matter: the learn skill, 'What the lawyer tells you'.
 6. **Refresh (scripts, no model cost):** `bash tools/work-bundle <REF> --quiet`, then `bash tools/matter-sync <REF> --pages-only --run <R>`. After a reader run, also `bash tools/index-rebuild --run <R>`.
 7. **Reply in one or two lines:** what you noted and, if it changed, the next step. No questions back unless step 1 needs one.
 

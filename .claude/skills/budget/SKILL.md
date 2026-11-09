@@ -33,9 +33,9 @@ The question: where could we have spent fewer tokens for the same result? Rules:
    - matter.md rewritten for a one-line change (an edit to the frontmatter would do);
    - long outputs nobody reads.
 3. Propose at most five changes, the biggest saving first. For each: what to change, the saving, and where it goes:
-   - **a legal skill** (skills/<area>/<name>/SKILL.md): the line for its 'What to read' section; apply it after the lawyer's yes, then `bash tools/skills-sync`;
+   - **a legal skill** (skills/<area>/<name>/SKILL.md): the line for its 'What to read' section. Record it as a learning line (`printf '%s\n' "note | what to read: <the line> | optimise <today>" | bash tools/learn-add --matter chat --work-type <slug>`); the next learning pass writes it into the skill. An approved skill: say the line, and apply it when the lawyer says so;
    - **a house setting or habit** (batch size, mode, which emails to drop): the lawyer decides;
    - **the workspace's own files** (RULES.md, tools/, skills/operations/, .claude/): never edit them here. Write the change into the maintainer note.
 4. Write changes/optimise-<YYYY-MM-DD>.md: the groups, the savings, the proposals, and at the end a "Note for the maintainer" block that is safe to share: kinds of work and documents, references, step names and numbers only. No names of people or organisations, no quotes, no figures from matters.
-5. Reply in plain words: the total that could have been saved, the top three changes in one line each, and which need the lawyer's yes. Offer to apply the legal-skill lines. Say the maintainer note can be pasted to whoever keeps the repository.
+5. Reply in plain words: the total that could have been saved, the top three changes in one line each, and which are the lawyer's to decide. Say the maintainer note can be pasted to whoever keeps the repository.
 6. Learning comes last in the spend order, never first: do not suggest cutting the reads a skill still needs as evidence.

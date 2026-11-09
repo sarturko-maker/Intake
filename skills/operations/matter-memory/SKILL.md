@@ -20,7 +20,8 @@ With or without subagents, whoever writes the memory follows these rules, one ma
 
 ## matter.md
 - Rewritten whole each time: read the current page, fold in what is new, drop what is stale or superseded. Never just append.
-- Sections in template order: What this is; Where we are; Positions and why; Open points and who owes what; Key dates; Documents in play; Questions for the lawyer; Closing note.
+- Sections in template order: What this is; Where we are; Positions and why; Open points and who owes what; Key dates; Documents in play; Questions for the lawyer; Closing note. 'Questions for the lawyer' holds the points the files do not settle, each with the reading taken (`assumed: ...`): the lawyer reads them there; nobody is asked in chat.
+- A reading the files do not prove is marked where it is used: `(assumed: <what it rests on>)`. Never write an assumption as a fact, and never assume a fixed point (a red line, an approval limit, who may sign).
 - Every claim ends with a pointer to a file, relative to the matter folder: `(correspondence/<file>)`, `(documents/received/<file> s12)`, `(facts.md F0007)`. No pointer, no claim.
 - Cap 16,000 characters; hooks reject and restore above it. From 12,000 (`wc -m matter.md`) consolidate: rewrite tighter, and supersede duplicate or contradicted facts in facts.md with new lines. Never delete a fact. Never truncate silently.
 
@@ -31,7 +32,7 @@ You set: title (unless `title_locked: yes`), label, status, proposed_outcome, wa
 - waiting_on: you | requester | counterparty | <team> | nobody. next_step: one line the lawyer can act on. due: YYYY-MM-DD, from the correspondence only.
 - requester: the internal team or person who asked. counterparty: the other organisation's short name.
 - arrived: Date of the first inbound email, `YYYY-MM-DD HH:MM`. ready_at: set once, when the proposed outcome first becomes anything but in_progress; never reset. last_activity: date of the newest email or file.
-- controlling_skill: the approved skill in skills/<area>/ that governs the work, or empty. Never a draft.
+- controlling_skill: the skill for this matter's type of work in skills/<area>/, working or approved, or empty when there is none yet.
 - flags: comma-separated: wrap-up-pending, reopened, personal-address, possible-impersonation, out-of-area, general-flagged, sensitive, light-read, proposed-sub-area:<name>. Keep flags you did not set, except light-read, which the reader removes after its full read.
 - Never touch reference, kind, area, sub_area, subject, opened, closed, follows, confirmed_outcome, confirmed_by, lawyer_minutes, accepted_unchanged. Exceptions: reopen; the lawyer's own words in chat (status and close skills).
 - Reopen (new mail on a closed matter): status open, closed emptied, flag reopened, log `reopened: new email after close`.

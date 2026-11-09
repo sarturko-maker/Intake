@@ -9,11 +9,11 @@ The plan for building legal intake on Microsoft Copilot Studio, phase by phase. 
 | | The build | The lab |
 |---|---|---|
 | What | Copilot Studio agents, Power Automate flows, SharePoint lists and libraries, Dataverse, later a worker in Azure AI Foundry | This workspace: Claude Code on the lawyer's laptop |
-| Job | Runs intake for Sales | Learns how legal works and turns it into approved content: skills, knowledge, the question bank, the five points |
+| Job | Runs intake for Sales | Learns how legal works by watching, with nobody asked, and turns it into content the lawyer approves: skills, knowledge, the question bank, the five points |
 | Sends anything? | Only what [CONTRACT.md](CONTRACT.md) allows in each phase | Never |
 | Data | Company tenant | The lawyer's laptop, then the tenant via export |
 
-Content flows one way into the build: the lawyer approves it in the lab, then exports it ([export.md](export.md)). Evidence flows the other way: the register and the question log feed the lab ([lab-changes.md](lab-changes.md)).
+Content flows one way into the build: the lab writes working skills and knowledge as it reads, the lawyer approves what is to leave, then exports it ([export.md](export.md)). Nothing working is ever exported. Evidence flows the other way: the register and the question log feed the lab ([lab-changes.md](lab-changes.md)).
 
 ## Phases
 

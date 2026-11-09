@@ -8,6 +8,9 @@
 #   - matter.md, facts.md or subject.md that exists, or a matter's agent/notes.md: copies it first to
 #     history/<stem>.<YYYY-MM-DD_HHMMSS>.md (-2 on a clash), with tools/history-copy when present.
 #     (after-write checks notes.md against that copy: the agent may only add lines at the end.)
+#   - A legal skill (skills/<area>/<name>/SKILL.md) or a knowledge entry (knowledge/**/*.md) that the lawyer
+#     edited by hand since the agent last wrote it, or that has no copy yet: copies it first to
+#     history/<stem>.<stamp>.before.md, so the hand-edited version is never lost.
 #   - Anything else: exit 0, silent.
 # Exit: 0 go ahead; 2 refused. Unreadable input or a failed copy never blocks: warning, exit 0.
 # Needs bash 3.2+ and coreutils. JSON is read with python3/python/py, else jq, else sed.
@@ -185,6 +188,35 @@ abs="$(canon "$(to_posix "$raw")" "${proj:-/}")"
 rel="$(rel_to "$abs" "$proj")" || rel="$abs"
 base_lc="$(lower "${abs##*/}")"
 
+# A legal skill or a knowledge entry: the agent's own working view, which the lawyer may also edit by hand
+# (RULES.md, Knowledge and Skills). Not the operational skills, the index, the type lists or history/ copies.
+is_learned() {
+  case "$(lower "$1")" in
+    skills/operations/* | skills/*/history/* | knowledge/history/* | knowledge/*/history/*) return 1 ;;
+    knowledge/index.md | knowledge/types.md | knowledge/types.local.md) return 1 ;;
+    skills/*/*/skill.md | knowledge/*.md) return 0 ;;
+  esac
+  return 1
+}
+
+# Newest history/<stem>.<YYYY-MM-DD_HHMMSS>[_N].written<ext> of $1: the file as the agent last wrote it (kept by
+# after-write, or by tools/learn-mark --wrote). Other copies in history/ are never taken for the agent's version.
+latest_written() {
+  local f="$1" dir name stem ext c best=""
+  dir="${f%/*}"
+  name="${f##*/}"
+  stem="${name%.*}"
+  ext=".${name##*.}"
+  [ -d "$dir/history" ] || return 0
+  for c in "$dir/history/$stem".[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]*.written"$ext"; do
+    [ -f "$c" ] || continue
+    if [ -z "$best" ] || [[ "$c" > "$best" ]]; then
+      best="$c"
+    fi
+  done
+  printf '%s' "$best"
+}
+
 # ---- end of shared block -----------------------------------------------------------------------
 
 # Human-only: corrections.md, roster.confirmed.md, any matter's human/ folder. (house/ is not refused here:
@@ -254,4 +286,30 @@ case "$copy" in
     fi
     ;;
 esac
+
+# A legal skill or a knowledge entry: after-write keeps a copy of every version the agent writes
+# (history/<stem>.<stamp>.written<ext>). When the file no longer reads as the newest of those copies (the lawyer
+# edited it by hand), or has none yet, keep it as it stands before this write: history/<stem>.<stamp>.before<ext>.
+# The learning pass reads the difference (tools/learn-index --edits).
+if is_learned "$rel" && [ -f "$abs" ]; then
+  prev="$(latest_written "$abs")"
+  if [ -z "$prev" ] || ! cmp -s "$prev" "$abs"; then
+    dir="${abs%/*}"
+    name="${abs##*/}"
+    stem="${name%.*}"
+    ext=".${name##*.}"
+    if mkdir -p "$dir/history" 2>/dev/null && stamp="$(date +%Y-%m-%d_%H%M%S)"; then
+      dest="$dir/history/$stem.$stamp.before$ext"
+      n=2
+      while [ -e "$dest" ]; do
+        dest="$dir/history/$stem.$stamp-$n.before$ext"
+        n=$((n + 1))
+      done
+      cp -p "$abs" "$dest" 2>/dev/null || cp "$abs" "$dest" 2>/dev/null ||
+        warn "could not copy $rel to history/ before this write."
+    else
+      warn "could not copy $rel to history/ before this write."
+    fi
+  fi
+fi
 exit 0

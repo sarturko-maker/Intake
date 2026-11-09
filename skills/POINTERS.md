@@ -1,6 +1,6 @@
 # Pointers
 
-Reference material for the shape of skills and for checklists. Nothing here is a house position, and nothing here becomes one without the lawyer. A position enters a skill, a playbook or the knowledge base only through /draft-skill or the knowledge confirm flow, after the lawyer says yes.
+Reference material for the shape of skills and for checklists. Nothing here is a house position, and nothing here becomes one without the lawyer. A position enters a skill, a playbook or the knowledge base only from this organisation's own matters or the lawyer's own words (RULES.md, Skills and Knowledge), never from here.
 
 Every entry below is labelled: reference, not house position. Use it for structure, order and coverage, never for the answer. The fork's legal skills assume US law unless they say otherwise; this organisation's law, positions and tone come from house/, knowledge/, closed matters and the lawyer.
 

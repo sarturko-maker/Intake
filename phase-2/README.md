@@ -23,5 +23,5 @@ Phase 1 already gives you most of this in text:
 
 - `digests/LATEST.md` ends with what you should do next and shows the four measures.
 - `INDEX.md` lists every open and closed matter.
-- "close 2026-0042" and "checkpoint 2026-0042" ask you up to three short questions about why things went the way they did, and keep your answers.
-- "learn" tells you it is not active yet and notes that you asked.
+- "close 2026-0042" and "checkpoint 2026-0042" write the closing note from the file, with the reasons the record shows, and ask nothing.
+- Skills and company facts write themselves as matters are read; `learning/index.md` shows them, and "learn" runs the write-up now.

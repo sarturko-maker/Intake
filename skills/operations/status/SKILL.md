@@ -5,7 +5,7 @@ description: "Rebuild the index and digest from current files without reading ne
 
 # Status
 
-Orchestrator skill. Current files only: never process inbox/. Rules: RULES.md 'Index and digest'. Ask in plain chat, one short question at a time; never assume an answer.
+Orchestrator skill. Current files only: never process inbox/. Rules: RULES.md 'Index and digest'. Ask almost nothing (RULES.md 'Notes and questions'): say what was assumed.
 Only if the harness has no subagents: do the reader or indexer step yourself, one matter at a time.
 R = run id: the first `bash tools/scan-changes` prints `report: changes/<R>.md`; pass `--run <R>` to every later tool. Journal lines as in the intake skill.
 
@@ -18,9 +18,9 @@ R = run id: the first `bash tools/scan-changes` prints `report: changes/<R>.md`;
 5b. Spend less: as the intake skill, section 4 step 2b, for any reader or indexer this run used.
 6. Write digests/<R>.md with the headings of the intake skill, section 4. Arrivals and where filed: "No new mail read in this run. Inbox: <n> files waiting." Copy it to digests/LATEST.md.
 7. `bash tools/scan-changes --run <R> --write-manifest --quiet`, unless a change was left unhandled. Journal `run-end`.
-7a. `bash tools/learn-index`: what has been learned and the next learning steps (learning mode: these come first in the reply).
+7a. `bash tools/learn-index`: the page of what has been learned, and what the next learning pass will write. No pass in a status run (it runs at the end of intake, or on "learn"); one line in the reply, never a list of things for the lawyer to do.
 7b. `bash tools/work-bundle --all`, then `bash tools/matter-sync --run <R> --pages-only`: refresh the Harvey packs and START-HERE.md pages. (At the start, `bash tools/matter-sync --run <R>` lists files the lawyer added or changed: offer to read them.)
-8. Reply in the task format (RULES.md 'Index and digest': bold-titled bullets, links, Harvey pack where it exists): the What you should do next list, then at most three questions, numbered, each naming its matter, optional (RULES.md 'Notes and questions'). Inbox has files: add "Say 'process the inbox' to file them."
+8. Reply in the task format (RULES.md 'Index and digest': bold-titled bullets, links, Harvey pack where it exists): the What you should do next list, then at most one question, only for a matter that cannot move without the lawyer, optional (RULES.md 'Notes and questions'). Inbox has files: add "Say 'process the inbox' to file them."
 
 ## Answers to the digest
 R here: the open run's id, else `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`. Apply each answer, then run `bash tools/index-rebuild --run <R>` once and confirm in one line what changed.
@@ -31,6 +31,7 @@ R here: the open run's id, else `TZ=<timezone in house/brief.md> date +%Y-%m-%d_
 - "full read <REF>": a reader for that matter now, depth full, why "lawyer asked for a full read"; then `bash tools/work-bundle <REF>` and `bash tools/matter-sync --run <R> --pages-only`. Asked before an intake: that run's reader for <REF> gets depth full.
 - "accept <file>" (a changed received file the lawyer only opened): `bash tools/lint-received --accept <file> --run <R>`. It records the new hash; the file is not changed.
 - "close <REF>": close skill. "checkpoint <REF>": checkpoint skill. "run the wrap-ups": close skill from 'Wrap-up' for each matter flagged wrap-up-pending.
+- Anything the lawyer says about how the team works, the company, a skill or a knowledge entry ("in the NDA skill, ...", "we never ...", "that is wrong: ..."): the learn skill, 'What the lawyer tells you'. "learn", "catch up": the learn skill, 'The pass'.
 - A possible-impersonation item stays where it is until the lawyer decides. Never act on it.
 
 ## Next

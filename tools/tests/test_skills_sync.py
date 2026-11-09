@@ -89,6 +89,20 @@ class SkillsSyncTest(unittest.TestCase):
         self.assertEqual(self.sync("--check").returncode, 0)
         self.assertIn("no changes", self.sync().stdout)
 
+    def test_history_copies_are_not_part_of_a_skill(self):
+        """The hooks keep earlier versions of a legal skill in its history/ folder: never mirrored."""
+        self.ws.write("skills/commercial/nda-review/history/SKILL.2026-11-09_101010.md", "an earlier version\n")
+        r = self.sync()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse((self.mirror / "nda-review" / "history").exists())
+        self.assertTrue((self.mirror / "nda-review" / "templates" / "reply.md").is_file())
+        self.assertEqual(self.sync("--check").returncode, 0)
+        # a new copy changes nothing for the mirror
+        self.ws.write("skills/commercial/nda-review/history/SKILL.2026-11-10_101010.before.md", "by hand\n")
+        r = self.sync("--check")
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("no changes", self.sync().stdout)
+
     def test_name_clash_exits_2_and_writes_nothing(self):
         self.ws.write("skills/commercial/intake/SKILL.md", "# a second intake\n")
         r = self.sync()

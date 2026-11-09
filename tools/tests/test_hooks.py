@@ -38,10 +38,10 @@ POSIX = os.name != "nt"
 TOOL_NAMES = ["scan-changes", "unpack-email", "place-email", "new-matter", "msg2eml", "hash-files",
               "history-copy", "lint-facts", "lint-received", "index-rebuild", "budget-update",
               "skills-sync", "work-bundle", "tooling-setup", "matter-sync", "matter-migrate", "learn-add", "learn-index",
-              "init-workspace", "area-lines", "redline-changes"]
+              "learn-mark", "init-workspace", "area-lines", "redline-changes"]
 DEMO_SCRIPTS = ["setup", "drop-batch", "check-filing"]
 AGENT_MODELS = {"filer": "sonnet", "reader": "sonnet", "indexer": "sonnet", "researcher": "sonnet",
-                "drafter": "sonnet", "reviewer": "sonnet", "distiller": "opus"}
+                "drafter": "sonnet", "reviewer": "sonnet", "distiller": "opus", "learner": "opus"}
 READ_ONLY_AGENTS = {"filer", "researcher", "reviewer"}
 KNOWN_TOOLS = {"Read", "Grep", "Glob", "Bash", "Write", "Edit"}
 
@@ -385,7 +385,7 @@ class NotesAndAgentWritesTest(HookCase):
         self.assertEqual(rc, 0, err)
 
     def test_notes_elsewhere_are_not_checked(self):
-        p = self.ws / "knowledge" / "notes.md"
+        p = self.ws / "seeds" / "notes.md"
         self.write(p, "a\n")
         self.assertEqual(self.write_cycle(p, "b\n"), (0, "", ""))
         self.assertEqual(self.history(p), [])
@@ -407,6 +407,151 @@ class NotesAndAgentWritesTest(HookCase):
         rc, _, _ = self.write_cycle(page, "x" * 17000)
         self.assertEqual(rc, 2)
         self.assertEqual(self.ledger_rows(), [])
+
+
+class LearnedFilesTest(HookCase):
+    """A legal skill or a knowledge entry is the agent's working view, and the lawyer may edit it by hand.
+    after-write keeps a copy of every version the agent writes and records the write; before-write keeps a
+    hand-edited version before the agent writes over it. Nothing is ever rejected."""
+
+    def setUp(self):
+        super().setUp()
+        self.skill = self.ws / "skills" / "commercial" / "nda-review" / "SKILL.md"
+        self.entry = self.ws / "knowledge" / "entities" / "kestrel-pumpen-gmbh.md"
+        self.ledger = self.ws / "changes" / "agent-writes.csv"
+
+    def ledger_rows(self):
+        if not self.ledger.is_file():
+            return []
+        return [line for line in self.read(self.ledger).splitlines()[1:] if line]
+
+    def befores(self, path):
+        hist = Path(path).parent / "history"
+        return sorted(hist.glob(Path(path).stem + ".*.before.md")) if hist.is_dir() else []
+
+    def writtens(self, path):
+        hist = Path(path).parent / "history"
+        return sorted(hist.glob(Path(path).stem + ".*.written.md")) if hist.is_dir() else []
+
+    def last_written(self, path):
+        import learning
+        return learning.latest_written(path)
+
+    def test_every_version_the_agent_writes_is_kept_and_recorded(self):
+        v1 = "---\nname: nda-review\nstatus: working\n---\n# NDA review\nv1\n"
+        self.assertEqual(self.write_cycle(self.skill, v1), (0, "", ""))
+        copies = self.writtens(self.skill)
+        self.assertEqual(len(copies), 1)
+        self.assertEqual(self.read(copies[0]), v1)
+        v2 = v1.replace("v1", "v2")
+        self.assertEqual(self.write_cycle(self.skill, v2), (0, "", ""))
+        self.assertEqual(len(self.writtens(self.skill)), 2)
+        self.assertEqual(self.read(self.last_written(self.skill)), v2)
+        self.assertEqual(self.befores(self.skill), [])      # the agent wrote over its own version
+        rows = self.ledger_rows()
+        self.assertEqual(len(rows), 2)
+        self.assertIn(self.rel(self.skill), rows[1])
+        self.assertIn(hashlib.sha256(v2.encode("utf-8")).hexdigest(), rows[1])
+
+    def test_a_hand_edit_is_kept_before_the_agent_writes_again(self):
+        v1 = "---\nname: nda-review\n---\n# NDA review\nv1\n"
+        self.write_cycle(self.skill, v1)
+        by_hand = v1 + "- We never accept more than three years.\n"
+        self.write(self.skill, by_hand)                       # the lawyer, in an editor
+        self.assertEqual(self.read(self.last_written(self.skill)), v1)
+        v2 = by_hand.replace("v1", "v2")
+        self.assertEqual(self.write_cycle(self.skill, v2), (0, "", ""))
+        kept = self.befores(self.skill)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(self.read(kept[0]), by_hand)
+        self.assertEqual(self.read(self.last_written(self.skill)), v2)
+        self.assertEqual(self.read(self.skill), v2)
+
+    def test_a_file_from_before_is_kept_first(self):
+        old = "---\ntype: entity\nconfirmed_by: you\n---\nConfirmed last month.\n"
+        self.write(self.entry, old)
+        self.assertEqual(self.write_cycle(self.entry, old + "More.\n"), (0, "", ""))
+        kept = self.befores(self.entry)
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(self.read(kept[0]), old)
+        self.assertEqual(len(self.writtens(self.entry)), 1)
+        self.assertEqual(len(self.ledger_rows()), 1)
+        self.assertIn("knowledge/entities/kestrel-pumpen-gmbh.md", self.ledger_rows()[0])
+
+    def test_a_stray_history_copy_does_not_hide_a_hand_edit(self):
+        """A manual tools/history-copy of the lawyer's version is not the agent's version."""
+        v1 = "---\nname: nda-review\n---\n# NDA review\nv1\n"
+        self.write_cycle(self.skill, v1)
+        by_hand = v1 + "- We never accept more than three years.\n"
+        self.write(self.skill, by_hand)
+        common.history_copy(self.skill)                       # an agent keeping a copy "to be safe"
+        self.assertEqual(self.read(self.last_written(self.skill)), v1)
+        r = subprocess.run([BASH, str(self.ws / "tools" / "learn-index"), "--edits"], capture_output=True, text=True,
+                           env=dict(os.environ, INTAKE_ROOT=str(self.ws)), cwd=str(self.ws))
+        self.assertIn("edited by hand: skills/commercial/nda-review/SKILL.md", r.stdout, r.stderr)
+        self.assertEqual(self.write_cycle(self.skill, by_hand.replace("v1", "v2")), (0, "", ""))
+        self.assertEqual(self.read(self.befores(self.skill)[0]), by_hand)
+
+    def test_same_second_versions_keep_their_order(self):
+        for i in range(3):
+            self.assertEqual(self.write_cycle(self.skill, "v%d\n" % i), (0, "", ""))
+        self.assertEqual(len(self.writtens(self.skill)), 3)
+        self.assertEqual(self.read(self.last_written(self.skill)), "v2\n")
+        self.assertEqual(self.befores(self.skill), [])
+
+    def test_edit_tool_payload(self):
+        self.write(self.skill, "v1\n")
+        rc, _, err = self.run_hook("before-write", self.payload(self.skill, tool="Edit"))
+        self.assertEqual(rc, 0, err)
+        self.write(self.skill, "v2\n")
+        rc, _, err = self.run_hook("after-write", self.payload(self.skill, tool="Edit", event="PostToolUse"))
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.befores(self.skill)), 1)
+        self.assertEqual(self.read(self.last_written(self.skill)), "v2\n")
+
+    def test_other_files_are_left_alone(self):
+        """Operational skills, the index, the type lists, history copies themselves and everything else."""
+        others = [self.ws / "skills" / "operations" / "learn" / "SKILL.md",
+                  self.ws / "knowledge" / "INDEX.md",
+                  self.ws / "knowledge" / "TYPES.md",
+                  self.ws / "knowledge" / "TYPES.local.md",
+                  self.ws / "knowledge" / "entities" / "history" / "kestrel-ltd.2026-11-01_101010.md",
+                  self.ws / "skills" / "commercial" / "nda-review" / "history" / "SKILL.2026-11-01_101010.md",
+                  self.ws / "skills" / "commercial" / "nda-review" / "templates" / "reply.md",
+                  self.ws / "skills" / "POINTERS.md",
+                  self.ws / "learning" / "index.md",
+                  self.ws / "seeds" / "interviews" / "2026-11-01_nda-review.md"]
+        for p in others:
+            self.write(p, "a\n")
+        before = sorted(q.relative_to(self.ws).as_posix() for q in self.ws.rglob("*")
+                        if q.is_file() and "tools" not in q.parts and ".claude" not in q.parts)
+        for p in others:
+            self.assertEqual(self.write_cycle(p, "b\n"), (0, "", ""), p)
+        after = sorted(q.relative_to(self.ws).as_posix() for q in self.ws.rglob("*")
+                       if q.is_file() and "tools" not in q.parts and ".claude" not in q.parts)
+        self.assertEqual(after, before)             # no copy made anywhere
+        self.assertEqual(self.ledger_rows(), [])
+
+    def test_a_long_skill_is_never_rejected(self):
+        long = "---\nname: nda-review\n---\n" + "x" * 17000
+        rc, out, err = self.write_cycle(self.skill, long)
+        self.assertEqual((rc, err), (0, ""))
+        self.assertEqual(self.read(self.skill), long)
+        note = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("skills/commercial/nda-review/SKILL.md is 17,", note)
+        self.assertIn("tighten it", note)
+        self.assertEqual(len(self.writtens(self.skill)), 1)
+        # a long knowledge entry gets no note
+        self.assertEqual(self.write_cycle(self.entry, "---\ntype: entity\n---\n" + "x" * 17000), (0, "", ""))
+
+    def test_without_python(self):
+        path_env = restricted_bin(self.tmp / "bin", drop_jq=False)
+        self.assertEqual(self.write_cycle(self.skill, "v1\n", path_env=path_env), (0, "", ""))
+        self.write(self.skill, "by hand\n")
+        self.assertEqual(self.write_cycle(self.skill, "v2\n", path_env=path_env), (0, "", ""))
+        self.assertEqual(len(self.writtens(self.skill)), 2)
+        self.assertEqual(self.read(self.befores(self.skill)[0]), "by hand\n")
+        self.assertEqual(len(self.ledger_rows()), 2)
 
 
 class MalformedInputTest(HookCase):

@@ -10,10 +10,14 @@
 #     version already had do not block: the write stands, with a warning.
 #   - A matter's agent/notes.md (the lawyer's words): the agent may only add lines at the end. Any
 #     change to an earlier line: restores the newest history copy, reason on stderr, exit 2.
+#   - A legal skill (skills/<area>/<name>/SKILL.md) or a knowledge entry (knowledge/**/*.md): keeps a copy
+#     of the version just written in history/<stem>.<stamp>.written.md; a skill over the cap gets a note to
+#     tighten it at the next write (never rejected).
 #   - Anything else: exit 0, silent.
-#   Every write that stands to a matter's agent/ matter.md, brief.md, facts.md, roster.md or notes.md
-#   is recorded in changes/agent-writes.csv (path, sha256), so matter-sync does not report the agent's
-#   own writes as the lawyer's edits. scan-changes --write-manifest empties it.
+#   Every write that stands to a matter's agent/ matter.md, brief.md, facts.md, roster.md or notes.md, to a
+#   legal skill or to a knowledge entry is recorded in changes/agent-writes.csv (path, sha256), so matter-sync
+#   and scan-changes do not report the agent's own writes as the lawyer's edits. scan-changes --write-manifest
+#   empties it.
 # Exit: 0 fine; 2 rejected and restored (the harness shows stderr to the agent).
 # Never blocks on its own failure: unreadable input, or tools/lint-facts or Python missing, gives
 #   a warning (stderr, plus additionalContext JSON on stdout for the agent) and exit 0.
@@ -191,6 +195,35 @@ proj="${proj%/}"
 abs="$(canon "$(to_posix "$raw")" "${proj:-/}")"
 rel="$(rel_to "$abs" "$proj")" || rel="$abs"
 base_lc="$(lower "${abs##*/}")"
+
+# A legal skill or a knowledge entry: the agent's own working view, which the lawyer may also edit by hand
+# (RULES.md, Knowledge and Skills). Not the operational skills, the index, the type lists or history/ copies.
+is_learned() {
+  case "$(lower "$1")" in
+    skills/operations/* | skills/*/history/* | knowledge/history/* | knowledge/*/history/*) return 1 ;;
+    knowledge/index.md | knowledge/types.md | knowledge/types.local.md) return 1 ;;
+    skills/*/*/skill.md | knowledge/*.md) return 0 ;;
+  esac
+  return 1
+}
+
+# Newest history/<stem>.<YYYY-MM-DD_HHMMSS>[_N].written<ext> of $1: the file as the agent last wrote it (kept by
+# after-write, or by tools/learn-mark --wrote). Other copies in history/ are never taken for the agent's version.
+latest_written() {
+  local f="$1" dir name stem ext c best=""
+  dir="${f%/*}"
+  name="${f##*/}"
+  stem="${name%.*}"
+  ext=".${name##*.}"
+  [ -d "$dir/history" ] || return 0
+  for c in "$dir/history/$stem".[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]*.written"$ext"; do
+    [ -f "$c" ] || continue
+    if [ -z "$best" ] || [[ "$c" > "$best" ]]; then
+      best="$c"
+    fi
+  done
+  printf '%s' "$best"
+}
 
 # ---- end of shared block -----------------------------------------------------------------------
 
@@ -430,7 +463,7 @@ record_write() {
   case "$(lower "$rel")" in
     areas/*/agent/matter.md | areas/*/agent/brief.md | areas/*/agent/facts.md | \
       areas/*/agent/roster.md | areas/*/agent/notes.md) ;;
-    *) return 0 ;;
+    *) is_learned "$rel" || return 0 ;;
   esac
   [ -f "$abs" ] || return 0
   h="$(file_sha "$abs")" || return 0
@@ -440,9 +473,48 @@ record_write() {
   return 0
 }
 
+# A legal skill or a knowledge entry the agent wrote: keep a copy of this version,
+# history/<stem>.<stamp>.written<ext>. The newest such copy is "as the agent last wrote it": tools/learn-index
+# --edits compares the file with it to find what the lawyer changed by hand, and before-write keeps a hand-edited
+# version before the next write.
+keep_written() {
+  local dir name stem ext stamp dest n=2
+  is_learned "$rel" || return 0
+  [ -f "$abs" ] || return 0
+  dir="${abs%/*}"
+  name="${abs##*/}"
+  stem="${name%.*}"
+  ext=".${name##*.}"
+  mkdir -p "$dir/history" 2>/dev/null || { warn "could not keep a copy of $rel in history/."; return 0; }
+  stamp="$(date +%Y-%m-%d_%H%M%S)" || return 0
+  dest="$dir/history/$stem.$stamp.written$ext"
+  while [ -e "$dest" ]; do
+    dest="$dir/history/$stem.${stamp}_$n.written$ext"
+    n=$((n + 1))
+  done
+  cp -p "$abs" "$dest" 2>/dev/null || cp "$abs" "$dest" 2>/dev/null ||
+    warn "could not keep a copy of $rel in history/."
+  return 0
+}
+
+# A skill the lawyer reads stays short. Never rejected: the agent is told to tighten it at the next write.
+advise_long() {
+  local n
+  is_learned "$rel" || return 0
+  [ -f "$abs" ] || return 0
+  n="$(char_count "$abs")" || return 0
+  [ "$n" -gt "$CAP" ] || return 0
+  printf '{"hookSpecificOutput":{"hookEventName":"PostToolUse","additionalContext":"%s"}}\n' \
+    "$(json_escape "$HOOK: $rel is $(commas "$n") characters. A skill the lawyer reads stays under $(commas "$CONSOLIDATE"): at the next write, tighten it (drop repeats, keep the examples that teach most).")"
+  return 0
+}
+
 on_exit() {
   local rc=$?
-  [ "$rc" -eq 0 ] && record_write
+  if [ "$rc" -eq 0 ]; then
+    record_write
+    keep_written
+  fi
   exit "$rc"
 }
 trap on_exit EXIT
@@ -451,5 +523,6 @@ case "$base_lc" in
   matter.md | subject.md) check_cap ;;
   facts.md) check_facts ;;
   notes.md) case "$(lower "$rel")" in areas/*/agent/notes.md) check_notes ;; esac ;;
+  skill.md) advise_long ;;
 esac
 exit 0

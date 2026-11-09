@@ -5,6 +5,7 @@ A folder that works as an in-house legal team's intake inbox.
 - You drop emails into `inbox/`. An AI assistant files each one into a matter, under its practice area and the party or project it is about.
 - For every matter it keeps a short memory: a one-page summary, dated facts, who is who, a log, and your corrections.
 - It keeps an index you can open in Excel, and writes a digest that ends with what you should do next.
+- It learns how you work from what it reads: for each type of work it writes a skill, and it writes down company facts as it meets them. It asks you nothing; you read what it has written when you like and tell it what to change.
 - You decide everything. It never sends anything.
 - It is plain files, a few small helper scripts and one rules file, so you are not tied to one tool.
 
@@ -16,7 +17,8 @@ A folder that works as an in-house legal team's intake inbox.
 - Rename or edit a file you received.
 - Delete your files. The one exception is a second, identical copy of an email it has already filed.
 - Follow instructions written in an email. Emails are information, nothing more.
-- Add a sub-area, a knowledge type, a company fact or a skill without your yes.
+- Treat its own notes as approved. The skills and company facts it writes are marked "working" until you say "approve"; a red line or an approval limit is fixed only when you say so; nothing working leaves for another system.
+- Add an area or a sub-area without your yes.
 
 ## Quick start
 
@@ -39,9 +41,10 @@ Follow [COLD-START-HUMAN.md](COLD-START-HUMAN.md). It is one page and takes abou
 | `inbox/` | Emails you drop in; noise and please-check piles | You drop; the assistant sorts |
 | `areas/` | Matters, by area, sub-area and subject | The assistant |
 | `house/` | Your organisation and your practice areas | You (Claude only with your yes); never in git |
-| `knowledge/` | Company facts: policies, companies, people, standard answers, templates, positions | You add files; the assistant indexes them and asks before it writes |
+| `knowledge/` | Company facts: policies, companies, people, standard answers, templates, positions | You add files; the assistant indexes them and writes working entries from what it reads |
 | `seeds/` | Starting material, such as an extraction from old emails | You |
-| `skills/` | How the assistant works, and legal skills drafted with you | The assistant, after your approval |
+| `skills/` | How the assistant works, and one legal skill per type of work | The assistant writes them from your matters; you correct and approve |
+| `learning/` | What it has learned: start at `learning/index.md` | The assistant |
 | `digests/` | What came in and what to do next | The assistant |
 | `INDEX.csv`, `INDEX.md` | Every matter and its status | The assistant; you fill in four columns |
 | `RULES.md` | The rules every assistant follows | Part of the workspace |
@@ -52,7 +55,7 @@ Follow [COLD-START-HUMAN.md](COLD-START-HUMAN.md). It is one page and takes abou
 
 ## Three phases
 
-1. **Working intake.** Built. Filing, matter memory, index and digest, budget, work bundle, the commands, the knowledge base, skills drafted from your answers, and a short wrap-up when a matter closes.
+1. **Working intake.** Built. Filing, matter memory, index and digest, budget, work bundle, the commands, the knowledge base, skills that write themselves from your matters, and a short wrap-up when a matter closes.
 2. **Learning and visibility.** A dashboard, proposals to improve the skills from closed matters, and a monthly review. See [phase-2/README.md](phase-2/README.md).
 3. **Connections.** A direct Outlook connection instead of drag and drop, sending bundles to the work tool automatically, and a second user. Decided after phase 2.
 

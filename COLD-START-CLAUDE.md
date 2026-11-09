@@ -36,9 +36,9 @@ If Python is blocked by policy, record it and move on. Record every workaround i
 
 1. Read every file in `house/`, `knowledge/`, `seeds/`. For each, a one-paragraph summary and the section tree with locators.
 2. Write `knowledge/INDEX.md` as a tree: folder, file, summary, sections. Seeds marked `origin: seed`.
-3. Files lacking owner, source or validity date: list in the first digest under "Needs an owner or date". Do not guess owners.
-4. Standard answer sets, entity lists, people lists: propose in chat splitting them into one knowledge entry each (RULES.md, Knowledge). Write only after a yes.
-5. Material fitting no type in `knowledge/TYPES.md`: propose a type with an example. Add only after a yes.
+3. Dropped documents lacking owner, source or validity date: list in the first digest under "Needs an owner or date". Do not guess owners.
+4. Standard answer sets, entity lists, people lists: split them into one working knowledge entry each (RULES.md, Knowledge). Nobody is asked; say what was done.
+5. Material fitting no type in `knowledge/TYPES.md` three times over: add a type to `knowledge/TYPES.local.md`, and say so.
 
 ## Step 4. Inbox
 
@@ -62,14 +62,14 @@ Read `RULES.md`, `TOOLING.md`, `BUDGET.md`, `HANDOFF.md` if present, the latest 
 | `/status` | "where are we", "what should I do" | rebuild index, `INDEX.md`, digest; no new reading |
 | `/status` | "confirm nothing needed: NOISE-0001, NOISE-0002" | those noise items closed; files move to `inbox/noise/confirmed/` |
 | `/status` | "file the please-check email from <sender> in 2026-0042" | filed there; its note moves to `inbox/please-check/resolved/` |
-| `/close REF` | "close 2026-0042" | status closed, then the wrap-up |
+| `/close REF` | "close 2026-0042" | status closed, then the wrap-up; asks nothing |
 | `/checkpoint REF` | "checkpoint 2026-0042" | wrap-up without closing |
 | `/bundle REF` | "bundle 2026-0042 for Harvey" | work bundle; Legora or another tool works the same way |
-| `/draft-skill NAME` | "draft a skill for NDA review" | interview and draft |
+| `/draft-skill NAME` | "draft a skill for NDA review", "approve nda-review", "approve the knowledge entries" | write one working skill now; stamp approval |
 | `/index` | "re-index knowledge" | knowledge index |
 | `/budget` | "how much have we spent", "budget actual 37.20" | ledger and mode; records the actual bill |
-| `/learn` | "learn", "what have you learned" | confirm facts, answer questions, take in seeds, choose the next interview or skill |
-| `/interview TOPIC` | "interview me about NDAs" | dictated interview about a way of working |
+| `/learn` | "learn", "catch up", "what have you learned", "in the NDA skill, ..." | write the working skills and knowledge entries now; apply what the lawyer says; asks nothing |
+| `/interview TOPIC` | "interview me about NDAs" | only when the lawyer asks: reacts to the working skill, then a few questions |
 | `/guided-learning TOPIC` | "guided learning on LOAs", "interrogate me about <topic>" | questions in layers about a topic or a document you bring: purpose, shape, practice, then where it meets what is already known |
 | `/reply REF` | "draft a reply to 2026-0042" | draft a reply to send yourself |
 

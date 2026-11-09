@@ -10,7 +10,7 @@ Only if the harness has no subagents: the orchestrator applies these rules itsel
 
 ## Read, in this order
 1. areas/<area>/playbook.md and intake.md: their headings first (`grep -n '^#' FILE`), then only the sections that fit this matter and 'Which skill controls which document'; one point (a signatory, a letter of authority, an approval limit): `bash tools/area-lines <area> "<pattern>"`; subject.md; corrections.md; notes.md; roster.confirmed.md; roster.md; matter.md; live facts (`bash tools/lint-facts <folder>/facts.md --live`); documents.md.
-2. The controlling skill if matter.md names one (approved only). Apply it by reasoning from its considerations and worked examples, never as if-then rules. knowledge/INDEX.md, then only the knowledge sections you need, by locator. Knowledge used for the matter: copy the file to documents/reference/, `bash tools/place-email --register <path> --run <R>`, cite the copy.
+2. The controlling skill: the skill for this matter's type of work (skills/<area>/<work-type slug>/SKILL.md), working or approved. Apply it by reasoning from its considerations and worked examples, never as if-then rules; where the brief leans on a working skill, say "(working skill v<N>)"; outside what it has seen, say so and give your best view. knowledge/INDEX.md, then only the knowledge sections you need, by locator. Knowledge used for the matter: copy the file to documents/reference/, `bash tools/place-email --register <path> --run <R>`, cite the copy.
 3. The new emails only (documents.md rows with read: pending), oldest first: `bash tools/unpack-email --no-signals <file>` gives the new text without quoted history. Earlier emails are already in matter.md, facts.md and their documents.md summaries: rely on those rather than reading them again. A filed email opened in full carries the whole quoted chain, so open one only when the new text turns on something the memory does not hold, and say why in your report. The quoted history only once, when the matter is new and its first email quotes earlier messages, or when it is needed in the same way: `--with-quoted` shows the oldest quoted message, where the request usually is; the whole history, without disclaimers, is in changes/quoted/<name>.txt (quoted_file): read that once, only when the oldest message does not give the request.
 
 ## Short read
@@ -34,7 +34,7 @@ Otherwise decide first: request for work, question, deadline notice, document to
 - Title: at most 80 characters, one line, a lawyer's file title: what it is and what is open. Example: `Supplier MSA: liability cap for data breach still open`. No RE:, FW:, addresses, dates or reference.
 - Set it on the first email. Change it only if the matter turned out to be about something else.
 - `title_locked: yes` means the lawyer renamed it: never change it, never mention it.
-- Label: a few words; prefer the labels in the area intake.md (NDA review, MSA negotiation, questionnaire). A new label that will recur: propose it under your questions.
+- Label: a few words; prefer the labels in the area intake.md (NDA review, MSA negotiation, questionnaire). A new label that will recur: use it, and say so in your report.
 
 ## Brief
 brief.md sections: Requester; What they want; By when; What we still need from them; What the lawyer must decide; Proposed outcome; Proposed next step. One page, plain, self-contained: it is also the work tool's task. Flags (personal address, possible impersonation, unknown document authors, suggested home) go first under What the lawyer must decide.
@@ -51,10 +51,13 @@ Warning signs: a lookalike domain, a display name that does not fit the address,
 - Two matters touched: note the cross-reference in both matter.md files.
 - personal-address: the brief says the sender wrote from a personal address.
 
+## Assume, and say so
+Nobody is asked. Where the files do not settle a point, take the likeliest reading, mark it `(assumed: <why>)` in the brief and matter.md, and go on: the lawyer reads the brief and corrects it in a word. Two things are never assumed: who a sender is or which matter an email belongs to (please-check), and a fixed point (a red line, an approval limit, who may sign).
+
 ## Outcome and drafts
 - Propose one outcome (matter-memory skill). In doubt: ready_for_lawyer. Closing is the lawyer's.
 - Draft only when the controlling skill asks for a draft and the mode is full: into drafts/, named `YYYY-MM-DD_<type>_<topic>_v<N>.<ext>`, a reply subject ending `[<REF>]`. A draft is never sent.
 
 ## Report to the orchestrator
-Per matter: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, summary, at most two questions for the lawyer (each answerable in a few words, only where the answer changes the next step or settles a point the files do not show), company facts worth keeping in knowledge/ (one sentence each, with source), please-check items, unread files with reasons, workflow-log lines (the orchestrator writes them). Last line: `chars read: N, chars written: M`.
+Per matter: title, label, status, proposed_outcome, waiting_on, next_step, due, flags, summary, at most two open points, each with the reading you took (only where the point changes the next step and the files do not settle it; marked `blocks` when no reading lets the matter move), new labels, please-check items, unread files with reasons, workflow-log lines (the orchestrator writes them). Last line: `chars read: N, chars written: M`.
 Only if the harness has no subagents (you are the orchestrator): fold the report into the digest and end your reply with what the lawyer should do next.

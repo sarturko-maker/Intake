@@ -26,8 +26,8 @@ The question, why we ask and the stated assumption may be shown to Sales. Everyt
 
 1. **Phase 1:** every question legal asks is logged ([p1-agent-and-button.md](p1-agent-and-button.md)).
 2. **Monthly:** the paralegal groups questions that ask for the same thing and marks the ones asked three or more times as candidates.
-3. **In the lab:** each guided learning session on a topic or a document ("levels of authority") ends with the intake questions it raised. The lawyer's interview for each work type covers "what do you always need to know first, and what do you assume when it is missing?". Each legal skill's "Questions we ask first" section is the same list with its reasoning. The lab drafts the entries from all three.
-4. **The lawyer approves** each entry. Its default and "never assume when" are fixed points: only the lawyer sets or changes them.
+3. **In the lab, by watching:** the lab records every question legal puts to a requester before it can start, from legal's own emails, with the answer when it comes. Before legal answers a new request, the lab notes which questions it expects; afterwards it compares, and a question it missed is added. Each legal skill's "Questions we ask first" section is built from these: the question, why we ask, where the answer may already be, what legal went ahead on when it was missing. A guided learning session or an interview adds the lawyer's own words where the lawyer wants to. The lab drafts the entries from that section.
+4. **The lawyer approves** the entries in one sitting before export. A default and its "never assume when" are fixed points: the lab may show what legal went ahead on in past matters, but only the lawyer's own word makes it a default.
 5. **Export** to the legal library ([export.md](export.md)); the question and its reason also go into the Sales "what legal needs from you" guide.
 
 ## How it is checked

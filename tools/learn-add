@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
 # learn-add: append learning lines to the learning register (no model cost; safe for readers in parallel).
-# Usage: bash tools/learn-add --matter REF --work-type SLUG [--work-type-name "NDA review"] [--area A] [--origin O] < lines
+# Usage: bash tools/learn-add --matter REF --work-type SLUG [--work-type-name "NDA review"] [--area A] [--origin O] [--line TEXT ...] < lines
 #        bash tools/learn-add --matter REF --knowledge < lines      (each line: type | fact | source)
-#        bash tools/learn-add --matter REF --question < lines       (each line: about | question | evidence)
+#        bash tools/learn-add --matter REF --question < lines       (each line: about | open point | evidence)
 #   evidence line on stdin: kind | text | source [| origin]
-#     kinds: asked, did, position, fallback, red-line, context, approval, phrasing, outcome, timing, routing, answer, note
+#     kinds: asked (what the requester wanted), did, position, fallback, red-line, context, approval, phrasing,
+#       outcome, timing, routing, we-asked (a question legal put before it could start), answer (the reply to it),
+#       expected (what the agent expected legal to ask and do, noted before legal answered), compared (after:
+#       starts match, partly or missed, then what was missed, not needed or different), correction (the lawyer
+#       corrected a skill or an entry), note
 #     origin: observed (default), stated, seed, interview, lawyer
-#   knowledge types: policy, entity, person_role, standard_answer, template, product, certification, contract_record, other
-#   --matter takes a reference, or a tag for evidence with no matter (seed, chat, interview).
-# Writes learning/work-types/<slug>.md (created from a template when new), learning/knowledge-candidates.md,
-# learning/questions.md. Ids are <matter>-<n>. Exit: 0 ok, 1 some lines refused (printed), 2 usage, 3 no Python.
+#     A position, fallback, red-line or phrasing whose source is an inbound email is kept as stated, not observed:
+#       our positions are learned from our own emails and documents and the lawyer's notes only.
+#   knowledge types: policy, entity, person_role, standard_answer, template, position, product, certification,
+#     contract_record, other, and the workspace's own types in knowledge/TYPES.local.md
+#   --line "kind | text | source" gives one line without a pipe; repeat it for more. With no --line, lines come from stdin.
+#   --matter takes a reference, or a tag for lines with no matter (seed, chat, interview).
+#   --run RUN dates the lines by the run (YYYY-MM-DD_HHMMSS); --date YYYY-MM-DD overrides it.
+# Writes learning/work-types/<slug>.md (created when new), learning/knowledge-candidates.md (status pending: the
+# learning pass writes them up in knowledge/), learning/questions.md (status open). Ids are <matter>-<n>.
+# Exit: 0 ok, 1 some lines refused (printed), 2 usage, 3 no Python.
 # Fallback without Python: append the lines by hand in the formats above, with the next free id.
 FALLBACK="append the lines by hand to learning/work-types/<slug>.md, learning/knowledge-candidates.md or learning/questions.md in the formats shown, with the next free id."
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

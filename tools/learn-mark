@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# learn-mark: set the status of lines in the learning register (no model cost).
+# Usage: bash tools/learn-mark ID[,ID...] --status "TEXT" [--run RUN]
+#   K-... ids are facts in learning/knowledge-candidates.md: after writing them up,
+#     --status "written (knowledge/entities/example-gmbh.md)"; not a company fact or a repeat: "dropped (<why>)".
+#   Q-... ids are open points in learning/questions.md: when later evidence or the lawyer settles one,
+#     --status "settled (2026-11-20): we ask every time (2026-0042, 2026-0051)".
+#   Only the status field changes; every other line and field stays as it is.
+#        bash tools/learn-mark --wrote FILE...
+#   Only where hooks are not live (TOOLING.md): after writing a legal skill or a knowledge entry, keep a copy of
+#   it as the agent's version, history/<stem>.<YYYY-MM-DD_HHMMSS>.written.md beside it. With hooks the after-write
+#   hook does this. learn-index --edits compares the file with the newest such copy to find the lawyer's hand edits.
+# Exit: 0 ok, 1 an id or a file was not found (printed), 2 usage, 3 no Python.
+# Fallback without Python: change the last field of those lines by hand.
+FALLBACK="change the last field (the status) of those lines in learning/knowledge-candidates.md or learning/questions.md by hand."
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in -h|--help) sed -n '2,/^FALLBACK=/p' "${BASH_SOURCE[0]}" | sed '$d; s/^# \{0,1\}//'; exit 0;; esac
+. "$here/lib/find-python.sh"
+exec $PY "$here/lib/learning.py" mark "$@"

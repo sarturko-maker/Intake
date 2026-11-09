@@ -1,34 +1,42 @@
 ---
 name: interview
-description: "Interview the lawyer about how the team works on one type of work, from dictated answers, and record them with caution as dated statements for the skills. Use for 'interview me about NDAs', '/interview nda-review', 'let's do the interview', and after cold start when there are no approved skills."
+description: "Talk through how the team works on one type of work, only when the lawyer asks for it. Starts from the working skill, so the lawyer reacts instead of reciting; records the answers as the lawyer's dated statements; rewrites the skill at once. Use for 'interview me about NDAs', '/interview nda-review', 'let's do the interview', 'interview me cold about <type>'."
 argument-hint: "<work type or skill name>"
 model: opus
 ---
 
 # Interview about ways of working
 
-The lawyer dictates. Recollection is valuable and fallible: people describe how they mean to work, remember the striking case, and generalise. Dictation adds errors in names and numbers. So an interview is **evidence of what the lawyer says, on one day**. It is not a record of what happened, and nothing from it becomes a skill without the read-back and approval.
+Only when the lawyer asks. Skills write themselves from the matters (learn skill); an interview is the lawyer choosing to talk rather than read. Never suggest one as a step the lawyer owes.
 
-Rules: RULES.md 'Skills', 'Knowledge'. Ask in plain chat, one question at a time. Never assume an answer.
+The lawyer dictates. Recollection is valuable and fallible: people describe how they mean to work, remember the striking case, and generalise. Dictation adds errors in names and numbers. So an interview is **evidence of what the lawyer says, on one day**. For how we should work (positions, red lines, approvals), the lawyer's answer decides. For what actually happened (steps, timings, who did what), the matters do. Where the two differ, both stay visible.
 
+Rules: RULES.md 'Skills', 'Knowledge'. Ask in plain chat, one question at a time.
 R = run id, house time: `TZ=<timezone in house/brief.md> date +%Y-%m-%d_%H%M%S`. Today = house date.
 
 ## Before
 
-1. Topic: the work type or skill name from the request. If there is none, show the work types from the work-types report (seeds/harvey/ or areas/*/intake.md) with their counts, and ask which to start with. Suggest the most frequent one.
-2. Read quietly, and do not show yet (learning/work-types/<slug>.md first: the evidence matter by matter):
-   - the evidence for this topic: knowledge/INDEX.md and the relevant files, closed matters of this kind, seeds/ (Harvey output: leads only), any existing skill, earlier interviews in seeds/interviews/, and our substantive sent emails in matters of this kind (documents.md origin ours, "[substantive]");
-   - from these, note the points to test later: what the evidence shows we do, the positions seen with their context, and the gaps.
-   - a Harvey draft for this work type (seeds/harvey/*/skills.md, "Skill: <slug>"): treat it with suspicion. It was drafted by search over a Vault and may miss, merge or overstate. Mark each of its lines: agrees with our evidence, contradicts it, or Harvey only. Never show it before the open questions, so it cannot steer the answers.
-3. Say how it works, in two lines: about eight questions, about 15 minutes; numbers and names are read back; nothing changes a skill until the lawyer approves the read-back.
+1. Topic: the type of work from the request (its slug in learning/work-types/). None given: `bash tools/learn-index --quiet`, then the types of work on learning/index.md with their matter counts; suggest the one with the most matters.
+2. Read quietly: the working skill, skills/<area>/<slug>/SKILL.md, above all its 'Not sure yet' and 'Fixed points'; the `compared` lines that start partly or missed in learning/work-types/<slug>.md; earlier interviews in seeds/interviews/. No skill yet: the evidence file itself. A Harvey draft for this type of work (seeds/harvey/*/skills.md): a lead to test, never shown before the lawyer has spoken.
+3. Say how it works, in two lines: "I show you in ten lines how I think you handle this; you tell me what is wrong or missing. Then at most five questions on what I am least sure of. About ten minutes. Say 'cold' if you would rather answer open questions first, before seeing what I found."
 
-## Ask: open questions first, evidence after
+## React, then a few questions
 
-Ask the open question before showing any evidence, so the answer is not shaped by what the agent found. At most eight questions in a session, chosen from:
+1. Show the skill in at most ten plain lines: when this work comes in, what we ask first, how we think about it, what is fixed (or "nothing stated as fixed yet"), how we say it. Then one question: "What is wrong, and what is missing?" Take everything the lawyer says, in their words.
+2. At most five questions, one at a time, the ones whose answers would change the skill most: from 'Not sure yet', from where the agent expected the wrong thing, from sections that say "Not seen yet". For example: "In 2026-0042 we went to 150 percent; the other four matters held 100 percent. What made that one different?"
+3. Follow-ups, at most one per answer:
+   - **"Always", "never", "usually":** "Any exceptions? When did that last happen?"
+   - **A position or a decision:** why: what you weighed, and what would have changed it. The reason is what the skill keeps.
+   - **A number, percentage, amount, period, entity name or defined term:** read it back exactly ("I have: cap at 100 percent of annual fees. Right?").
+4. "Skip" and "enough" are always fine. Stop when the lawyer stops.
+
+## Cold ("interview me cold about <type>", or no skill and no evidence yet)
+
+Ask the open question before showing any evidence, so the answer is not shaped by what the agent found. At most eight, chosen from:
 
 1. When does this kind of request come in, from whom, and what do they really want?
-2. Walk me through what you do, step by step, from the email arriving to it being done.
-3. What do you check first, and what do you ask the requester before acting?
+2. Walk me through what you do, from the email arriving to it being done.
+3. What do you always need to know before you start? What do you assume when it is missing, and when is that not safe?
 4. What is our standard position on the main points? What will we move to, and when?
 5. What do we never accept? Who can override that?
 6. What changes the answer? For example the customer's size, leverage, deal value, a regulated customer, time pressure, or precedent.
@@ -36,35 +44,20 @@ Ask the open question before showing any evidence, so the answer is not shaped b
 8. How do you phrase the reply? Give a typical line.
 9. Tell me about one that went badly, and one that went well.
 
-Follow-ups, at most one per answer:
-- **"Always", "never", "usually":** ask "Any exceptions? When did that last happen?"
-- **A position or a decision:** ask why: what you weighed, and what would have changed it. Then ask for an example matter, so it can be checked. The reason is what the skill keeps; the answer alone is one example.
-- **A number, percentage, amount, period, entity name or defined term:** read it back exactly ("I have: cap at 100 percent of annual fees. Right?").
-
-## Then compare with the evidence
-
-After the open answers, show the differences with the evidence, one line each, and ask the lawyer to settle each one. With a Harvey draft: also its lines that contradict your evidence or the lawyer's answers, and its Harvey-only lines that would matter to the skill, each with its evidence, most important first. The lawyer confirms, corrects or drops each. A line the lawyer does not settle stays a question. Example: "You said we hold the cap at 100 percent. In 2 of 5 matters we went to 150 percent for strategic customers (M012, M031). Should the skill say 100 percent with an exception for strategic customers, or something else?"
-
-Record the lawyer's choice, and keep the difference visible:
-- **For how we should work** (positions, red lines, approvals): the lawyer's confirmed answer is what the skill will say. The past exceptions are kept as precedents with their context.
-- **For what actually happens** (steps, timings, who does what, volumes): evidence beats recollection. If they differ, record both, and ask once which to write. Never overwrite evidence with memory silently.
+Then show where the answers differ from the matters, one line each, most important first, and take the lawyer's word on each: "You said we hold the cap at 100 percent. In 2 of 5 matters we went to 150 percent for strategic customers. Should the skill say 100 percent with that exception, or something else?" A difference the lawyer does not settle stays visible in the skill under 'Not sure yet'.
 
 ## Write
 
-1. **The transcript.** seeds/interviews/<YYYY-MM-DD>_<topic>.md: the questions and the dictated answers as given, with dictation slips marked [sic] only where read back and corrected. Header: topic, date, who (role), session length. Written once, never edited afterwards.
-2. **The notes.** seeds/interviews/<YYYY-MM-DD>_<topic>.notes.md: one statement per line:
-
-   `S01 | kind (consideration, position, red line, approval, step, timing, phrasing, fact, example) | statement with its reason | confirmed in read-back: yes or no | matches evidence: yes, no (with refs) or not checked | lawyer's choice where they differ`
-
-3. **The read-back.** In chat, a plain-English summary of at most 15 lines: the considerations you weigh, the few fixed points (red lines, approvals), and the steps, as the skill would say them, plus the differences and the choices made. Ask about anything that reads like a rule you did not mean. Ask: "Is this right? Correct anything." Mark the confirmed lines yes in the notes.
-4. **Company facts** that came up (entities, approval limits, who signs): offer the knowledge confirm flow, one sentence each. Write only after a yes.
+1. **The transcript.** seeds/interviews/<YYYY-MM-DD>_<topic>.md: the questions and the dictated answers as given. Header: topic, date, who (role), session length. Written once, never edited afterwards.
+2. **The notes.** seeds/interviews/<YYYY-MM-DD>_<topic>.notes.md, one statement per line: `S01 | kind (consideration, position, red line, approval, step, timing, phrasing, question we ask, fact, example, correction) | statement with its reason | matches the matters: yes, no (with refs) or not checked`.
+3. **Into the register, at once, as the lawyer's.** Every statement: `printf '%s\n' "<kind> | <statement, with its reason> | interview <today> S<nn>" | bash tools/learn-add --matter interview --origin interview --work-type <slug> --run <R>`. Kinds: position, fallback, red-line, approval, context, phrasing, did (a step), timing, we-asked (a question we put first, with what we assume when it is missing), `correction` (the lawyer said something in the skill is wrong). A firm "never", "always" or limit is a red-line or approval line: it becomes a fixed point because the lawyer said it. Company facts (entities, approval limits, who signs): `printf '%s\n' "<type> | <fact> | interview <today>" | bash tools/learn-add --matter interview --knowledge --run <R>`.
+4. **The read-back, once.** At most twelve lines: "This is what I took from it", with every number and name, and anything that reads like a rule. The lawyer corrects, or says nothing. A correction is one more `correction` line. Do not wait for a yes, and do not ask for one.
+5. **The skill, now.** `bash tools/learn-index`, then one learner with this type of work's `skill` line (learn skill, 'The pass', steps 4 and 5), `knowledge: yes` when facts came up. If more than one lawyer has been interviewed on the topic, the learner keeps their statements apart and shows any disagreement; it never averages them.
 
 ## After
 
-- Interview notes are a source for the draft-skill skill: (interview <date>, S03). A skill line resting only on an unconfirmed statement is not used.
-- Interview statements are dated. When later matters contradict one, the reader or the wrap-up raises it as a question. It is not silently replaced.
-- If more than one lawyer is interviewed on the same topic, keep their statements apart and show any disagreement. Never average them.
-- Tell the lawyer what is next: "draft a skill for <topic>" builds the draft from the interview, the evidence and the seeds; or "interview me about <next topic>".
+- Tell the lawyer in three lines: the skill's link, what changed, and what is still under 'Not sure yet'.
+- Interview statements are dated. When later matters go another way, the learner keeps the lawyer's line and shows the matter as an example under 'Not sure yet'; it never replaces the lawyer's word silently.
 - `bash tools/budget-update --measure --run <R> --note "interview <topic>"` (the real token use from Claude Code's logs since the last measurement). It finds no logs (another harness): `bash tools/budget-update --run <R> --model <m> --in-chars <n> --out-chars <n> --note "interview <topic>"`, once per model used.
 
-No subagents are needed: the orchestrator runs the interview itself.
+The orchestrator runs the interview itself; the learner writes the skill.

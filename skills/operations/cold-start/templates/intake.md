@@ -6,7 +6,7 @@ version: 0
 <!-- Template for areas/<key>/intake.md (cold-start skill). In the area file: replace {{...}}; replace each "Fill" prompt with content, each point with its source; where nothing is known keep the prompt and write "Not known yet."; delete this comment. -->
 # {{area_name}} intake
 
-How requests arrive in this area and what the agent does with them. Legal content comes from this organisation only: house/, knowledge/, approved skills and the lawyer's answers. Draft until the lawyer approves it in chat.
+How requests arrive in this area and what the agent does with them. Legal content comes from this organisation only: house/, knowledge/, the skills and the lawyer's words. In use from the start; draft until the lawyer approves it in chat.
 
 ## Request kinds
 <!-- Fill from the examples line for this area in house/areas.md: one line per kind, with a typical subject line and the title the matter gets. -->
@@ -33,7 +33,7 @@ How requests arrive in this area and what the agent does with them. Legal conten
 - Summary: at most five bullets. Each has a title of at most 40 characters and one line of text of at most 300 characters.
 
 ## Labels
-<!-- Fill from the request kinds: the short labels used here, a few words each, for example NDA review, questionnaire. A new recurring label is proposed in the digest and added after a yes. -->
+<!-- Fill from the request kinds: the short labels used here, a few words each, for example NDA review, questionnaire. A new recurring label is used at once and listed in the digest; the lawyer renames or merges it in a sentence. -->
 
 ## Outcome vocabulary
 <!-- Fill: what each outcome usually means for this area's request kinds. -->

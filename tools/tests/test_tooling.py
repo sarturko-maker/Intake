@@ -147,6 +147,11 @@ class ToolingSetupTest(unittest.TestCase):
         self.assertEqual(rows["deny rules"][1], "missing")
         self.assertIn("lack: house/", rows["deny rules"][4])
         self.assertEqual(rows["hooks"][1], "configured")
+        # house/ under "ask" (changed only after the lawyer approves each change) counts as protected
+        self.ws.write(".claude/settings.json", SETTINGS.replace(
+            '"Edit(house/**)", "Write(house/**)"\n    ]', '"Read(x)"\n    ],\n    "ask": ["Edit(/house/**)"]'))
+        self.setup_tool("--verify-only")
+        self.assertEqual(self.table()["deny rules"][1], "configured")
 
     # ------------------------------------------------------------ missing items, the question, installs
 

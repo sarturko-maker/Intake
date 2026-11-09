@@ -36,8 +36,6 @@ A Harvey agent finds emails in a Vault by search, so on a large Vault it can mis
 
 ## Then, in Claude Code
 
-1. **"learn"**: imports the leads. Each work type is matched to the learning register, each knowledge need becomes a question ("where is it kept, who owns it?"), facts seen become facts to confirm, and Harvey's questions join the open questions. The skill drafts wait for the interview.
-2. **"interview me about <work type>"**: Claude asks its open questions first, so Harvey's draft does not steer your answers. Then it shows, line by line, where your answers, its own evidence and Harvey's draft agree or differ, and you settle each one.
-3. **"draft a skill for <work type>"**: Claude writes the skill. A line from Harvey goes in only if you confirmed it or Claude's own evidence supports it. Claude adds what its own evidence shows and Harvey missed.
-
-Do one work type at a time, the most common first.
+1. **"learn"**: takes the files in as leads, and asks you nothing. Each work type is matched to the learning register, the facts Harvey saw are noted, and what it left open joins the open points. Claude then writes or rewrites its working skills. A line from Harvey's draft goes into a skill only where Claude's own evidence or your own words support it; the rest is listed under "Not sure yet" as a lead.
+2. **Read the skills when you like** (`learning/index.md` links them) and tell Claude what is wrong in your own words.
+3. **Optional, "interview me cold about <work type>"**: Claude asks its open questions first, so Harvey's draft does not steer your answers, then shows where your answers, its own evidence and Harvey's draft differ.

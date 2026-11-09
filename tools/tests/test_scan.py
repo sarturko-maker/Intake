@@ -134,6 +134,35 @@ class ScanTest(ScanBase):
         report = self.ws.path("changes/S3.md").read_text(encoding="utf-8")
         self.assertIn("## root\n- new: INDEX.csv", report)
 
+    def test_the_agents_own_skills_and_entries_are_marked(self):
+        """The after-write hook records what the agent wrote (changes/agent-writes.csv): a skill or a knowledge
+        entry that still reads that way is not the lawyer's edit."""
+        self.scan("--run", "S1", "--write-manifest")
+        entry = self.write("knowledge/entities/kestrel-ltd.md", "---\ntype: entity\n---\nOur UK company.\n")
+        skill = self.write("skills/commercial/nda-review/SKILL.md", "---\nname: nda-review\n---\n# NDA review\n")
+        mine = self.write("knowledge/policies/gifts.md", "---\ntype: policy\n---\nTyped by the lawyer.\n")
+        self.write("changes/agent-writes.csv", "path,sha256\n"
+                   '"knowledge/entities/kestrel-ltd.md",%s\n"skills/commercial/nda-review/SKILL.md",%s\n'
+                   '"skills/commercial/nda-review/SKILL.md",%s\n'
+                   % (common.sha256_file(entry), "0" * 64, common.sha256_file(skill)))
+        d = self.scan("--run", "S2")
+        by = {c["path"]: c.get("by") for c in d["changes"]}
+        self.assertEqual(by, {"knowledge/entities/kestrel-ltd.md": "agent",
+                              "skills/commercial/nda-review/SKILL.md": "agent",
+                              "knowledge/policies/gifts.md": None})
+        report = self.ws.path("changes/S2.md").read_text(encoding="utf-8")
+        self.assertIn("- new: knowledge/entities/kestrel-ltd.md (%d) (the agent's own write)" % entry.stat().st_size,
+                      report)
+        self.assertIn("- new: knowledge/policies/gifts.md (%d)\n" % mine.stat().st_size, report)
+        # the lawyer edits the entry by hand: no longer the agent's own
+        self.write("knowledge/entities/kestrel-ltd.md", "---\ntype: entity\n---\nOur UK company. Edited.\n")
+        d = self.scan("--run", "S3", "--write-manifest")
+        by = {c["path"]: c.get("by") for c in d["changes"]}
+        self.assertIsNone(by["knowledge/entities/kestrel-ltd.md"])
+        self.assertEqual(by["skills/commercial/nda-review/SKILL.md"], "agent")
+        self.assertFalse(self.ws.path("changes/agent-writes.csv").exists())
+        self.assertEqual(self.scan("--run", "S4")["changes"], [])
+
     def test_write_manifest_columns_and_bookkeeping(self):
         self.write("inbox/new.eml", "mail")
         self.write("inbox/noise/old.eml", "noise")

@@ -220,14 +220,17 @@ detect() {
     else
       set_item hooks missing "-" "RULES.md obligations; history copies by the agent" ".claude/settings.json declares no PreToolUse and PostToolUse hooks"
     fi
-    local deny lacking=""
+    local deny ask lacking=""
     deny="$(awk '/"deny"/ { on = 1 } on { print } on && /\]/ { exit }' "$set_file")"
+    ask="$(awk '/"ask"/ { on = 1 } on { print } on && /\]/ { exit }' "$set_file")"
     if [ -z "$deny" ]; then
       lacking="a deny list"
     else
-      for pat in corrections.md roster.confirmed.md house/; do
+      for pat in corrections.md roster.confirmed.md; do
         printf '%s' "$deny" | grep -qF "$pat" || lacking="$lacking${lacking:+, }$pat"
       done
+      # house/ is the lawyer's: either denied, or changed only after the lawyer approves each change (ask)
+      printf '%s\n%s' "$deny" "$ask" | grep -qF "house/" || lacking="$lacking${lacking:+, }house/"
     fi
     if [ -z "$lacking" ]; then
       set_item deny configured "-" "-" "$CONF_NOTE"
