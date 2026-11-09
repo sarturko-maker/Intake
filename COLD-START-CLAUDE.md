@@ -70,6 +70,7 @@ Read `RULES.md`, `TOOLING.md`, `BUDGET.md`, `HANDOFF.md` if present, the latest 
 | `/budget` | "how much have we spent", "budget actual 37.20" | ledger and mode; records the actual bill |
 | `/learn` | "learn", "what have you learned" | confirm facts, answer questions, take in seeds, choose the next interview or skill |
 | `/interview TOPIC` | "interview me about NDAs" | dictated interview about a way of working |
+| `/guided-learning TOPIC` | "guided learning on LOAs", "interrogate me about <topic>" | questions in layers about a topic or a document you bring: purpose, shape, practice, then where it meets what is already known |
 | `/reply REF` | "draft a reply to 2026-0042" | draft a reply to send yourself |
 
 If a helper fails on this machine, use its fallback, say so in the digest, add a line to `WORKFLOW-LOG.md`.

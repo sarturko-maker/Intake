@@ -42,6 +42,7 @@ Procedure: skills/operations/<skill>/SKILL.md. Read it, follow it.
 | /bundle REF | "bundle 2026-0042 for Harvey" | bundle |
 | /budget | "how much have we spent", "budget actual 37.20", "optimise", "where could we spend less" | budget |
 | /interview TOPIC | "interview me about NDAs", "let's do the interview" | interview |
+| /guided-learning TOPIC | "guided learning on LOAs", "interrogate me about <topic>", "here is <document>, question me on it" | guided-learning |
 | /reply REF | "draft a reply to 2026-0042" | reply |
 | /draft-skill NAME | "draft a skill for NDA review", "approve" | draft-skill |
 | /index | "re-index knowledge" | index |
@@ -66,8 +67,10 @@ areas/<area>/playbook.md intake.md proposals/
       human/          corrections.md roster.confirmed.md, and any file the lawyer adds
 learning/index.md (generated) work-types/<slug>.md knowledge-candidates.md questions.md seeds-imported.md
 inbox/ noise/NOISE.csv noise/confirmed/ please-check/ please-check/resolved/
-demo/ tools/ phase-2/ .claude/ (settings.json agents/ hooks/ skills/ = generated mirror)
+demo/ tools/ phase-2/ copilot-studio/ .claude/ (settings.json agents/ hooks/ skills/ = generated mirror)
 ```
+
+copilot-studio/ is the specification for building intake on Copilot Studio (Markdown, invented examples only). This workspace is its lab: it never sends, and approved content reaches the build only by copilot-studio/export.md, done by the lawyer.
 
 No sub-areas: skip that level. Closed matters stay put.
 Inside a matter: agent/ is the agent's, human/ the lawyer's. Paths in the agent's files (correspondence/, documents/received/, matter.md, drafts/) are relative to agent/; `human/...` means the matter's human folder. The agent never writes in human/ (deny rule and hook). The lawyer may change anything in agent/: matter-sync reports it at the start of the next run, and the reader keeps the lawyer's change. Old one-folder matters: `bash tools/matter-migrate`.
@@ -181,7 +184,7 @@ The lawyer should not have to write things down: you ask, the lawyer answers in 
 - A change supersedes: valid_until on the old entry, a new entry; never a silent edit.
 - Splits (answer sets, entity and people lists) and new types (with an example): after a yes.
 - Seeds are leads, never truth; knowledge and corrections beat them. Harvey's skill drafts and knowledge needs (harvey/skills-agent/) are tested in the interview: a line enters a skill only on the lawyer's confirmation or our own evidence, and our own findings are added.
-- Interviews (seeds/interviews/) are dated statements of one lawyer's recollection: transcript written once, never edited; notes used only where confirmed in the read-back. For how we should work, the lawyer's confirmed answer decides; for what actually happens, evidence beats recollection; differences stay visible, never silently resolved.
+- Interviews (seeds/interviews/), including guided learning sessions (`kind: guided`, started from a topic or a document), are dated statements of one lawyer's recollection: transcript written once, never edited; notes used only where confirmed in the read-back. For how we should work, the lawyer's confirmed answer decides; for what actually happens, evidence beats recollection; differences stay visible, never silently resolved.
 - Knowledge used in a matter: copy into documents/reference/, then `bash tools/place-email --register PATH --run RUN`.
 - standard-answers/ is the most sensitive folder: open it only for the matter in hand.
 

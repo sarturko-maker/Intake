@@ -48,6 +48,7 @@ Follow [COLD-START-HUMAN.md](COLD-START-HUMAN.md). It is one page and takes abou
 | `tools/` | Small helper scripts the assistant runs | Part of the workspace |
 | `demo/` | The invented demo | Part of the workspace |
 | `phase-2/` | What comes next; not active | Part of the workspace |
+| `copilot-studio/` | The specification for building intake on Copilot Studio; the workspace is its lab | Part of the workspace |
 
 ## Three phases
 
